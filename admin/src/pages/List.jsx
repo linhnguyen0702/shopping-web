@@ -232,7 +232,7 @@ const List = ({ token }) => {
       !formData.price ||
       !formData.category
     ) {
-      toast.error("Please fill in all required fields");
+      toast.error("Vui lòng điền đầy đủ các trường bắt buộc");
       return;
     }
 

@@ -259,7 +259,7 @@ const Users = ({ token }) => {
                   className="flex items-center gap-2 bg-black text-white px-4 py-2.5 rounded-lg hover:bg-gray-800 transition-colors font-medium"
                 >
                   <IoMdAdd className="text-lg" />
-                  Add User
+                  Thêm người dùng
                 </button>
               )}
             </div>
@@ -274,7 +274,7 @@ const Users = ({ token }) => {
                 <IoMdSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search users by name or email..."
+                  placeholder="Tìm kiếm người dùng "
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
@@ -337,7 +337,7 @@ const Users = ({ token }) => {
                         Member Since
                       </th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
+                        Hành động
                       </th>
                     </tr>
                   </thead>

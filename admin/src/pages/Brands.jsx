@@ -46,11 +46,11 @@ const Brands = () => {
       if (data.success) {
         setBrands(data.brands);
       } else {
-        toast.error(data.message || "Failed to fetch brands");
+        toast.error(data.message || "Lỗi khi lấy thương hiệu");
       }
     } catch (error) {
-      console.error("Fetch brands error:", error);
-      toast.error("Failed to fetch brands");
+      console.error("Lỗi khi lấy thương hiệu:", error);
+      toast.error("Lỗi khi lấy thương hiệu");
     } finally {
       setLoading(false);
     }
@@ -86,12 +86,12 @@ const Brands = () => {
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      toast.error("Brand name is required");
+      toast.error("Vui lòng nhập tên thương hiệu");
       return;
     }
 
     if (!formData.image && !editingBrand) {
-      toast.error("Brand image is required");
+      toast.error("Vui lòng nhập ảnh thương hiệu");
       return;
     }
 
@@ -123,17 +123,17 @@ const Brands = () => {
       if (data.success) {
         toast.success(
           editingBrand
-            ? "Brand updated successfully"
-            : "Brand created successfully"
+            ? "Cập nhật thương hiệt thành công"
+            : "Tạo thương hiệu thành công"
         );
         fetchBrands();
         closeModal();
       } else {
-        toast.error(data.message || "Failed to save brand");
+        toast.error(data.message || "Lỗi khi lưu thương hiệu");
       }
     } catch (error) {
-      console.error("Submit brand error:", error);
-      toast.error("Failed to save brand");
+      console.error("Lỗi khi lưu thương hiệu:", error);
+      toast.error("Lỗi khi lưu thương hiệu");
     } finally {
       setSubmitting(false);
     }
@@ -141,7 +141,7 @@ const Brands = () => {
 
   // Handle delete brand
   const handleDelete = async (brandId) => {
-    if (!window.confirm("Are you sure you want to delete this brand?")) {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa thương hiệu này không")) {
       return;
     }
 
@@ -159,14 +159,14 @@ const Brands = () => {
       const data = await response.json();
 
       if (data.success) {
-        toast.success("Brand deleted successfully");
+        toast.success("Xóa thương hiệu thành công");
         fetchBrands();
       } else {
-        toast.error(data.message || "Failed to delete brand");
+        toast.error(data.message || "Lỗi khi xóa thương hiệu");
       }
     } catch (error) {
-      console.error("Delete brand error:", error);
-      toast.error("Failed to delete brand");
+      console.error("Lỗi khi xóa thương hiệu:", error);
+      toast.error("Lỗi khi xóa thương hiệu");
     }
   };
 
@@ -219,9 +219,9 @@ const Brands = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-              Brands
+              Thương hiệu
             </h1>
-            <p className="text-gray-600 mt-1">Manage product brands</p>
+            <p className="text-gray-600 mt-1">Quản lý thương hiệu sản phẩm</p>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -237,7 +237,7 @@ const Brands = () => {
               className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
             >
               <FaPlus />
-              Add Brand
+              Thêm thương hiệu
             </button>
           </div>
         </div>
@@ -248,7 +248,7 @@ const Brands = () => {
             <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Search brands..."
+              placeholder="Tìm kiếm thương hiệu"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
@@ -266,19 +266,19 @@ const Brands = () => {
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Logo
+                        Ảnh
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Brand Name
+                        Tên thương hiệu
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Description
+                        Mô tả
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Website
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
+                        Hành động
                       </th>
                     </tr>
                   </thead>
@@ -335,19 +335,19 @@ const Brands = () => {
           <div className="text-center py-12">
             <FaImage className="mx-auto text-6xl text-gray-300 mb-4" />
             <h3 className="text-xl font-semibold text-gray-700 mb-2">
-              {searchTerm ? "No brands found" : "No brands yet"}
+              {searchTerm ? "Không tìm thấy thương hiệu" : "Không có thương hiệu"}
             </h3>
             <p className="text-gray-500 mb-6">
               {searchTerm
-                ? "Try adjusting your search terms"
-                : "Start by creating your first brand"}
+                ? "Hãy thử tìm kiếm với các từ khóa khác"
+                : "Bắt đầu bằng cách tạo thương hiệu đầu tiên"}
             </p>
             {!searchTerm && (
               <button
                 onClick={() => openModal()}
                 className="bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors"
               >
-                Create Brand
+                Thêm thương hiệu
               </button>
             )}
           </div>
@@ -360,19 +360,19 @@ const Brands = () => {
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Logo
+                        Ảnh
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Brand Name
+                        Tên thương hiệu
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Description
+                        Mô tả
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Website
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
+                        Hành động
                       </th>
                     </tr>
                   </thead>
@@ -396,7 +396,7 @@ const Brands = () => {
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-600 max-w-xs truncate">
-                            {brand.description || "No description"}
+                            {brand.description || "Không có mô tả"}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -408,11 +408,11 @@ const Brands = () => {
                               className="flex items-center gap-1 text-blue-600 text-sm hover:underline"
                             >
                               <FaExternalLinkAlt className="text-xs" />
-                              Visit
+                              Xem website
                             </a>
                           ) : (
                             <span className="text-sm text-gray-400">
-                              No website
+                              Không có website
                             </span>
                           )}
                         </td>
@@ -423,14 +423,14 @@ const Brands = () => {
                               className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors"
                             >
                               <FaEdit className="text-xs" />
-                              Edit
+                              Sửa
                             </button>
                             <button
                               onClick={() => handleDelete(brand._id)}
                               className="flex items-center gap-1 px-3 py-1.5 text-sm bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition-colors"
                             >
                               <FaTrash className="text-xs" />
-                              Delete
+                              Xóa
                             </button>
                           </div>
                         </td>
@@ -472,7 +472,7 @@ const Brands = () => {
                         className="flex items-center gap-1 text-blue-600 text-sm mb-3 hover:underline"
                       >
                         <FaExternalLinkAlt />
-                        Visit Website
+                        Xem website
                       </a>
                     )}
                     <div className="flex gap-2">
@@ -481,14 +481,14 @@ const Brands = () => {
                         className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors"
                       >
                         <FaEdit />
-                        Edit
+                        Sửa
                       </button>
                       <button
                         onClick={() => handleDelete(brand._id)}
                         className="flex items-center gap-1 px-3 py-1.5 text-sm bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors"
                       >
                         <FaTrash />
-                        Delete
+                        Xóa
                       </button>
                     </div>
                   </div>
@@ -511,7 +511,7 @@ const Brands = () => {
             <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center p-6 border-b">
                 <h2 className="text-xl font-semibold">
-                  {editingBrand ? "Edit Brand" : "Add Brand"}
+                  {editingBrand ? "Sửa thương hiệu" : "Thêm thương hiệu"}
                 </h2>
                 <button
                   onClick={closeModal}
@@ -524,7 +524,7 @@ const Brands = () => {
               <form onSubmit={handleSubmit} className="p-6 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Brand Name *
+                    Tên thương hiệu *
                   </label>
                   <input
                     type="text"
@@ -532,14 +532,14 @@ const Brands = () => {
                     value={formData.name}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                    placeholder="Enter brand name"
+                    placeholder="Nhập tên thương hiệu"
                     required
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description
+                    Mô tả
                   </label>
                   <textarea
                     name="description"
@@ -547,7 +547,7 @@ const Brands = () => {
                     onChange={handleInputChange}
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                    placeholder="Enter brand description"
+                    placeholder="Nhập mô tả thương hiệu"
                   />
                 </div>
 
@@ -567,7 +567,7 @@ const Brands = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Brand Logo *
+                    Ảnh thương hiệu *
                   </label>
                   <input
                     type="file"
@@ -592,7 +592,7 @@ const Brands = () => {
                     onClick={closeModal}
                     className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                   >
-                    Cancel
+                    Hủy bỏ
                   </button>
                   <button
                     type="submit"
@@ -600,10 +600,10 @@ const Brands = () => {
                     className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
                   >
                     {submitting
-                      ? "Saving..."
+                      ? "Lưu..."
                       : editingBrand
-                      ? "Update"
-                      : "Create"}
+                      ? "Cập nhật"
+                      : "Tạo"}
                   </button>
                 </div>
               </form>

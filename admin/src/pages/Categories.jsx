@@ -42,11 +42,11 @@ const Categories = () => {
       if (data.success) {
         setCategories(data.categories);
       } else {
-        toast.error(data.message || "Failed to fetch categories");
+        toast.error(data.message || "Lỗi khi lấy danh mục");
       }
     } catch (error) {
-      console.error("Fetch categories error:", error);
-      toast.error("Failed to fetch categories");
+      console.error("Lỗi khi lấy danh mục:", error);
+      toast.error("Lỗi khi lấy danh mục");
     } finally {
       setLoading(false);
     }
@@ -82,12 +82,12 @@ const Categories = () => {
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      toast.error("Category name is required");
+      toast.error("Vui lòng nhập tên danh mục");
       return;
     }
 
     if (!formData.image && !editingCategory) {
-      toast.error("Category image is required");
+      toast.error("Vui lòng nhập hình ảnh danh mục");
       return;
     }
 
@@ -120,17 +120,17 @@ const Categories = () => {
       if (data.success) {
         toast.success(
           editingCategory
-            ? "Category updated successfully"
-            : "Category created successfully"
+            ? "Danh mục đã được cập nhật thành công"
+            : "Danh mục đã được tạo thành công"
         );
         fetchCategories();
         closeModal();
       } else {
-        toast.error(data.message || "Failed to save category");
+        toast.error(data.message || "Lỗi khi lưu danh mục");
       }
     } catch (error) {
-      console.error("Submit category error:", error);
-      toast.error("Failed to save category");
+      console.error("Lỗi khi lưu danh mục:", error);
+      toast.error("Lỗi khi lưu danh mục");
     } finally {
       setSubmitting(false);
     }
@@ -138,7 +138,7 @@ const Categories = () => {
 
   // Handle delete category
   const handleDelete = async (categoryId) => {
-    if (!window.confirm("Are you sure you want to delete this category?")) {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa danh mục này?")) {
       return;
     }
 
@@ -156,14 +156,14 @@ const Categories = () => {
       const data = await response.json();
 
       if (data.success) {
-        toast.success("Category deleted successfully");
+        toast.success("Danh mục đã được xóa thành công");
         fetchCategories();
       } else {
-        toast.error(data.message || "Failed to delete category");
+        toast.error(data.message || "Lỗi khi xóa danh mục");
       }
     } catch (error) {
-      console.error("Delete category error:", error);
-      toast.error("Failed to delete category");
+      console.error("Lỗi khi xóa danh mục:", error);
+      toast.error("Lỗi khi xóa danh mục");
     }
   };
 
@@ -213,9 +213,9 @@ const Categories = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-              Categories
+              Danh mục
             </h1>
-            <p className="text-gray-600 mt-1">Manage product categories</p>
+            <p className="text-gray-600 mt-1">Quản lý danh mục sản phẩm</p>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -231,7 +231,7 @@ const Categories = () => {
               className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
             >
               <FaPlus />
-              Add Category
+              Thêm danh mục
             </button>
           </div>
         </div>
@@ -242,7 +242,7 @@ const Categories = () => {
             <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Search categories..."
+              placeholder="Tìm kiếm danh mục"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
@@ -260,16 +260,16 @@ const Categories = () => {
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Image
+                        Ảnh
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Name
+                        Tên
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Description
+                        Mô tả
                       </th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
+                        Hành động
                       </th>
                     </tr>
                   </thead>
@@ -324,19 +324,19 @@ const Categories = () => {
           <div className="text-center py-12">
             <FaImage className="mx-auto text-6xl text-gray-300 mb-4" />
             <h3 className="text-xl font-semibold text-gray-700 mb-2">
-              {searchTerm ? "No categories found" : "No categories yet"}
+              {searchTerm ? "Không tìm thấy danh mục" : "Không có danh mục"}
             </h3>
             <p className="text-gray-500 mb-6">
               {searchTerm
-                ? "Try adjusting your search terms"
-                : "Start by creating your first category"}
+                ? "Hãy thử tìm kiếm với các từ khóa khác"
+                : "Bắt đầu bằng cách tạo danh mục đầu tiên"}
             </p>
             {!searchTerm && (
               <button
                 onClick={() => openModal()}
                 className="bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors"
               >
-                Create Category
+                Tạo danh mục
               </button>
             )}
           </div>
@@ -349,16 +349,16 @@ const Categories = () => {
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Image
+                        Ảnh
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Name
+                        Tên
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Description
+                        Mô tả
                       </th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
+                        Hoạt động
                       </th>
                     </tr>
                   </thead>
@@ -389,14 +389,14 @@ const Categories = () => {
                               className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors"
                             >
                               <FaEdit />
-                              Edit
+                              Sửa
                             </button>
                             <button
                               onClick={() => handleDelete(category._id)}
                               className="flex items-center gap-1 px-3 py-1.5 text-sm bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors"
                             >
                               <FaTrash />
-                              Delete
+                              Xóa
                             </button>
                           </div>
                         </td>
@@ -435,14 +435,14 @@ const Categories = () => {
                           className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors"
                         >
                           <FaEdit />
-                          Edit
+                          Sửa
                         </button>
                         <button
                           onClick={() => handleDelete(category._id)}
                           className="flex items-center gap-1 px-3 py-1.5 text-sm bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors"
                         >
                           <FaTrash />
-                          Delete
+                          Xóa
                         </button>
                       </div>
                     </div>
@@ -466,7 +466,7 @@ const Categories = () => {
             <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center p-6 border-b">
                 <h2 className="text-xl font-semibold">
-                  {editingCategory ? "Edit Category" : "Add Category"}
+                  {editingCategory ? "Sửa danh mục" : "Thêm danh mục"}
                 </h2>
                 <button
                   onClick={closeModal}
@@ -479,7 +479,7 @@ const Categories = () => {
               <form onSubmit={handleSubmit} className="p-6 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Category Name *
+                    Tên danh mục *
                   </label>
                   <input
                     type="text"
@@ -487,14 +487,14 @@ const Categories = () => {
                     value={formData.name}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                    placeholder="Enter category name"
+                    placeholder="Nhập tên danh mục"
                     required
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description
+                    Mô tả
                   </label>
                   <textarea
                     name="description"
@@ -502,13 +502,13 @@ const Categories = () => {
                     onChange={handleInputChange}
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                    placeholder="Enter category description"
+                    placeholder="Nhập mô tả danh mục"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Category Image *
+                    Ảnh danh mục *
                   </label>
                   <input
                     type="file"
@@ -533,7 +533,7 @@ const Categories = () => {
                     onClick={closeModal}
                     className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                   >
-                    Cancel
+                    Hủy bỏ
                   </button>
                   <button
                     type="submit"
@@ -541,10 +541,10 @@ const Categories = () => {
                     className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
                   >
                     {submitting
-                      ? "Saving..."
+                      ? "Lưu..."
                       : editingCategory
-                      ? "Update"
-                      : "Create"}
+                      ? "Cập nhật"
+                      : "Tạo"}
                   </button>
                 </div>
               </form>
