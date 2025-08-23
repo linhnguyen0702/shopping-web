@@ -53,11 +53,11 @@ const Users = ({ token }) => {
           if (response.data.success) {
             dispatch(setUser(response.data.user));
           } else {
-            console.log("❌ Profile fetch failed:", response.data.message);
+            console.log("❌ Tải dữ liệu hồ sơ không thành công", response.data.message);
           }
         } catch (error) {
           console.log(
-            "🚨 Failed to fetch user profile:",
+            "🚨 Lấy thông tin người dùng thất bại",
             error?.response?.data || error?.message
           );
         }
@@ -80,18 +80,18 @@ const Users = ({ token }) => {
         setUsersList(data?.users);
         setFilteredUsers(data?.users);
       } else {
-        toast.error(data?.message || "Failed to fetch users");
-        console.log("❌ API Error:", data);
+        toast.error(data?.message || "Lấy thông tin người dùng thất bại");
+        console.log("❌ API Lỗi :", data);
       }
     } catch (error) {
       console.log(
-        "🚨 Request failed:",
+        "🚨 Yêu cầu không thành công",
         error?.response?.data || error?.message
       );
       toast.error(
         error?.response?.data?.message ||
           error?.message ||
-          "Failed to connect to server"
+          "Không thể kết nối tới server"
       );
     } finally {
       setLoading(false);
@@ -125,7 +125,7 @@ const Users = ({ token }) => {
 
   const handleRemoveUser = async (_id) => {
     const confirmRemoval = window.confirm(
-      "Are you sure you want to remove this user?"
+      "Bạn có chắc chắn muốn xóa người dùng này không?"
     );
     if (confirmRemoval) {
       try {
@@ -143,7 +143,7 @@ const Users = ({ token }) => {
           toast.error(data?.message);
         }
       } catch (error) {
-        console.log("User remove error", error);
+        console.log("Xảy ra lỗi khi xóa người dùng", error);
         toast.error(error?.message);
       } finally {
         setLoading(false);
@@ -153,7 +153,7 @@ const Users = ({ token }) => {
 
   const handleEditUser = (user) => {
     if (!isAdmin) {
-      toast.error("Only administrators can edit users");
+      toast.error("Chỉ quản trị viên mới có thể chỉnh sửa người dùng");
       return;
     }
     setSelectedUser(user);
@@ -166,7 +166,7 @@ const Users = ({ token }) => {
       setIsOpen(true);
     } else {
       // For non-admin users, show read-only view
-      toast.info("Read-only view - Only administrators can edit users");
+      toast.info("Bạn chỉ có quyền xem. Việc chỉnh sửa người dùng chỉ dành cho quản trị viên.");
     }
   };
 
@@ -235,10 +235,10 @@ const Users = ({ token }) => {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <Title className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-                Users Management
+              Quản trị người dùng
               </Title>
               <p className="text-gray-600">
-                Manage system users and their permissions
+              Quản lý người dùng và phân quyền
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -248,7 +248,7 @@ const Users = ({ token }) => {
                 title="Refresh Users"
               >
                 <FaSync className="text-sm" />
-                Refresh
+                Làm mới
               </button>
               {isAdmin && (
                 <button
@@ -325,16 +325,16 @@ const Users = ({ token }) => {
                         User
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Role & Status
+                        Vai trò và Trạng thái
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Activity
+                        Hoạt động
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Location
+                        Ví trí
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Member Since
+                        Thành viên từ
                       </th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Hành động
@@ -471,7 +471,7 @@ const Users = ({ token }) => {
                               )}
                             </div>
                           ) : (
-                            <span className="text-gray-400">No addresses</span>
+                            <span className="text-gray-400">Không có địa chỉ</span>
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
@@ -486,14 +486,14 @@ const Users = ({ token }) => {
                                   className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors"
                                 >
                                   <FaEdit />
-                                  Edit
+                                  Sửa
                                 </button>
                                 <button
                                   onClick={() => handleRemoveUser(user._id)}
                                   className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition-colors"
                                 >
                                   <FaTrash />
-                                  Delete
+                                  Xóa
                                 </button>
                               </>
                             ) : (
@@ -502,7 +502,7 @@ const Users = ({ token }) => {
                                 className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-50 text-gray-600 rounded-md hover:bg-gray-100 transition-colors"
                               >
                                 <FaEye />
-                                View
+                                Xem
                               </button>
                             )}
                           </div>
@@ -577,7 +577,7 @@ const Users = ({ token }) => {
                     <div className="space-y-3 mb-4">
                       {/* Desktop role display */}
                       <div className="hidden sm:flex items-center justify-between">
-                        <span className="text-sm text-gray-500">Role:</span>
+                        <span className="text-sm text-gray-500">Người dùng:</span>
                         <span
                           className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
                             user.role === "admin"
@@ -596,7 +596,7 @@ const Users = ({ token }) => {
                       </div>
 
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-500">Status:</span>
+                        <span className="text-sm text-gray-500">Trạng thái:</span>
                         <span
                           className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                             user.isActive
@@ -604,14 +604,14 @@ const Users = ({ token }) => {
                               : "bg-red-100 text-red-800"
                           }`}
                         >
-                          {user.isActive ? "Active" : "Inactive"}
+                          {user.isActive ? "Hoạt động" : "Không hoạt động"}
                         </span>
                       </div>
 
                       {user.lastLogin && (
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-gray-500">
-                            Last Login:
+                          Lần đăng nhập gần nhất
                           </span>
                           <span className="text-xs text-gray-600 flex items-center gap-1">
                             <IoMdTime />
@@ -622,7 +622,7 @@ const Users = ({ token }) => {
 
                       {user.orders && user.orders.length > 0 && (
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-500">Orders:</span>
+                          <span className="text-sm text-gray-500">Đơn hàng:</span>
                           <span className="text-sm font-medium text-gray-900 bg-blue-50 px-2 py-1 rounded-full">
                             {user.orders.length}
                           </span>
@@ -634,7 +634,7 @@ const Users = ({ token }) => {
                         Object.keys(user.userCart).length > 0 && (
                           <div className="flex items-center justify-between">
                             <span className="text-sm text-gray-500">
-                              Cart Items:
+                              Sản phẩm trong giỏ:
                             </span>
                             <span className="text-sm font-medium text-gray-900 bg-orange-50 px-2 py-1 rounded-full">
                               {Object.keys(user.userCart).length}
@@ -646,7 +646,7 @@ const Users = ({ token }) => {
                       {user.addresses && user.addresses.length > 0 && (
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-gray-500">
-                            Location:
+                            Địa chỉ:
                           </span>
                           <div className="text-xs text-gray-600 truncate max-w-32">
                             {user.addresses
@@ -676,7 +676,7 @@ const Users = ({ token }) => {
                         user.addresses.some((addr) => addr.phone) && (
                           <div className="flex items-center justify-between">
                             <span className="text-sm text-gray-500">
-                              Phone:
+                              Số điện thoại:
                             </span>
                             <span className="text-xs text-gray-600">
                               {user.addresses.find((addr) => addr.isDefault)
@@ -689,7 +689,7 @@ const Users = ({ token }) => {
 
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-500">
-                          Member Since:
+                          Thành viên từ :
                         </span>
                         <span className="text-xs text-gray-600">
                           {new Date(user.createdAt).toLocaleDateString()}
@@ -706,14 +706,14 @@ const Users = ({ token }) => {
                             className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors font-medium"
                           >
                             <FaEdit />
-                            Edit
+                            Sửa
                           </button>
                           <button
                             onClick={() => handleRemoveUser(user._id)}
                             className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium"
                           >
                             <FaTrash />
-                            Delete
+                            Xóa
                           </button>
                         </>
                       ) : (
@@ -722,7 +722,7 @@ const Users = ({ token }) => {
                           className="w-full flex items-center justify-center gap-1 px-3 py-2 text-sm bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors font-medium"
                         >
                           <FaEye />
-                          View Details
+                          Xem chi tiết
                         </button>
                       )}
                     </div>
@@ -739,22 +739,22 @@ const Users = ({ token }) => {
             </div>
             <h3 className="text-xl font-semibold text-gray-700 mb-2">
               {searchTerm || roleFilter !== "all"
-                ? "No users match your search"
-                : "No users found"}
+                ? "Không có người dùng nào khớp với tìm kiếm"
+                : "Chưa có người dùng"}
             </h3>
             <p className="text-gray-500 mb-6">
               {searchTerm || roleFilter !== "all"
-                ? "Try adjusting your search criteria or filters"
+                ? "Hãy thử điều chỉnh bộ lọc hoặc tiêu chí tìm kiếm"
                 : isAdmin
-                ? "Start by creating your first user account"
-                : "No users available to display"}
+                ? "Bắt đầu bằng cách tạo tài khoản người dùng đầu tiên"
+                : "Hiện chưa có người dùng để hiển thị"}
             </p>
             {isAdmin && (
               <button
                 onClick={openLoginForm}
                 className="bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors font-medium"
               >
-                Add User
+                Thêm người dùng
               </button>
             )}
           </div>

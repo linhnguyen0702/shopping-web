@@ -224,7 +224,7 @@ const Categories = () => {
               title="Refresh Categories"
             >
               <FaSync className="w-4 h-4" />
-              Refresh
+              làm mới
             </button>
             <button
               onClick={() => openModal()}

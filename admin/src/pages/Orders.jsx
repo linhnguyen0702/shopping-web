@@ -265,7 +265,7 @@ const Orders = () => {
           title="Refresh Orders"
         >
           <FaSync className="w-4 h-4" />
-          Refresh
+          Làm mới
         </button>
       </div>
 

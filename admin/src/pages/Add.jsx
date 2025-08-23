@@ -244,7 +244,7 @@ const Add = ({ token }) => {
                             <>
                               <IoMdCloudUpload className="text-3xl text-gray-400 mb-2" />
                               <span className="text-xs text-gray-600">
-                                Upload Image {index + 1}
+                                Ảnh sản phẩm {index + 1}
                               </span>
                             </>
                           )}

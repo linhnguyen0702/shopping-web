@@ -71,7 +71,7 @@ const List = ({ token }) => {
         toast.error(data?.message);
       }
     } catch (error) {
-      console.log("Product List fetching error", error?.message);
+      console.log("Lỗi khi tải danh sách sản phẩm", error?.message);
       toast.error(error?.message);
     } finally {
       setLoading(false);
@@ -96,8 +96,8 @@ const List = ({ token }) => {
         setBrands(brandsData.brands);
       }
     } catch (error) {
-      console.error("Error fetching categories and brands:", error);
-      toast.error("Failed to load categories and brands");
+      console.error("Lỗi khi tải danh mục và thương hiệu:", error);
+      toast.error("Không thể tải danh mục và thương hiệu");
     }
   };
 
@@ -274,15 +274,15 @@ const List = ({ token }) => {
 
       const responseData = response?.data;
       if (responseData?.success) {
-        toast.success("Product updated successfully");
+        toast.success("Cập nhật sản phẩm thành công");
         await fetchList();
         closeEditModal();
       } else {
-        toast.error(responseData?.message || "Failed to update product");
+        toast.error(responseData?.message || "Cập nhật sản phẩm thất bại");
       }
     } catch (error) {
-      console.log("Product update error", error);
-      toast.error(error?.response?.data?.message || "Error updating product");
+      console.log("Lỗi khi cập nhật sản phẩm", error);
+      toast.error(error?.response?.data?.message || "Lỗi khi cập nhật sản phẩm");
     } finally {
       setSubmitting(false);
     }
@@ -307,7 +307,7 @@ const List = ({ token }) => {
         toast.error(data?.message);
       }
     } catch (error) {
-      console.log("Product remove error", error);
+      console.log("Lỗi khi xóa sản phẩm", error);
       toast.error(error?.message);
     } finally {
       setSubmitting(false);
@@ -330,25 +330,25 @@ const List = ({ token }) => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-              Products
+              Danh sách sản phẩm
             </h1>
-            <p className="text-gray-600 mt-1">Manage your product inventory</p>
+            <p className="text-gray-600 mt-1">Quản lý kho sản phẩm của bạn</p>
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={fetchList}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-              title="Refresh Products"
+              title="Làm mới danh sách sản phẩm"
             >
               <FaSync className="w-4 h-4" />
-              Refresh
+              Làm mới
             </button>
             <Link
               to="/add"
               className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
             >
               <FaPlus />
-              Add Product
+              Thêm sản phẩm
             </Link>
           </div>
         </div>
@@ -359,7 +359,7 @@ const List = ({ token }) => {
             <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Search products..."
+              placeholder="Tìm kiếm sản phẩm..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
@@ -377,22 +377,22 @@ const List = ({ token }) => {
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Image
+                        Hình ảnh
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Product
+                        Sản phẩm
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Category
+                        Danh mục
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Price
+                        Giá
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Stock
+                        Tồn kho
                       </th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
+                        Hành động
                       </th>
                     </tr>
                   </thead>
@@ -454,19 +454,19 @@ const List = ({ token }) => {
           <div className="text-center py-12">
             <FaBox className="mx-auto text-6xl text-gray-300 mb-4" />
             <h3 className="text-xl font-semibold text-gray-700 mb-2">
-              {searchTerm ? "No products found" : "No products yet"}
+              {searchTerm ? "Không tìm thấy sản phẩm nào" : "Chưa có sản phẩm nào"}
             </h3>
             <p className="text-gray-500 mb-6">
               {searchTerm
-                ? "Try adjusting your search terms"
-                : "Start by adding your first product"}
+                ? "Hãy thử điều chỉnh từ khóa tìm kiếm"
+                : "Bắt đầu bằng cách thêm sản phẩm đầu tiên"}
             </p>
             {!searchTerm && (
               <Link
                 to="/add"
                 className="bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors"
               >
-                Add Product
+                Thêm sản phẩm
               </Link>
             )}
           </div>
@@ -479,22 +479,22 @@ const List = ({ token }) => {
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Image
+                        Hình ảnh
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Product
+                        Sản phẩm
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Category
+                        Danh mục
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Price
+                        Giá
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Stock
+                        Tồn kho
                       </th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
+                        Hành động
                       </th>
                     </tr>
                   </thead>
@@ -529,7 +529,7 @@ const List = ({ token }) => {
                           </div>
                           {product.discountedPercentage > 0 && (
                             <div className="text-xs text-green-600">
-                              {product.discountedPercentage}% off
+                              Giảm {product.discountedPercentage}%
                             </div>
                           )}
                         </td>
@@ -544,7 +544,7 @@ const List = ({ token }) => {
                                 : "text-red-600"
                             }`}
                           >
-                            {product.stock > 0 ? "In Stock" : "Out of Stock"}
+                            {product.stock > 0 ? "Còn hàng" : "Hết hàng"}
                           </div>
                         </td>
                         <td className="px-6 py-4 text-right">
@@ -554,14 +554,14 @@ const List = ({ token }) => {
                               className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors"
                             >
                               <FaEdit />
-                              Edit
+                              Sửa
                             </button>
                             <button
                               onClick={() => openDeleteModal(product)}
                               className="flex items-center gap-1 px-3 py-1.5 text-sm bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors"
                             >
                               <FaTrash />
-                              Delete
+                              Xóa
                             </button>
                           </div>
                         </td>
@@ -606,13 +606,13 @@ const List = ({ token }) => {
                           </div>
                           {product.discountedPercentage > 0 && (
                             <div className="text-xs text-green-600">
-                              {product.discountedPercentage}% off
+                              Giảm {product.discountedPercentage}%
                             </div>
                           )}
                         </div>
                         <div className="text-right">
                           <div className="text-sm text-gray-900">
-                            Stock: {product.stock || 0}
+                            Tồn kho: {product.stock || 0}
                           </div>
                           <div
                             className={`text-xs ${
@@ -621,7 +621,7 @@ const List = ({ token }) => {
                                 : "text-red-600"
                             }`}
                           >
-                            {product.stock > 0 ? "In Stock" : "Out of Stock"}
+                            {product.stock > 0 ? "Còn hàng" : "Hết hàng"}
                           </div>
                         </div>
                       </div>
@@ -631,14 +631,14 @@ const List = ({ token }) => {
                           className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors"
                         >
                           <FaEdit />
-                          Edit
+                          Sửa
                         </button>
                         <button
                           onClick={() => openDeleteModal(product)}
                           className="flex items-center gap-1 px-3 py-1.5 text-sm bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors"
                         >
                           <FaTrash />
-                          Delete
+                          Xóa
                         </button>
                       </div>
                     </div>
@@ -661,7 +661,7 @@ const List = ({ token }) => {
           >
             <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center p-6 border-b">
-                <h2 className="text-xl font-semibold">Edit Product</h2>
+                <h2 className="text-xl font-semibold">Chỉnh sửa sản phẩm</h2>
                 <button
                   onClick={closeEditModal}
                   className="text-gray-400 hover:text-gray-600"
@@ -674,7 +674,7 @@ const List = ({ token }) => {
                 {/* Image Upload Section */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium text-gray-900">
-                    Product Images
+                    Hình ảnh sản phẩm
                   </h3>
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     {["image1", "image2", "image3", "image4"].map(
@@ -688,7 +688,7 @@ const List = ({ token }) => {
                                     src={URL.createObjectURL(
                                       imageFiles[imageKey]
                                     )}
-                                    alt={`Preview ${index + 1}`}
+                                    alt={`Xem trước ${index + 1}`}
                                     className="w-full h-20 object-cover rounded-md mb-2"
                                   />
                                   <button
@@ -702,25 +702,25 @@ const List = ({ token }) => {
                                     <FaTimes className="text-xs" />
                                   </button>
                                   <span className="text-xs text-gray-600">
-                                    Change
+                                    Thay đổi
                                   </span>
                                 </>
                               ) : editingProduct?.images?.[index] ? (
                                 <>
                                   <img
                                     src={editingProduct.images[index]}
-                                    alt={`Current ${index + 1}`}
+                                    alt={`Hiện tại ${index + 1}`}
                                     className="w-full h-20 object-cover rounded-md mb-2"
                                   />
                                   <span className="text-xs text-gray-600">
-                                    Replace
+                                    Thay thế
                                   </span>
                                 </>
                               ) : (
                                 <>
                                   <IoMdCloudUpload className="text-3xl text-gray-400 mb-2" />
                                   <span className="text-xs text-gray-600">
-                                    Upload Image {index + 1}
+                                    Tải lên hình ảnh {index + 1}
                                   </span>
                                 </>
                               )}
@@ -742,7 +742,7 @@ const List = ({ token }) => {
                 {/* Basic Information */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="lg:col-span-2">
-                    <Label htmlFor="name">Product Name *</Label>
+                    <Label htmlFor="name">Tên sản phẩm *</Label>
                     <Input
                       type="text"
                       name="name"
@@ -754,7 +754,7 @@ const List = ({ token }) => {
                   </div>
 
                   <div className="lg:col-span-2">
-                    <Label htmlFor="description">Description *</Label>
+                    <Label htmlFor="description">Mô tả *</Label>
                     <textarea
                       name="description"
                       value={formData.description}
@@ -766,14 +766,14 @@ const List = ({ token }) => {
                   </div>
 
                   <div>
-                    <Label htmlFor="brand">Brand</Label>
+                    <Label htmlFor="brand">Thương hiệu</Label>
                     <select
                       name="brand"
                       value={formData.brand}
                       onChange={handleInputChange}
                       className="mt-1 w-full border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="">Select brand</option>
+                      <option value="">Chọn thương hiệu</option>
                       {brands.map((brand) => (
                         <option key={brand._id} value={brand.name}>
                           {brand.name}
@@ -783,7 +783,7 @@ const List = ({ token }) => {
                   </div>
 
                   <div>
-                    <Label htmlFor="category">Category *</Label>
+                    <Label htmlFor="category">Danh mục *</Label>
                     <select
                       name="category"
                       value={formData.category}
@@ -791,7 +791,7 @@ const List = ({ token }) => {
                       className="mt-1 w-full border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       required
                     >
-                      <option value="">Select category</option>
+                      <option value="">Chọn danh mục</option>
                       {categories.map((category) => (
                         <option key={category._id} value={category.name}>
                           {category.name}
@@ -804,7 +804,7 @@ const List = ({ token }) => {
                 {/* Pricing & Stock */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="flex flex-col">
-                    <Label htmlFor="price">Price *</Label>
+                    <Label htmlFor="price">Giá *</Label>
                     <Input
                       type="number"
                       step="0.01"
@@ -818,7 +818,7 @@ const List = ({ token }) => {
                   </div>
 
                   <div className="flex flex-col">
-                    <Label htmlFor="discountedPercentage">Discount %</Label>
+                    <Label htmlFor="discountedPercentage">Giảm giá %</Label>
                     <Input
                       type="number"
                       min="0"
@@ -831,7 +831,7 @@ const List = ({ token }) => {
                   </div>
 
                   <div className="flex flex-col">
-                    <Label htmlFor="stock">Stock *</Label>
+                    <Label htmlFor="stock">Tồn kho *</Label>
                     <Input
                       type="number"
                       min="0"
@@ -847,71 +847,71 @@ const List = ({ token }) => {
                 {/* Settings */}
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                   <div>
-                    <Label htmlFor="_type">Product Type</Label>
+                    <Label htmlFor="_type">Loại sản phẩm</Label>
                     <select
                       name="_type"
                       value={formData._type}
                       onChange={handleInputChange}
                       className="mt-1 w-full border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="">Select type</option>
-                      <option value="new_arrivals">New Arrivals</option>
-                      <option value="best_sellers">Best Sellers</option>
-                      <option value="special_offers">Special Offers</option>
-                      <option value="promotions">Promotions</option>
+                      <option value="">Chọn loại</option>
+                      <option value="new_arrivals">Hàng mới về</option>
+                      <option value="best_sellers">Bán chạy nhất</option>
+                      <option value="special_offers">Ưu đãi đặc biệt</option>
+                      <option value="promotions">Khuyến mãi</option>
                     </select>
                   </div>
 
                   <div>
-                    <Label htmlFor="isAvailable">Availability</Label>
+                    <Label htmlFor="isAvailable">Tình trạng</Label>
                     <select
                       name="isAvailable"
                       value={formData.isAvailable.toString()}
                       onChange={handleInputChange}
                       className="mt-1 w-full border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="true">Available</option>
-                      <option value="false">Out of Stock</option>
+                      <option value="true">Còn hàng</option>
+                      <option value="false">Hết hàng</option>
                     </select>
                   </div>
 
                   <div>
-                    <Label htmlFor="offer">Special Offer</Label>
+                    <Label htmlFor="offer">Ưu đãi đặc biệt</Label>
                     <select
                       name="offer"
                       value={formData.offer.toString()}
                       onChange={handleInputChange}
                       className="mt-1 w-full border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="false">No</option>
-                      <option value="true">Yes</option>
+                      <option value="false">Không</option>
+                      <option value="true">Có</option>
                     </select>
                   </div>
 
                   <div>
-                    <Label htmlFor="badge">Show Badge</Label>
+                    <Label htmlFor="badge">Hiển thị nhãn</Label>
                     <select
                       name="badge"
                       value={formData.badge.toString()}
                       onChange={handleInputChange}
                       className="mt-1 w-full border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="false">No</option>
-                      <option value="true">Yes</option>
+                      <option value="false">Không</option>
+                      <option value="true">Có</option>
                     </select>
                   </div>
                 </div>
 
                 {/* Tags */}
                 <div>
-                  <Label>Tags</Label>
+                  <Label>Nhãn</Label>
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-2">
                     {[
-                      "Fashion",
-                      "Electronics",
-                      "Sports",
-                      "Accessories",
-                      "Others",
+                      "Thời trang",
+                      "Điện tử",
+                      "Thể thao",
+                      "Phụ kiện",
+                      "Khác",
                     ].map((tag) => (
                       <div className="flex items-center space-x-2" key={tag}>
                         <input
@@ -951,7 +951,7 @@ const List = ({ token }) => {
                     onClick={closeEditModal}
                     className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                   >
-                    Cancel
+                    Hủy
                   </button>
                   <button
                     type="submit"
@@ -961,10 +961,10 @@ const List = ({ token }) => {
                     {submitting ? (
                       <>
                         <SmallLoader />
-                        Updating...
+                        Đang cập nhật...
                       </>
                     ) : (
-                      "Update Product"
+                      "Cập nhật sản phẩm"
                     )}
                   </button>
                 </div>
@@ -991,10 +991,10 @@ const List = ({ token }) => {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">
-                      Delete Product
+                      Xóa sản phẩm
                     </h3>
                     <p className="text-gray-600">
-                      This action cannot be undone.
+                      Hành động này không thể hoàn tác.
                     </p>
                   </div>
                 </div>
@@ -1020,8 +1020,8 @@ const List = ({ token }) => {
                 )}
 
                 <p className="text-gray-600 mb-6">
-                  Are you sure you want to delete this product? This will
-                  permanently remove it from your inventory.
+                  Bạn có chắc chắn muốn xóa sản phẩm này không? Điều này sẽ
+                  xóa vĩnh viễn sản phẩm khỏi kho hàng của bạn.
                 </p>
 
                 <div className="flex gap-3">
@@ -1030,7 +1030,7 @@ const List = ({ token }) => {
                     onClick={closeDeleteModal}
                     className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                   >
-                    Cancel
+                    Hủy
                   </button>
                   <button
                     onClick={handleRemoveProduct}
@@ -1040,12 +1040,12 @@ const List = ({ token }) => {
                     {submitting ? (
                       <>
                         <SmallLoader />
-                        Deleting...
+                        Đang xóa...
                       </>
                     ) : (
                       <>
                         <FaTrash />
-                        Delete
+                        Xóa
                       </>
                     )}
                   </button>

@@ -230,7 +230,7 @@ const Brands = () => {
               title="Refresh Brands"
             >
               <FaSync className="w-4 h-4" />
-              Refresh
+              Làm mới
             </button>
             <button
               onClick={() => openModal()}
