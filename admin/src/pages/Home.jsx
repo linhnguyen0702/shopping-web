@@ -19,34 +19,104 @@ const Home = () => {
     topProducts: [],
     loading: true,
     error: null,
+    ordersChangePct: 0,
+    usersChangePct: 0,
+    revenueChangePct: 0,
   });
+
+  const calcChangePct = (current, previous) => {
+    const curr = Number(current) || 0;
+    const prev = Number(previous) || 0;
+    if (prev === 0) return curr > 0 ? 100 : 0;
+    return Number((((curr - prev) / prev) * 100).toFixed(2));
+  };
 
   const fetchStatistics = useCallback(async () => {
     try {
       setStats((prev) => ({ ...prev, loading: true, error: null }));
 
-      // Fetch real data from server APIs
-      const response = await axios.get(`${serverUrl}/api/dashboard/stats`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      // Base dashboard aggregates
+      const dashReq = axios.get(`${serverUrl}/api/dashboard/stats`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      // Order monthly stats for growth (MoM)
+      const orderStatsReq = axios.get(`${serverUrl}/api/order/stats`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      // Users list for last-30d growth calc (fallback if backend doesn't provide growth)
+      const usersReq = axios.get(`${serverUrl}/api/user/users?limit=1000`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (response.data.success) {
-        const { stats: serverStats } = response.data;
+      const [dashRes, orderStatsRes, usersRes] = await Promise.allSettled([
+        dashReq,
+        orderStatsReq,
+        usersReq,
+      ]);
 
-        setStats({
-          totalProducts: serverStats.totalProducts || 0,
-          totalOrders: serverStats.totalOrders || 0,
-          totalUsers: serverStats.totalUsers || 0,
-          totalRevenue: serverStats.totalRevenue || 0,
-          recentOrders: serverStats.recentOrders || [],
-          topProducts: serverStats.topProducts || [],
-          loading: false,
-        });
-      } else {
-        throw new Error(response.data.message || "Không thể tải dữ liệu bảng điều khiển");
+      if (dashRes.status !== "fulfilled" || !dashRes.value.data?.success) {
+        throw new Error(
+          dashRes.status === "fulfilled"
+            ? dashRes.value.data?.message || "Không thể tải dữ liệu bảng điều khiển"
+            : dashRes.reason?.message || "Không thể tải dữ liệu bảng điều khiển"
+        );
       }
+
+      const { stats: serverStats } = dashRes.value.data;
+
+      // Defaults
+      let ordersChangePct = 0;
+      let revenueChangePct = 0;
+      let usersChangePct = 0;
+
+      // Compute growth from orderStats monthlyOrders (MoM)
+      if (
+        orderStatsRes.status === "fulfilled" &&
+        orderStatsRes.value.data?.success &&
+        Array.isArray(orderStatsRes.value.data?.stats?.monthlyOrders)
+      ) {
+        const monthlyOrders = orderStatsRes.value.data.stats.monthlyOrders;
+        if (monthlyOrders.length > 0) {
+          const last = monthlyOrders[monthlyOrders.length - 1];
+          const prev = monthlyOrders[monthlyOrders.length - 2] || { count: 0, revenue: 0 };
+          const currCount = Number(last.count) || 0;
+          const prevCount = Number(prev.count) || 0;
+          const currRevenue = Number(last.revenue) || 0;
+          const prevRevenue = Number(prev.revenue) || 0;
+          ordersChangePct = calcChangePct(currCount, prevCount);
+          revenueChangePct = calcChangePct(currRevenue, prevRevenue);
+        }
+      }
+
+      // Compute users growth from createdAt (last 30 days vs previous 30 days)
+      if (usersRes.status === "fulfilled" && usersRes.value.data?.success) {
+        const users = usersRes.value.data.users || [];
+        const now = Date.now();
+        const day = 24 * 60 * 60 * 1000;
+        const startCurr = now - 30 * day;
+        const startPrev = now - 60 * day;
+        const usersCurr = users.filter((u) => u.createdAt && new Date(u.createdAt).getTime() >= startCurr).length;
+        const usersPrev = users.filter((u) => {
+          if (!u.createdAt) return false;
+          const t = new Date(u.createdAt).getTime();
+          return t >= startPrev && t < startCurr;
+        }).length;
+        usersChangePct = calcChangePct(usersCurr, usersPrev);
+      }
+
+      setStats({
+        totalProducts: serverStats.totalProducts || 0,
+        totalOrders: serverStats.totalOrders || 0,
+        totalUsers: serverStats.totalUsers || 0,
+        totalRevenue: serverStats.totalRevenue || 0,
+        recentOrders: serverStats.recentOrders || [],
+        topProducts: serverStats.topProducts || [],
+        ordersChangePct,
+        usersChangePct,
+        revenueChangePct,
+        loading: false,
+        error: null,
+      });
     } catch (error) {
       console.error("Lỗi khi tải dữ liệu bảng điều khiển:", error);
       setStats((prev) => ({
@@ -73,11 +143,7 @@ const Home = () => {
                 changeType === "positive" ? "text-green-600" : "text-red-600"
               }`}
             >
-              <svg
-                className="w-4 h-4 mr-1"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
+              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                 <path
                   fillRule="evenodd"
                   d={
@@ -155,28 +221,13 @@ const Home = () => {
 
         <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center">
           <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-            <svg
-              className="w-8 h-8 text-red-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
+            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h3 className="text-xl font-semibold text-red-800 mb-2">
-            Không thể tải dữ liệu bảng điều khiển.
-          </h3>
+          <h3 className="text-xl font-semibold text-red-800 mb-2">Không thể tải dữ liệu bảng điều khiển.</h3>
           <p className="text-red-600 mb-4">{stats.error}</p>
-          <button
-            onClick={fetchStatistics}
-            className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
-          >
+          <button onClick={fetchStatistics} className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
             Hãy thử lại.
           </button>
         </div>
@@ -199,22 +250,12 @@ const Home = () => {
         <StatCard
           title="Tổng sản phẩm"
           value={stats.totalProducts.toLocaleString()}
-          change="+12%"
-          changeType="positive"
+          change={`${stats.totalProducts > 0 ? "+" : ""}${stats.totalProducts > 0 ? "" : ""}`}
+          changeType={"positive"}
           color="bg-blue-100"
           icon={
-            <svg
-              className="w-8 h-8 text-blue-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-              />
+            <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
             </svg>
           }
         />
@@ -222,22 +263,12 @@ const Home = () => {
         <StatCard
           title="Tổng đơn hàng"
           value={stats.totalOrders.toLocaleString()}
-          change="+8%"
-          changeType="positive"
+          change={`${stats.ordersChangePct >= 0 ? "+" : ""}${stats.ordersChangePct}%`}
+          changeType={stats.ordersChangePct >= 0 ? "positive" : "negative"}
           color="bg-green-100"
           icon={
-            <svg
-              className="w-8 h-8 text-green-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-              />
+            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
           }
         />
@@ -245,22 +276,12 @@ const Home = () => {
         <StatCard
           title="Tổng người dùng"
           value={stats.totalUsers.toLocaleString()}
-          change="+15%"
-          changeType="positive"
+          change={`${stats.usersChangePct >= 0 ? "+" : ""}${stats.usersChangePct}%`}
+          changeType={stats.usersChangePct >= 0 ? "positive" : "negative"}
           color="bg-purple-100"
           icon={
-            <svg
-              className="w-8 h-8 text-purple-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
-              />
+            <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
             </svg>
           }
         />
@@ -268,22 +289,12 @@ const Home = () => {
         <StatCard
           title="Tổng doanh thu"
           value={formatCurrency(stats.totalRevenue)}
-          change="+23%"
-          changeType="positive"
+          change={`${stats.revenueChangePct >= 0 ? "+" : ""}${stats.revenueChangePct}%`}
+          changeType={stats.revenueChangePct >= 0 ? "positive" : "negative"}
           color="bg-orange-100"
           icon={
-            <svg
-              className="w-8 h-8 text-orange-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
-              />
+            <svg className="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
             </svg>
           }
         />
@@ -303,36 +314,21 @@ const Home = () => {
           <div className="space-y-4">
             {stats.recentOrders.length > 0 ? (
               stats.recentOrders.map((order, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
-                >
+                <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
                   <div>
-                    <p className="font-semibold text-gray-800">
-                      Đơn hàng #{order._id?.slice(-8) || "N/A"}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {order.userId?.name ||
-                        order.address?.firstName ||
-                        "Khách hàng"}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {formatDate(order.date)}
-                    </p>
+                    <p className="font-semibold text-gray-800">Đơn hàng #{order._id?.slice(-8) || "N/A"}</p>
+                    <p className="text-sm text-gray-600">{order.userId?.name || order.address?.firstName || "Khách hàng"}</p>
+                    <p className="text-xs text-gray-500">{formatDate(order.date)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-green-600">
-                      {formatCurrency(order.amount || 0)}
-                    </p>
-                    <span
-                      className={`inline-block px-2 py-1 text-xs rounded-full ${
-                        order.status === "delivered"
-                          ? "bg-green-100 text-green-800"
-                          : order.status === "shipped"
-                          ? "bg-blue-100 text-blue-800"
-                          : "bg-yellow-100 text-yellow-800"
-                      }`}
-                    >
+                    <p className="font-bold text-green-600">{formatCurrency(order.amount || 0)}</p>
+                    <span className={`inline-block px-2 py-1 text-xs rounded-full ${
+                      order.status === "delivered"
+                        ? "bg-green-100 text-green-800"
+                        : order.status === "shipped"
+                        ? "bg-blue-100 text-blue-800"
+                        : "bg-yellow-100 text-yellow-800"
+                    }`}>
                       {getStatusLabel(order.status)}
                     </span>
                   </div>
@@ -347,9 +343,7 @@ const Home = () => {
         {/* Top Products */}
         <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold text-gray-800">
-              Sản phẩm bán chạy nhất
-            </h3>
+            <h3 className="text-xl font-bold text-gray-800">Sản phẩm bán chạy nhất</h3>
             <button onClick={() => navigate('/list')} className="text-blue-600 hover:text-blue-800 text-sm font-medium">
               Xem tất cả
             </button>
@@ -358,35 +352,20 @@ const Home = () => {
           <div className="space-y-4">
             {stats.topProducts.length > 0 ? (
               stats.topProducts.map((product, index) => (
-                <div
-                  key={index}
-                  className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
-                >
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-xl flex items-center justify-center text-white font-bold">
-                    {index + 1}
-                  </div>
+                <div key={index} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-xl flex items-center justify-center text-white font-bold">{index + 1}</div>
                   <div className="flex-1">
-                    <p className="font-semibold text-gray-800">
-                      {product.name || "Tên sản phẩm"}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {product.category || "Danh mục"}
-                    </p>
+                    <p className="font-semibold text-gray-800">{product.name || "Tên sản phẩm"}</p>
+                    <p className="text-sm text-gray-600">{product.category || "Danh mục"}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-gray-800">
-                      {formatCurrency(product.price || 0)}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Tồn kho: {product.stock || 0}
-                    </p>
+                    <p className="font-bold text-gray-800">{formatCurrency(product.price || 0)}</p>
+                    <p className="text-sm text-gray-600">Tồn kho: {product.stock || 0}</p>
                   </div>
                 </div>
               ))
             ) : (
-              <p className="text-gray-500 text-center py-8">
-                Không có sản phẩm bán chạy nhất
-              </p>
+              <p className="text-gray-500 text-center py-8">Không có sản phẩm bán chạy nhất</p>
             )}
           </div>
         </div>
@@ -398,18 +377,8 @@ const Home = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <button onClick={() => navigate('/add')} className="bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-300 rounded-xl p-4 text-left">
             <div className="flex items-center space-x-3">
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                />
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
               <span className="font-semibold">Thêm sản phẩm mới</span>
             </div>
@@ -417,18 +386,8 @@ const Home = () => {
 
           <button onClick={() => navigate('/orders')} className="bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-300 rounded-xl p-4 text-left">
             <div className="flex items-center space-x-3">
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                />
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
               <span className="font-semibold">Xem đơn hàng</span>
             </div>
@@ -436,18 +395,8 @@ const Home = () => {
 
           <button onClick={() => navigate('/users')} className="bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-300 rounded-xl p-4 text-left">
             <div className="flex items-center space-x-3">
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                />
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
               <span className="font-semibold">Quản lý người dùng</span>
             </div>

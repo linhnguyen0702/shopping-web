@@ -20,6 +20,7 @@ import Checkout from "./pages/Checkout.jsx";
 import PaymentSuccess from "./pages/PaymentSuccess.jsx";
 import FAQ from "./pages/FAQ.jsx";
 import Blog from "./pages/Blog.jsx";
+import AuthBridge from "./pages/AuthBridge.jsx";
 
 const router = createBrowserRouter(
   [
@@ -30,6 +31,10 @@ const router = createBrowserRouter(
         {
           path: "/",
           element: <App />,
+        },
+        {
+          path: "/auth/bridge",
+          element: <AuthBridge />,
         },
         {
           path: "/about",

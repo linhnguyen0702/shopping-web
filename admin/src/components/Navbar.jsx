@@ -4,11 +4,16 @@ import { useState, useRef, useEffect } from "react";
 import { logo } from "../assets/images";
 import { FaUser, FaCog, FaChevronDown, FaUserShield } from "react-icons/fa";
 import { MdNotifications, MdDashboard } from "react-icons/md";
+import NewUserForm from "./NewUserForm";
+import axios from "axios";
+import { serverUrl } from "../../config";
 
 const Navbar = () => {
-  const { user } = useSelector((state) => state.auth);
+  const { user, token } = useSelector((state) => state.auth);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [selectedProfile, setSelectedProfile] = useState(null);
   const userMenuRef = useRef(null);
   const notificationRef = useRef(null);
 
@@ -43,13 +48,30 @@ const Navbar = () => {
   };
 
   const notifications = [
-    { id: 1, title: "New order received", time: "2 min ago", type: "order" },
-    { id: 2, title: "Low stock alert", time: "1 hour ago", type: "warning" },
-    { id: 3, title: "User registration", time: "3 hours ago", type: "user" },
+    { id: 1, title: "Đơn hàng mới nhận", time: "2 phút trước", type: "order" },
+    { id: 2, title: "Cảnh báo hết hàng", time: "1 giờ trước", type: "warning" },
+    { id: 3, title: "Đăng ký người dùng", time: "3 giờ trước", type: "user" },
   ];
 
+  const openProfileEditor = async () => {
+    setIsUserMenuOpen(false);
+    try {
+      const res = await axios.get(`${serverUrl}/api/user/profile`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.data?.success && res.data.user) {
+        setSelectedProfile(res.data.user);
+      } else {
+        setSelectedProfile(user);
+      }
+    } catch (e) {
+      setSelectedProfile(user);
+    }
+    setIsProfileOpen(true);
+  };
+
   const userMenuItems = [
-    { icon: FaUser, label: "Profile", path: "/profile" },
+    { icon: FaUser, label: "Profile", onClick: openProfileEditor },
     { icon: MdDashboard, label: "Dashboard", path: "/" },
     { icon: FaCog, label: "Settings", path: "/settings" },
   ];
@@ -68,7 +90,7 @@ const Navbar = () => {
             <p className="text-xs uppercase font-bold tracking-wide text-blue-600">
               Admin Panel
             </p>
-            <p className="text-xs text-gray-500">Dashboard v1.0</p>
+            <p className="text-xs text-gray-500">Dashboard </p>
           </div>
         </Link>
 
@@ -96,9 +118,9 @@ const Navbar = () => {
             {isNotificationOpen && (
               <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
                 <div className="px-4 py-3 border-b border-gray-100">
-                  <h3 className="font-semibold text-gray-900">Notifications</h3>
+                  <h3 className="font-semibold text-gray-900">Thông báo</h3>
                   <p className="text-sm text-gray-500">
-                    {notifications.length} new notifications
+                    {notifications.length} thông báo mới
                   </p>
                 </div>
                 <div className="max-h-64 overflow-y-auto">
@@ -118,7 +140,7 @@ const Navbar = () => {
                 </div>
                 <div className="px-4 py-2 border-t border-gray-100">
                   <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                    View all notifications
+                    Xem tất cả thông báo
                   </button>
                 </div>
               </div>
@@ -185,15 +207,26 @@ const Navbar = () => {
                   {/* Menu Items */}
                   <div className="py-1">
                     {userMenuItems.map((item, index) => (
-                      <Link
-                        key={index}
-                        to={item.path}
-                        onClick={() => setIsUserMenuOpen(false)}
-                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-150"
-                      >
-                        <item.icon className="text-gray-400" />
-                        {item.label}
-                      </Link>
+                      item.onClick ? (
+                        <button
+                          key={index}
+                          onClick={item.onClick}
+                          className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-150"
+                        >
+                          <item.icon className="text-gray-400" />
+                          {item.label}
+                        </button>
+                      ) : (
+                        <Link
+                          key={index}
+                          to={item.path}
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-150"
+                        >
+                          <item.icon className="text-gray-400" />
+                          {item.label}
+                        </Link>
+                      )
                     ))}
                   </div>
                 </div>
@@ -202,6 +235,19 @@ const Navbar = () => {
           )}
         </div>
       </div>
+
+      {/* Profile Edit Modal */}
+      {user && (
+        <NewUserForm
+          isOpen={isProfileOpen}
+          setIsOpen={setIsProfileOpen}
+          close={() => setIsProfileOpen(false)}
+          selectedUser={selectedProfile || user}
+          getUsersList={() => {}}
+          token={token}
+          isReadOnly={false}
+        />
+      )}
     </header>
   );
 };

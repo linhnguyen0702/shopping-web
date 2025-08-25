@@ -55,84 +55,84 @@ const Orders = () => {
       });
 
       const data = await response.json();
-      if (data.success) {
-        setOrders(data.orders);
-      } else {
-        toast.error(data.message || "Failed to fetch orders");
+      if (data.success) {// Nếu API trả về thành công
+        setOrders(data.orders);// Cập nhật state danh sách đơn hàng
+      } else {// Nếu API trả về thất bại
+        toast.error(data.message || "Không thể lấy danh sách đơn hàng");
       }
-    } catch (error) {
-      console.error("Error fetching orders:", error);
-      toast.error("Failed to load orders");
-    } finally {
+    } catch (error) {// Nếu có lỗi trong quá trình fetch hoặc xử lý
+      console.error("Lỗi khi lấy đơn hàng:", error);
+      toast.error("Không thể tải danh sách đơn hàng");
+    } finally {// Luôn chạy, dù thành công hay thất bại (thường dùng để tắt loading)
       setLoading(false);
     }
   };
 
-  // Update order status
+  // Cập nhật trạng thái đơn hàng
   const updateOrderStatus = async (orderId, status, paymentStatus = null) => {
     try {
-      const token = localStorage.getItem("token");
-      const updateData = { orderId, status };
+      const token = localStorage.getItem("token");// Lấy token từ localStorage
+      const updateData = { orderId, status };// Tạo dữ liệu cập nhật
 
-      if (paymentStatus) {
-        updateData.paymentStatus = paymentStatus;
+      if (paymentStatus) {// Nếu có paymentStatus
+        updateData.paymentStatus = paymentStatus;// Thêm paymentStatus vào dữ liệu cập nhật
       }
 
-      const response = await fetch(`${serverUrl}/api/order/update-status`, {
+      const response = await fetch(`${serverUrl}/api/order/update-status`, {// Gửi request cập nhật đơn hàng
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",// Đặt header là JSON
+          Authorization: `Bearer ${token}`,// Thêm token vào header
         },
-        body: JSON.stringify(updateData),
+        body: JSON.stringify(updateData),// Gửi dữ liệu cập nhật dưới dạng JSON
       });
 
-      const data = await response.json();
-      if (data.success) {
-        toast.success("Order updated successfully");
+      const data = await response.json();// Lấy dữ liệu từ response
+      if (data.success) {// Nếu API trả về thành công
+        toast.success("Đơn hàng đã được cập nhật thành công");// Hiển thị thông báo thành công
         fetchOrders(); // Refresh orders
-        setShowEditModal(false);
-        setEditingOrder(null);
-      } else {
-        toast.error(data.message || "Failed to update order");
+        setShowEditModal(false);// Đóng modal
+        setEditingOrder(null);// Xóa dữ liệu đơn hàng đang chỉnh sửa
+      } else {// Nếu API trả về thất bại
+        toast.error(data.message || "Không thể cập nhật đơn hàng");// Hiển thị thông báo lỗi
       }
-    } catch (error) {
-      console.error("Error updating order:", error);
-      toast.error("Failed to update order");
+    } catch (error) {// Nếu có lỗi trong quá trình xử lý
+      console.error("Lỗi khi cập nhật đơn hàng:", error);// Hiển thị lỗi trong console
+      toast.error("Không thể cập nhật đơn hàng");// Hiển thị thông báo lỗi
     }
   };
 
-  // Delete order
+  // Xóa đơn hàng
   const deleteOrder = async (orderId) => {
-    if (!window.confirm("Are you sure you want to delete this order?")) {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa đơn hàng này không?")) {// Hiển thị hộp thoại xác nhận
       return;
     }
 
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${serverUrl}/api/order/delete`, {
-        method: "POST",
+        const token = localStorage.getItem("token");// Lấy token từ localStorage
+      const response = await fetch(`${serverUrl}/api/order/delete`, {// Gửi request xóa đơn hàng
+        method: "POST",// Phương thức POST
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",// Đặt header là JSON
+          Authorization: `Bearer ${token}`,// Thêm token vào header
         },
-        body: JSON.stringify({ orderId }),
+        body: JSON.stringify({ orderId }),// Gửi dữ liệu xóa dưới dạng JSON
       });
 
-      const data = await response.json();
-      if (data.success) {
-        toast.success("Order deleted successfully");
+      const data = await response.json();// Lấy dữ liệu từ response
+      if (data.success) {// Nếu API trả về thành công
+        toast.success("Đơn hàng đã được xóa thành công");// Hiển thị thông báo thành công
         fetchOrders(); // Refresh orders
-      } else {
-        toast.error(data.message || "Failed to delete order");
+      } else {// Nếu API trả về thất bại
+        toast.error(data.message || "Không thể xóa đơn hàng");// Hiển thị thông báo lỗi
       }
-    } catch (error) {
-      console.error("Error deleting order:", error);
-      toast.error("Failed to delete order");
+    } catch (error) {// Nếu có lỗi trong quá trình xử lý
+      console.error("Lỗi khi xóa đơn hàng:", error);// Hiển thị lỗi trong console
+      toast.error("Không thể xóa đơn hàng");// Hiển thị thông báo lỗi
     }
   };
 
-  // Handle edit order
+  // Xử lý chỉnh sửa đơn hàng
   const handleEditOrder = (order) => {
     setEditingOrder(order);
     setNewStatus(order.status);
@@ -140,14 +140,14 @@ const Orders = () => {
     setShowEditModal(true);
   };
 
-  // Handle save changes
+  // Xử lý lưu thay đổi
   const handleSaveChanges = () => {
     if (editingOrder) {
       updateOrderStatus(editingOrder._id, newStatus, newPaymentStatus);
     }
   };
 
-  // Filter and sort orders
+  // Lọc và sắp xếp đơn hàng
   const filteredOrders = orders
     .filter((order) => {
       const matchesSearch =
@@ -190,7 +190,7 @@ const Orders = () => {
       }
     });
 
-  // Get status color
+  // Lấy màu sắc trạng thái
   const getStatusColor = (status) => {
     switch (status) {
       case "pending":
@@ -208,7 +208,7 @@ const Orders = () => {
     }
   };
 
-  // Get status icon
+  // Lấy icon trạng thái
   const getStatusIcon = (status) => {
     switch (status) {
       case "pending":
@@ -226,7 +226,7 @@ const Orders = () => {
     }
   };
 
-  // Get payment status color
+  // Lấy màu sắc trạng thái thanh toán
   const getPaymentStatusColor = (status) => {
     switch (status) {
       case "pending":
@@ -240,16 +240,16 @@ const Orders = () => {
     }
   };
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
+  useEffect(() => {// Sử dụng useEffect để gọi fetchOrders khi component mount
+    fetchOrders();// Gọi hàm fetchOrders để lấy danh sách đơn hàng
+  }, []);// Chỉ chạy khi component mount
 
-  if (loading) {
+  if (loading) {// Nếu đang loading
     return (
       <div>
-        <Title>Orders List</Title>
+        <Title>Danh sách đơn hàng</Title>
         <div className="mt-6">
-          <SkeletonLoader type="orders" />
+          <SkeletonLoader type="orders" />// Hiển thị skeleton loader
         </div>
       </div>
     );
@@ -258,24 +258,24 @@ const Orders = () => {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <Title>Orders Management</Title>
+        <Title>Quản lý đơn hàng</Title>
         <button
           onClick={fetchOrders}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-          title="Refresh Orders"
+          title="Làm mới danh sách đơn hàng"
         >
           <FaSync className="w-4 h-4" />
           Làm mới
         </button>
       </div>
 
-      {/* Stats Cards */}
+      {/* Thống kê đơn hàng */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6">
         <div className="bg-white rounded-lg border border-gray-200 p-4 lg:p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs lg:text-sm font-medium text-gray-600">
-                Total Orders
+                Tổng đơn hàng
               </p>
               <p className="text-xl lg:text-2xl font-bold text-gray-900">
                 {orders.length}
@@ -289,7 +289,7 @@ const Orders = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs lg:text-sm font-medium text-gray-600">
-                Pending
+                Chờ xử lý
               </p>
               <p className="text-xl lg:text-2xl font-bold text-yellow-600">
                 {orders.filter((o) => o.status === "pending").length}
@@ -303,7 +303,7 @@ const Orders = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs lg:text-sm font-medium text-gray-600">
-                Delivered
+                Đã giao
               </p>
               <p className="text-xl lg:text-2xl font-bold text-green-600">
                 {orders.filter((o) => o.status === "delivered").length}
@@ -317,7 +317,7 @@ const Orders = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs lg:text-sm font-medium text-gray-600">
-                Revenue
+                Doanh thu
               </p>
               <p className="text-xl lg:text-2xl font-bold text-purple-600">
                 $
@@ -331,7 +331,7 @@ const Orders = () => {
         </div>
       </div>
 
-      {/* Filters and Search */}
+      {/* Lọc và tìm kiếm */}
       <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Search */}
@@ -339,7 +339,7 @@ const Orders = () => {
             <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
-              placeholder="Search orders..."
+              placeholder="Tìm kiếm đơn hàng..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
@@ -352,7 +352,7 @@ const Orders = () => {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
           >
-            <option value="all">All Status</option>
+            <option value="all">Tất cả trạng thái</option>
             {statusOptions.map((status) => (
               <option key={status} value={status}>
                 {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -366,7 +366,7 @@ const Orders = () => {
             onChange={(e) => setPaymentFilter(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
           >
-            <option value="all">All Payments</option>
+            <option value="all">Tất cả thanh toán</option>
             {paymentStatusOptions.map((status) => (
               <option key={status} value={status}>
                 {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -381,9 +381,9 @@ const Orders = () => {
               onChange={(e) => setSortBy(e.target.value)}
               className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
             >
-              <option value="date">Sort by Date</option>
-              <option value="amount">Sort by Amount</option>
-              <option value="status">Sort by Status</option>
+              <option value="date">Sắp xếp theo ngày</option>
+              <option value="amount">Sắp xếp theo doanh thu</option>
+              <option value="status">Sắp xếp theo trạng thái</option>
             </select>
             <button
               onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
@@ -403,28 +403,28 @@ const Orders = () => {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Order ID
+                  Mã đơn hàng
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Customer
+                  Khách hàng
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
+                  Ngày đặt hàng
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Items
+                  Sản phẩm
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Amount
+                  Doanh thu
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
+                  Trạng thái
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Payment
+                  Thanh toán
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
+                  Hành động
                 </th>
               </tr>
             </thead>
@@ -502,14 +502,14 @@ const Orders = () => {
                       <button
                         onClick={() => handleEditOrder(order)}
                         className="text-blue-600 hover:text-blue-900 p-1 rounded"
-                        title="Edit Order"
+                        title="Chỉnh sửa đơn hàng"
                       >
                         <FaEdit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => deleteOrder(order._id)}
                         className="text-red-600 hover:text-red-900 p-1 rounded"
-                        title="Delete Order"
+                        title="Xóa đơn hàng"
                       >
                         <FaTrash className="w-4 h-4" />
                       </button>
@@ -525,12 +525,12 @@ const Orders = () => {
           <div className="text-center py-12">
             <FaShoppingBag className="w-12 h-12 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No orders found
+              Không tìm thấy đơn hàng
             </h3>
             <p className="text-gray-500">
               {searchTerm || statusFilter !== "all" || paymentFilter !== "all"
-                ? "Try adjusting your filters"
-                : "No orders have been placed yet"}
+                ? "Thử điều chỉnh bộ lọc của bạn"
+                : "Không có đơn hàng nào đã được đặt"}
             </p>
           </div>
         )}
@@ -542,12 +542,12 @@ const Orders = () => {
           <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
             <FaShoppingBag className="w-12 h-12 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No orders found
+              Không tìm thấy đơn hàng
             </h3>
             <p className="text-gray-500">
               {searchTerm || statusFilter !== "all" || paymentFilter !== "all"
-                ? "Try adjusting your filters"
-                : "No orders have been placed yet"}
+                ? "Thử điều chỉnh bộ lọc của bạn"
+                : "Không có đơn hàng nào đã được đặt"}
             </p>
           </div>
         ) : (
@@ -591,7 +591,7 @@ const Orders = () => {
 
               {/* Customer Info */}
               <div className="mb-3">
-                <div className="text-sm text-gray-600 mb-1">Customer Email</div>
+                <div className="text-sm text-gray-600 mb-1">Email khách hàng</div>
                 <div className="text-sm font-medium text-gray-900">
                   {order.userId?.email || "N/A"}
                 </div>
@@ -600,14 +600,14 @@ const Orders = () => {
               {/* Order Details */}
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <div className="text-xs text-gray-500 mb-1">Date</div>
+                  <div className="text-xs text-gray-500 mb-1">Ngày đặt hàng</div>
                   <div className="flex items-center text-sm text-gray-900">
                     <FaCalendarAlt className="w-3 h-3 mr-1 text-gray-400" />
                     {new Date(order.date).toLocaleDateString()}
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-500 mb-1">Items</div>
+                  <div className="text-xs text-gray-500 mb-1">Sản phẩm</div>
                   <div className="text-sm text-gray-900">
                     {order.items.length} items
                   </div>
@@ -616,7 +616,7 @@ const Orders = () => {
 
               {/* Amount */}
               <div className="mb-4">
-                <div className="text-xs text-gray-500 mb-1">Amount</div>
+                <div className="text-xs text-gray-500 mb-1">Doanh thu</div>
                 <div className="text-lg font-bold text-gray-900">
                   ${order.amount.toFixed(2)}
                 </div>
@@ -649,7 +649,7 @@ const Orders = () => {
 
               {/* Payment Method */}
               <div className="text-xs text-gray-500">
-                Payment Method: {order.paymentMethod?.toUpperCase() || "N/A"}
+                Phương thức thanh toán: {order.paymentMethod?.toUpperCase() || "N/A"}
               </div>
             </div>
           ))
@@ -663,7 +663,7 @@ const Orders = () => {
             <div className="mt-3">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium text-gray-900">
-                  Edit Order
+                  Chỉnh sửa đơn hàng
                 </h3>
                 <button
                   onClick={() => {
@@ -684,7 +684,7 @@ const Orders = () => {
 
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Order Status
+                  Trạng thái đơn hàng
                 </label>
                 <select
                   value={newStatus}
@@ -701,7 +701,7 @@ const Orders = () => {
 
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Payment Status
+                  Trạng thái thanh toán
                 </label>
                 <select
                   value={newPaymentStatus}
@@ -721,7 +721,7 @@ const Orders = () => {
                   onClick={handleSaveChanges}
                   className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
                 >
-                  Save Changes
+                  Lưu thay đổi
                 </button>
                 <button
                   onClick={() => {
@@ -730,7 +730,7 @@ const Orders = () => {
                   }}
                   className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors font-medium"
                 >
-                  Cancel
+                  Hủy
                 </button>
               </div>
             </div>

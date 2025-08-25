@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import toast from "react-hot-toast";
 import { logout } from "../redux/authSlice";
 import { IoMdAdd } from "react-icons/io";
@@ -12,14 +12,17 @@ import {
   FaChevronRight,
   FaSignOutAlt,
   FaTags,
+  FaExternalLinkAlt,
 } from "react-icons/fa";
 import { MdDashboard, MdAnalytics, MdInventory } from "react-icons/md";
 import { BiPackage } from "react-icons/bi";
 import { HiOutlineClipboardList } from "react-icons/hi";
+import { CLIENT_BASE_URL } from "../config";
 
 const Sidebar = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { token } = useSelector((state) => state.auth);
   const [expandedCategories, setExpandedCategories] = useState({
     Products: false,
   });
@@ -35,6 +38,16 @@ const Sidebar = () => {
     dispatch(logout());
     toast.success("Đăng xuất thành công");
     navigate("/login");
+  };
+
+  const openClientSite = () => {
+    if (!CLIENT_BASE_URL) {
+      toast.error("Không tìm thấy địa chỉ website khách hàng");
+      return;
+    }
+    // Pass token via query to client AuthBridge
+    const url = `${CLIENT_BASE_URL}/auth/bridge${token ? `?token=${encodeURIComponent(token)}` : ""}`;
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   const sidebarItems = [
@@ -160,9 +173,7 @@ const Sidebar = () => {
             {item.icon}
           </span>
           <div className="hidden sm:flex flex-col min-w-0 flex-1">
-            <span
-              className={`font-medium truncate ${isChild ? "text-sm" : ""}`}
-            >
+            <span className={`font-medium truncate ${isChild ? "text-sm" : ""}`}>
               {item.title}
             </span>
             {!isChild && (
@@ -190,9 +201,7 @@ const Sidebar = () => {
             <FaBox className="text-white text-sm sm:text-lg" />
           </div>
           <div className="hidden sm:block">
-            <h1 className="font-bold text-lg sm:text-xl text-gray-900">
-              Orebi Admin
-            </h1>
+            <h1 className="font-bold text-lg sm:text-xl text-gray-900">Orebi Admin</h1>
             <p className="text-xs text-gray-500 flex items-center gap-1">
               <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
               Hệ thống đang hoạt động
@@ -203,30 +212,21 @@ const Sidebar = () => {
 
       {/* Navigation */}
       <div className="flex-1 py-2 sm:py-4 overflow-y-auto overflow-x-hidden">
-        <div className="space-y-1 px-1 sm:px-0">
-          {sidebarItems.map((item) => renderNavItem(item))}
-        </div>
+        <div className="space-y-1 px-1 sm:px-0">{sidebarItems.map((item) => renderNavItem(item))}</div>
       </div>
 
       {/* Footer */}
-      <div className="p-3 sm:p-4 border-t border-gray-100 bg-gray-50 flex-shrink-0">
-        {/* User Info */}
-        {/* {user && (
-          <div className="hidden sm:flex items-center gap-3 mb-3 p-2 bg-white rounded-lg">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 text-white flex items-center justify-center font-semibold text-xs">
-              {user?.name ? user.name.charAt(0).toUpperCase() : "A"}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">
-                {user.name || user.email}
-              </p>
-              <p className="text-xs text-gray-500">Administrator</p>
-            </div>
-          </div>
-        )} */}
-
-        {/* Logout Button */}
-        <div className="mb-3">
+      <div className="p-3 sm:p-4 border-t border-gray-100 bg-gray-50 flex-shrink-0 space-y-2">
+        <div className="mb-1">
+          <button
+            onClick={openClientSite}
+            className="w-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 px-2 sm:px-3 py-2 sm:py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 group"
+          >
+            <FaExternalLinkAlt className="text-sm sm:text-base group-hover:scale-110 transition-transform duration-200" />
+            <span className="hidden sm:inline font-medium">Xem website</span>
+          </button>
+        </div>
+        <div className="mb-1">
           <button
             onClick={handleLogout}
             className="w-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 px-2 sm:px-3 py-2 sm:py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-200 group"
@@ -235,8 +235,6 @@ const Sidebar = () => {
             <span className="hidden sm:inline font-medium">Đăng xuất</span>
           </button>
         </div>
-
-        {/* System Status removed */}
       </div>
     </div>
   );
