@@ -34,11 +34,11 @@ const RegisterPage = () => {
 
   const validateForm = () => {
     if (formData.password !== formData.confirmPassword) {
-      dispatch(setError("Passwords do not match"));
+      dispatch(setError("Mật khẩu xác nhận không khớp"));
       return false;
     }
     if (formData.password.length < 8) {
-      dispatch(setError("Password must be at least 8 characters long"));
+      dispatch(setError("Mật khẩu phải có ít nhất 8 ký tự"));
       return false;
     }
     return true;
@@ -63,15 +63,15 @@ const RegisterPage = () => {
       const response = await authService.userRegister(userData);
 
       if (response.success) {
-        toast.success(response.message || "Registration successful!");
+        toast.success(response.message || "Đăng ký thành công!");
         navigate("/login");
       } else {
-        dispatch(setError(response.message || "Registration failed"));
-        toast.error(response.message || "Registration failed");
+        dispatch(setError(response.message || "Đăng ký thất bại"));
+        toast.error(response.message || "Đăng ký thất bại");
       }
     } catch (error) {
       const errorMessage =
-        error.response?.data?.message || error.message || "Registration failed";
+        error.response?.data?.message || error.message || "Đăng ký thất bại";
       dispatch(setError(errorMessage));
       toast.error(errorMessage);
     } finally {
@@ -88,10 +88,10 @@ const RegisterPage = () => {
             <img src={logo} alt="logo" className="w-20" />
           </div>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            Create Account
+            Tạo tài khoản
           </h1>
           <p className="text-gray-600">
-            Join us and start managing your admin panel
+            Tham gia cùng chúng tôi và bắt đầu quản lý bảng điều khiển của bạn
           </p>
         </div>
 
@@ -106,13 +106,13 @@ const RegisterPage = () => {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
               <label className="text-sm font-semibold text-gray-700 block">
-                Full Name
+                Họ và tên
               </label>
               <div className="relative">
                 <input
                   type="text"
                   name="name"
-                  placeholder="Enter your full name"
+                  placeholder="Nhập họ và tên"
                   className="w-full py-3 px-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white/70"
                   required
                   value={formData.name}
@@ -139,13 +139,13 @@ const RegisterPage = () => {
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-gray-700 block">
-                Email Address
+                Email 
               </label>
               <div className="relative">
                 <input
                   type="email"
                   name="email"
-                  placeholder="Enter your email"
+                  placeholder="Nhập email"
                   className="w-full py-3 px-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white/70"
                   required
                   value={formData.email}
@@ -172,13 +172,13 @@ const RegisterPage = () => {
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-gray-700 block">
-                Password
+                Mật khẩu
               </label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
                   name="password"
-                  placeholder="Enter your password"
+                  placeholder="Nhập mật khẩu"
                   className="w-full py-3 px-4 pr-12 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white/70"
                   required
                   value={formData.password}
@@ -229,19 +229,19 @@ const RegisterPage = () => {
                 </button>
               </div>
               <p className="text-xs text-gray-500">
-                Password must be at least 8 characters long
+                Mật khẩu phải có ít nhất 8 ký tự
               </p>
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-gray-700 block">
-                Confirm Password
+                Nhập lại mật khẩu
               </label>
               <div className="relative">
                 <input
                   type={showConfirmPassword ? "text" : "password"}
                   name="confirmPassword"
-                  placeholder="Confirm your password"
+                  placeholder="Nhập lại mật khẩu"
                   className="w-full py-3 px-4 pr-12 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white/70"
                   required
                   value={formData.confirmPassword}
@@ -320,10 +320,10 @@ const RegisterPage = () => {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Creating Account...
+                  Đang tạo tài khoản...
                 </div>
               ) : (
-                "Create Account"
+                "Tạo tài khoản"
               )}
             </button>
           </form>
@@ -331,12 +331,12 @@ const RegisterPage = () => {
           {/* Login Link */}
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              Already have an account?{" "}
+              Bạn đã có tài khoản?{" "}
               <Link
                 to="/login"
                 className="text-purple-600 hover:text-purple-800 font-semibold transition-colors duration-200"
               >
-                Sign In
+                Đăng nhập
               </Link>
             </p>
           </div>
@@ -344,7 +344,7 @@ const RegisterPage = () => {
           {/* Additional Elements */}
           <div className="mt-4 text-center">
             <p className="text-xs text-gray-500">
-              By creating an account, you agree to our Terms of Service
+              Bằng cách tạo tài khoản, bạn đồng ý với Điều khoản dịch vụ của chúng tôi
             </p>
           </div>
         </div>
@@ -352,7 +352,7 @@ const RegisterPage = () => {
         {/* Footer */}
         <div className="text-center mt-6">
           <p className="text-sm text-gray-500">
-            © 2025 Admin Dashboard. All rights reserved.
+            © 2025 Admin Dashboard. Tất cả quyền được bảo lưu.
           </p>
         </div>
       </div>
