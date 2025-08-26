@@ -19,6 +19,10 @@ import {
   setDefaultAddress,
   getUserAddresses,
   uploadUserAvatar,
+  sendPasswordResetOtp,
+  verifyPasswordResetOtp,
+  resetPasswordWithToken,
+  googleLogin,
 } from "../controllers/userController.mjs";
 import adminAuth from "../middleware/adminAuth.js";
 import userAuth from "../middleware/userAuth.js";
@@ -32,6 +36,12 @@ const routeValue = "/api/user/";
 router.post(`${routeValue}register`, userRegister);
 router.post(`${routeValue}login`, userLogin);
 router.post(`${routeValue}admin`, adminLogin);
+router.post(`${routeValue}google`, googleLogin);
+
+// Password reset public routes
+router.post(`${routeValue}password/otp/send`, sendPasswordResetOtp);
+router.post(`${routeValue}password/otp/verify`, verifyPasswordResetOtp);
+router.post(`${routeValue}password/reset`, resetPasswordWithToken);
 
 // User-protected routes
 router.get(`${routeValue}profile`, userAuth, getUserProfile);

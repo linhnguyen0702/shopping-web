@@ -38,6 +38,30 @@ export const authService = {
     return response.data;
   },
 
+  // Forgot password - send OTP
+  sendResetOtp: async (email) => {
+    const response = await api.post("/api/user/password/otp/send", { email });
+    return response.data;
+  },
+
+  // Forgot password - verify OTP
+  verifyResetOtp: async ({ email, otp }) => {
+    const response = await api.post("/api/user/password/otp/verify", { email, otp });
+    return response.data;
+  },
+
+  // Reset password
+  resetPassword: async ({ resetToken, newPassword }) => {
+    const response = await api.post("/api/user/password/reset", { resetToken, newPassword });
+    return response.data;
+  },
+
+  // Google login (expects Google ID token from client)
+  googleLogin: async (idToken) => {
+    const response = await api.post("/api/user/google", { idToken });
+    return response.data;
+  },
+
   // Get user profile (if needed)
   getUserProfile: async () => {
     const response = await api.get("/api/user/profile");

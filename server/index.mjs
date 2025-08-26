@@ -8,7 +8,7 @@ import { readdirSync } from "fs";
 import dbConnect from "./config/mongodb.js";
 import connectCloudinary from "./config/cloudinary.js";
 
-const port = process.env.PORT;
+const port = process.env.PORT || 5000;
 
 const allowedOrigins = [
   process.env.ADMIN_URL,
@@ -34,7 +34,10 @@ app.use(
       if (!origin) return callback(null, true);
 
       // In development, allow all origins for easier testing
-      if (process.env.NODE_ENV === "development") {
+      if (
+        process.env.NODE_ENV === "development" ||
+        process.env.CORS_ALLOW_ALL === "true"
+      ) {
         console.log("Development mode: allowing all origins");
         return callback(null, true);
       }

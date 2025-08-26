@@ -4,6 +4,10 @@ import jwt from "jsonwebtoken";
 import userModel from "../models/userModel.js";
 import { cloudinary, deleteCloudinaryImage } from "../config/cloudinary.js";
 import fs from "fs";
+import crypto from "crypto";
+import nodemailer from "nodemailer";
+import { OAuth2Client } from "google-auth-library";
+import { promises as dns } from "dns";
 
 // Helper function to clean up temporary files
 const cleanupTempFile = (filePath) => {
@@ -157,15 +161,15 @@ const adminLogin = async (req, res) => {
     const user = await userModel.findOne({ email });
 
     if (!user) {
-      return res.json({ success: false, message: "User doesn't exist" });
+      return res.json({ success: false, message: "Tài khoản không tồn tại" });
     }
 
     if (user.role !== "admin") {
-      return res.json({ success: false, message: "Admin access required" });
+      return res.json({ success: false, message: "Yêu cầu quyền admin" });
     }
 
     if (!user.isActive) {
-      return res.json({ success: false, message: "Account is deactivated" });
+      return res.json({ success: false, message: "Tài khoản đã bị vô hiệu hóa" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -184,13 +188,222 @@ const adminLogin = async (req, res) => {
           email: user.email,
           role: user.role,
         },
-        message: "Welcome admin",
+        message: "Chào mừng bạn quay trở lại",
       });
     } else {
-      res.json({ success: false, message: "Invalid credentials" });
+      res.json({ success: false, message: "Mật khẩu không chính xác" });
     }
   } catch (error) {
-    console.log("Admin Login Error", error);
+    console.log("Đăng nhập admin thất bại", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Send OTP for password reset
+const sendPasswordResetOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const normalizedEmail = (email || "").toString().trim().toLowerCase();
+    if (!normalizedEmail || !validator.isEmail(normalizedEmail)) {
+      return res.json({ success: false, message: "Email không hợp lệ" });
+    }
+
+    const user = await userModel.findOne({ email: normalizedEmail });
+    if (!user) {
+      return res.json({ success: false, message: "Email không tồn tại" });
+    }
+
+    // Kiểm tra domain email có MX records (khả năng nhận mail) - chỉ bật ở production
+    if (process.env.NODE_ENV !== "development") {
+      try {
+        const domain = normalizedEmail.split("@")[1];
+        const mxRecords = await dns.resolveMx(domain);
+        if (!mxRecords || mxRecords.length === 0) {
+          return res.json({ success: false, message: "Email không thể nhận thư (không có MX)" });
+        }
+      } catch (mxErr) {
+        return res.json({ success: false, message: "Email không thể nhận thư (MX lỗi)" });
+      }
+    }
+
+    const otp = (Math.floor(100000 + Math.random() * 900000)).toString();
+    const otpHash = crypto.createHash("sha256").update(otp).digest("hex");
+    user.resetOtp = otpHash;
+    user.resetOtpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 phút
+    await user.save();
+
+    let smtpUser = process.env.SMTP_USER;
+    let smtpPass = process.env.SMTP_PASS;
+    let transporter;
+    if (!(smtpUser && smtpPass)) {
+      if (process.env.NODE_ENV === "development") {
+        // Tạo tài khoản Ethereal tự động để test gửi email trong DEV
+        try {
+          const testAccount = await nodemailer.createTestAccount();
+          smtpUser = testAccount.user;
+          smtpPass = testAccount.pass;
+          transporter = nodemailer.createTransport({
+            host: "smtp.ethereal.email",
+            port: 587,
+            secure: false,
+            auth: { user: smtpUser, pass: smtpPass },
+          });
+          console.log("Ethereal test SMTP created. Login:", smtpUser);
+        } catch (e) {
+          console.warn("Không tạo được Ethereal account:", e?.message);
+          return res.json({ success: true, message: "Gửi OTP thành công (DEV)", demoOtp: otp });
+        }
+      } else {
+        return res.json({ success: false, message: "Máy chủ email chưa được cấu hình" });
+      }
+    } else {
+      transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: Number(process.env.SMTP_PORT || 587),
+        secure: Boolean(process.env.SMTP_SECURE === "true"),
+        auth: { user: smtpUser, pass: smtpPass },
+      });
+    }
+    const mailOptions = {
+      from: process.env.MAIL_FROM || `Orebi <no-reply@orebi.local>`,
+      to: normalizedEmail,
+      subject: "Mã OTP đặt lại mật khẩu",
+      text: `Mã OTP của bạn là ${otp}. Mã có hiệu lực trong 10 phút.`,
+      html: `<p>Mã OTP của bạn là <b>${otp}</b>.</p><p>Mã có hiệu lực trong 10 phút.</p>`,
+    };
+    try {
+      const info = await transporter.sendMail(mailOptions);
+      const previewUrl = nodemailer.getTestMessageUrl ? nodemailer.getTestMessageUrl(info) : undefined;
+      return res.json({ success: true, message: "Gửi OTP thành công", previewUrl });
+    } catch (mailErr) {
+      console.log("Email send error", mailErr);
+      return res.json({ success: false, message: "Gửi email OTP thất bại" });
+    }
+  } catch (error) {
+    console.log("Send OTP Error", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Verify OTP
+const verifyPasswordResetOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.json({ success: false, message: "Email and OTP are required" });
+    }
+    const user = await userModel.findOne({ email });
+    if (!user) {
+      return res.json({ success: false, message: "User doesn't exist" });
+    }
+    if (!user.resetOtp || !user.resetOtpExpires || user.resetOtpExpires < new Date()) {
+      return res.json({ success: false, message: "OTP expired or not requested" });
+    }
+    const otpHash = crypto.createHash("sha256").update(otp).digest("hex");
+    if (otpHash !== user.resetOtp) {
+      return res.json({ success: false, message: "Invalid OTP" });
+    }
+
+    // Issue a short-lived token to allow password reset
+    const resetToken = jwt.sign(
+      { id: user._id, purpose: "password_reset" },
+      process.env.JWT_SECRET,
+      { expiresIn: "15m" }
+    );
+
+    res.json({ success: true, message: "OTP verified", resetToken });
+  } catch (error) {
+    console.log("Verify OTP Error", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Reset password with verified token
+const resetPasswordWithToken = async (req, res) => {
+  try {
+    const { resetToken, newPassword } = req.body;
+    if (!resetToken || !newPassword) {
+      return res.json({ success: false, message: "Missing data" });
+    }
+    if (newPassword.length < 8) {
+      return res.json({ success: false, message: "Password must be at least 8 characters" });
+    }
+
+    let payload;
+    try {
+      payload = jwt.verify(resetToken, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.json({ success: false, message: "Invalid or expired token" });
+    }
+
+    if (payload.purpose !== "password_reset") {
+      return res.json({ success: false, message: "Invalid token purpose" });
+    }
+
+    const user = await userModel.findById(payload.id);
+    if (!user) {
+      return res.json({ success: false, message: "User not found" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    // clear OTP fields
+    user.resetOtp = "";
+    user.resetOtpExpires = undefined;
+    await user.save();
+
+    res.json({ success: true, message: "Password reset successfully" });
+  } catch (error) {
+    console.log("Reset Password Error", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Google login with ID token
+const googleLogin = async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    if (!idToken) {
+      return res.json({ success: false, message: "Missing Google token" });
+    }
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    let ticket;
+    try {
+      ticket = await client.verifyIdToken({ idToken, audience: process.env.GOOGLE_CLIENT_ID });
+    } catch (err) {
+      return res.json({ success: false, message: "Invalid Google token" });
+    }
+    const payload = ticket.getPayload();
+    const email = payload.email?.toLowerCase();
+    const name = payload.name || payload.email?.split("@")[0] || "User";
+    if (!email) {
+      return res.json({ success: false, message: "Google account has no email" });
+    }
+
+    let user = await userModel.findOne({ email });
+    if (!user) {
+      // create user with random password
+      const salt = await bcrypt.genSalt(10);
+      const randomPassword = crypto.randomBytes(16).toString("hex");
+      const hashed = await bcrypt.hash(randomPassword, salt);
+      user = await userModel.create({ name, email, password: hashed, role: "user" });
+    }
+    if (!user.isActive) {
+      return res.json({ success: false, message: "Account is deactivated" });
+    }
+
+    user.lastLogin = new Date();
+    await user.save();
+
+    const token = createToken(user);
+    res.json({
+      success: true,
+      token,
+      user: { id: user._id, name: user.name, email: user.email, role: user.role },
+      message: "Logged in with Google",
+    });
+  } catch (error) {
+    console.log("Google Login Error", error);
     res.json({ success: false, message: error.message });
   }
 };
@@ -600,6 +813,10 @@ export {
   setDefaultAddress,
   getUserAddresses,
   uploadUserAvatar,
+  sendPasswordResetOtp,
+  verifyPasswordResetOtp,
+  resetPasswordWithToken,
+  googleLogin,
 };
 
 // Get user profile

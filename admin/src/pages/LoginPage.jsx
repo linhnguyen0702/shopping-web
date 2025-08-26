@@ -21,6 +21,15 @@ const LoginPage = () => {
     password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [resetStep, setResetStep] = useState(1);
+  const [resetEmail, setResetEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [resetToken, setResetToken] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [modalLoading, setModalLoading] = useState(false);
+  const [devOtp, setDevOtp] = useState("");
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -28,7 +37,7 @@ const LoginPage = () => {
       ...prev,
       [name]: value,
     }));
-    // Clear error when user starts typing
+    // Xóa lỗi khi người dùng bắt đầu gõ
     if (error) {
       dispatch(clearError());
     }
@@ -40,10 +49,10 @@ const LoginPage = () => {
     dispatch(clearError());
 
     try {
-      // Try admin login first
+      // Thử đăng nhập admin trước
       let response = await authService.adminLogin(formData);
 
-      // If admin login fails, try user login
+      // Nếu đăng nhập admin thất bại, thử đăng nhập user
       if (!response.success) {
         response = await authService.userLogin(formData);
       }
@@ -55,19 +64,92 @@ const LoginPage = () => {
             user: response.user || { email: formData.email },
           })
         );
-        toast.success(response.message || "Login successful!");
+        toast.success(response.message || "Đăng nhập thành công!");
         navigate("/");
       } else {
-        dispatch(setError(response.message || "Login failed"));
-        toast.error(response.message || "Login failed");
+        dispatch(setError(response.message || "Đăng nhập thất bại"));
+        toast.error(response.message || "Đăng nhập thất bại");
       }
     } catch (error) {
       const errorMessage =
-        error.response?.data?.message || error.message || "Login failed";
+        error.response?.data?.message || error.message || "Đăng nhập thất bại";
       dispatch(setError(errorMessage));
       toast.error(errorMessage);
     } finally {
       dispatch(setLoading(false));
+    }
+  };
+
+  const handleSendOtp = async (e) => {
+    e.preventDefault();
+    try {
+      setModalLoading(true);
+      const res = await authService.sendResetOtp(resetEmail);
+      if (res.success) {
+        toast.success("Đã gửi mã OTP đến email");
+        if (res.demoOtp) setDevOtp(res.demoOtp);
+        setResetStep(2);
+      } else {
+        toast.error(res.message || "Gửi OTP thất bại");
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || "Lỗi gửi OTP");
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    try {
+      setModalLoading(true);
+      const res = await authService.verifyResetOtp({ email: resetEmail, otp });
+      if (res.success) {
+        setResetToken(res.resetToken);
+        toast.success("Xác thực OTP thành công");
+        setResetStep(3);
+      } else {
+        toast.error(res.message || "OTP không hợp lệ");
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || "Lỗi xác thực OTP");
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    if (newPassword.length < 8) {
+      toast.error("Mật khẩu tối thiểu 8 ký tự");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      toast.error("Mật khẩu xác nhận không khớp");
+      return;
+    }
+    try {
+      setModalLoading(true);
+      const res = await authService.resetPassword({ resetToken, newPassword });
+      if (res.success) {
+        toast.success("Đặt lại mật khẩu thành công");
+        setShowForgotModal(false);
+        setResetStep(1);
+        setResetEmail("");
+        setOtp("");
+        setResetToken("");
+        setNewPassword("");
+        setConfirmNewPassword("");
+        setDevOtp("");
+      } else {
+        toast.error(res.message || "Đặt mật khẩu thất bại");
+      }
+    } catch (err) {
+      toast.error(
+        err.response?.data?.message || err.message || "Lỗi đặt lại mật khẩu"
+      );
+    } finally {
+      setModalLoading(false);
     }
   };
 
@@ -80,9 +162,9 @@ const LoginPage = () => {
             <img src={logo} alt="logo" className="w-20" />
           </div>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            Welcome Back
+            Chào mừng bạn quay trở lại!
           </h1>
-          <p className="text-gray-600">Please sign in to your account</p>
+          <p className="text-gray-600">Vui lòng đăng nhập để tiếp tục</p>
         </div>
 
         {/* Login Form */}
@@ -96,7 +178,7 @@ const LoginPage = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <label className="text-sm font-semibold text-gray-700 block">
-                Email Address
+                Email 
               </label>
               <div className="relative">
                 <input
@@ -125,11 +207,12 @@ const LoginPage = () => {
                   </svg>
                 </div>
               </div>
+             
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-gray-700 block">
-                Password
+                Mật khẩu
               </label>
               <div className="relative">
                 <input
@@ -186,7 +269,25 @@ const LoginPage = () => {
                 </button>
               </div>
             </div>
-
+            <div className="flex justify-end text-sm mt-1 ">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForgotModal(true);
+                    setResetStep(1);
+                    setResetEmail("");
+                    setOtp("");
+                    setResetToken("");
+                    setNewPassword("");
+                    setConfirmNewPassword("");
+                    setDevOtp("");
+                  }}
+                  className="text-blue-600 hover:text-blue-800 font-semibold"
+                  disabled={loading}
+                >
+                  Quên mật khẩu?
+                </button>
+              </div>
             <button
               type="submit"
               disabled={loading}
@@ -217,39 +318,210 @@ const LoginPage = () => {
                   Signing In...
                 </div>
               ) : (
-                "Sign In"
+                "Đăng nhập"
               )}
+            </button>
+            
+            <div className="relative py-2">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-gray-200"></span>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-gray-500">Hoặc</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => toast("Google Login sẽ được cấu hình")}
+              disabled={loading}
+              className="w-full border border-gray-300 bg-white text-gray-700 py-3 px-6 rounded-xl font-semibold hover:bg-gray-50 focus:ring-4 focus:ring-blue-100 transform hover:scale-[1.01] transition-all duration-200 shadow-sm disabled:opacity-50"
+            >
+              <span className="inline-flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="h-5 w-5">
+                  <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12 s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C32.65,6.053,28.53,4,24,4C12.955,4,4,12.955,4,24 s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
+                  <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,16.108,18.961,14,24,14c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657 C32.65,6.053,28.53,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
+                  <path fill="#4CAF50" d="M24,44c5.176,0,9.86-1.977,13.409-5.197l-6.19-5.238C29.211,35.091,26.715,36,24,36 c-5.202,0-9.619-3.317-11.283-7.946l-6.532,5.028C9.505,39.556,16.227,44,24,44z"/>
+                  <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-3.994,5.565 c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C35.271,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
+                </svg>
+                Đăng nhập bằng Google
+              </span>
             </button>
           </form>
 
           {/* Register Link */}
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              Don&apos;t have an account?{" "}
+              Bạn chưa có tài khoản?{" "}
               <Link
                 to="/register"
                 className="text-blue-600 hover:text-blue-800 font-semibold transition-colors duration-200"
               >
-                Create Account
+                Tạo tài khoản
               </Link>
             </p>
           </div>
-
-          {/* Additional Elements */}
-          <div className="mt-4 text-center">
-            <p className="text-xs text-gray-500">
-              Secure access • Protected by encryption
-            </p>
-          </div>
+          
         </div>
 
         {/* Footer */}
         <div className="text-center mt-6">
           <p className="text-sm text-gray-500">
-            © 2025 Admin Dashboard. All rights reserved.
+            © 2025 Admin Dashboard. Tất cả quyền được bảo lưu.
           </p>
         </div>
       </div>
+      {showForgotModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-semibold">Quên mật khẩu</h3>
+              <button
+                onClick={() => setShowForgotModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            {resetStep === 1 && (
+              <form onSubmit={handleSendOtp} className="space-y-4">
+                <p className="text-sm text-gray-600">Nhập email đã đăng ký để nhận mã OTP.</p>
+                <input
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  required
+                  placeholder="Email của bạn"
+                  className="w-full py-3 px-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                {devOtp && (
+                  <p className="text-xs text-gray-500">OTP (dev): {devOtp}</p>
+                )}
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowForgotModal(false);
+                      setResetStep(1);
+                      setResetEmail("");
+                      setOtp("");
+                      setResetToken("");
+                      setNewPassword("");
+                      setConfirmNewPassword("");
+                      setDevOtp("");
+                    }}
+                    className="w-1/3 border border-gray-300 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-50"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={modalLoading}
+                    className="w-2/3 bg-blue-600 text-white py-3 rounded-xl font-semibold disabled:opacity-50"
+                  >
+                    {modalLoading ? "Đang gửi..." : "Gửi mã OTP"}
+                  </button>
+                </div>
+              </form>
+            )}
+            {resetStep === 2 && (
+              <form onSubmit={handleVerifyOtp} className="space-y-4">
+                <p className="text-sm text-gray-600">Nhập mã OTP đã gửi đến email {resetEmail}.</p>
+                <input
+                  type="text"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  required
+                  placeholder="Nhập mã OTP 6 số"
+                  className="w-full py-3 px-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <div className="flex items-center justify-between text-sm">
+                  <button
+                    type="button"
+                    onClick={handleSendOtp}
+                    className="text-blue-600 hover:text-blue-800"
+                    disabled={modalLoading}
+                  >
+                    Gửi lại OTP
+                  </button>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowForgotModal(false);
+                      setResetStep(1);
+                      setResetEmail("");
+                      setOtp("");
+                      setResetToken("");
+                      setNewPassword("");
+                      setConfirmNewPassword("");
+                      setDevOtp("");
+                    }}
+                    className="w-1/3 border border-gray-300 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-50"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={modalLoading}
+                    className="w-2/3 bg-blue-600 text-white py-3 rounded-xl font-semibold disabled:opacity-50"
+                  >
+                    {modalLoading ? "Đang xác thực..." : "Xác thực OTP"}
+                  </button>
+                </div>
+              </form>
+            )}
+            {resetStep === 3 && (
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                <p className="text-sm text-gray-600">Nhập mật khẩu mới cho tài khoản {resetEmail}.</p>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  minLength={8}
+                  required
+                  placeholder="Mật khẩu mới"
+                  className="w-full py-3 px-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <input
+                  type="password"
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  minLength={8}
+                  required
+                  placeholder="Xác nhận mật khẩu mới"
+                  className="w-full py-3 px-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowForgotModal(false);
+                      setResetStep(1);
+                      setResetEmail("");
+                      setOtp("");
+                      setResetToken("");
+                      setNewPassword("");
+                      setConfirmNewPassword("");
+                      setDevOtp("");
+                    }}
+                    className="w-1/3 border border-gray-300 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-50"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={modalLoading}
+                    className="w-2/3 bg-blue-600 text-white py-3 rounded-xl font-semibold disabled:opacity-50"
+                  >
+                    {modalLoading ? "Đang cập nhật..." : "Cập nhật mật khẩu"}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

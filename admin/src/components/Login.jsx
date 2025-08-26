@@ -24,7 +24,7 @@ const Login = ({ setToken }) => {
         toast.error(data?.message);
       }
     } catch (error) {
-      console.log("Login Error", error.message);
+      console.log("Đăng nhập thất bại", error.message);
       toast.error(error?.message);
     }
   };
@@ -39,7 +39,7 @@ const Login = ({ setToken }) => {
           </div>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Admin Panel</h1>
           <p className="text-gray-600">
-            Welcome back! Please sign in to continue.
+            Chào mừng bạn quay trở lại! Vui lòng đăng nhập để tiếp tục.
           </p>
         </div>
 
@@ -48,7 +48,7 @@ const Login = ({ setToken }) => {
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
               <label className="text-sm font-semibold text-gray-700 block">
-                Email Address
+                Email 
               </label>
               <div className="relative">
                 <input
@@ -79,7 +79,7 @@ const Login = ({ setToken }) => {
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-gray-700 block">
-                Password
+                Mật khẩu
               </label>
               <div className="relative">
                 <input
@@ -138,14 +138,14 @@ const Login = ({ setToken }) => {
               type="submit"
               className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 focus:ring-4 focus:ring-blue-300 transform hover:scale-[1.02] transition-all duration-200 shadow-lg hover:shadow-xl"
             >
-              Sign In
+              Đăng nhập
             </button>
           </form>
 
           {/* Additional Elements */}
           <div className="mt-6 text-center">
             <p className="text-xs text-gray-500">
-              Secure admin access • Protected by encryption
+              Quản lý admin • Bảo mật bằng mã hóa
             </p>
           </div>
         </div>
@@ -153,7 +153,7 @@ const Login = ({ setToken }) => {
         {/* Footer */}
         <div className="text-center mt-6">
           <p className="text-sm text-gray-500">
-            © 2025 Admin Dashboard. All rights reserved.
+            © 2025 Admin Dashboard. Tất cả quyền được bảo lưu.
           </p>
         </div>
       </div>
