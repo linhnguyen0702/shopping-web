@@ -56,6 +56,12 @@ export const authService = {
     return response.data;
   },
 
+  // Direct password reset (no OTP)
+  resetPasswordDirect: async ({ email, newPassword }) => {
+    const response = await api.post("/api/user/password/reset-direct", { email, newPassword });
+    return response.data;
+  },
+
   // Google login (expects Google ID token from client)
   googleLogin: async (idToken) => {
     const response = await api.post("/api/user/google", { idToken });

@@ -57,7 +57,8 @@ app.use(
 );
 app.use(express.json());
 
-dbConnect();
+// Connect to services before starting server
+await dbConnect();
 connectCloudinary();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -74,6 +75,19 @@ app.get("/", (req, res) => {
   res.send("You should not be here");
 });
 
-app.listen(port, () => {
-  console.log(`Server is running on ${port}`);
-});
+try {
+  const server = app.listen(port, () => {
+    console.log(`Server is running on ${port}`);
+  });
+  server.on("error", (err) => {
+    if (err?.code === "EADDRINUSE") {
+      console.error(`Port ${port} is already in use. Set a different PORT or free it.`);
+    } else {
+      console.error("Server error:", err?.message || err);
+    }
+    process.exit(1);
+  });
+} catch (err) {
+  console.error("Failed to start server:", err?.message || err);
+  process.exit(1);
+}

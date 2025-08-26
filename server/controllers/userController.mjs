@@ -359,6 +359,37 @@ const resetPasswordWithToken = async (req, res) => {
   }
 };
 
+// Reset password directly by email (no OTP)
+const resetPasswordDirect = async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+    const normalizedEmail = (email || "").toString().trim().toLowerCase();
+    if (!normalizedEmail || !validator.isEmail(normalizedEmail)) {
+      return res.json({ success: false, message: "Email không hợp lệ" });
+    }
+    if (!newPassword || newPassword.length < 8) {
+      return res.json({ success: false, message: "Mật khẩu tối thiểu 8 ký tự" });
+    }
+
+    const user = await userModel.findOne({ email: normalizedEmail });
+    if (!user) {
+      return res.json({ success: false, message: "Email không tồn tại" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    // Clear any previous OTP state if present
+    user.resetOtp = "";
+    user.resetOtpExpires = undefined;
+    await user.save();
+
+    return res.json({ success: true, message: "Đổi mật khẩu thành công" });
+  } catch (error) {
+    console.log("Reset Password Direct Error", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
 // Google login with ID token
 const googleLogin = async (req, res) => {
   try {
@@ -816,6 +847,7 @@ export {
   sendPasswordResetOtp,
   verifyPasswordResetOtp,
   resetPasswordWithToken,
+  resetPasswordDirect,
   googleLogin,
 };
 

@@ -22,6 +22,7 @@ import {
   sendPasswordResetOtp,
   verifyPasswordResetOtp,
   resetPasswordWithToken,
+  resetPasswordDirect,
   googleLogin,
 } from "../controllers/userController.mjs";
 import adminAuth from "../middleware/adminAuth.js";
@@ -42,6 +43,8 @@ router.post(`${routeValue}google`, googleLogin);
 router.post(`${routeValue}password/otp/send`, sendPasswordResetOtp);
 router.post(`${routeValue}password/otp/verify`, verifyPasswordResetOtp);
 router.post(`${routeValue}password/reset`, resetPasswordWithToken);
+// Direct reset without OTP
+router.post(`${routeValue}password/reset-direct`, resetPasswordDirect);
 
 // User-protected routes
 router.get(`${routeValue}profile`, userAuth, getUserProfile);
