@@ -439,6 +439,82 @@ const googleLogin = async (req, res) => {
   }
 };
 
+// Google OAuth (Authorization Code) with react-oauth/google
+// Expects body: { code: string }
+const googleLoginWithCode = async (req, res) => {
+  try {
+    const { code } = req.body || {};
+    if (!code) {
+      return res.json({ success: false, message: "Missing authorization code" });
+    }
+
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const redirectUri = process.env.GOOGLE_REDIRECT_URI || "postmessage"; // react-oauth/google default
+
+    if (!clientId || !clientSecret) {
+      return res.json({ success: false, message: "Google OAuth not configured" });
+    }
+
+    const oauthClient = new OAuth2Client({ clientId, clientSecret, redirectUri });
+
+    // Exchange code for tokens
+    let tokensResponse;
+    try {
+      const { tokens } = await oauthClient.getToken({ code });
+      tokensResponse = tokens;
+    } catch (err) {
+      return res.json({ success: false, message: "Failed to exchange code for tokens" });
+    }
+
+    const idToken = tokensResponse.id_token;
+    if (!idToken) {
+      return res.json({ success: false, message: "No id_token returned by Google" });
+    }
+
+    // Verify ID token
+    let ticket;
+    try {
+      ticket = await oauthClient.verifyIdToken({ idToken, audience: clientId });
+    } catch (err) {
+      return res.json({ success: false, message: "Invalid Google id_token" });
+    }
+
+    const payload = ticket.getPayload();
+    const email = payload.email?.toLowerCase();
+    const name = payload.name || payload.email?.split("@")[0] || "User";
+    if (!email) {
+      return res.json({ success: false, message: "Google account has no email" });
+    }
+
+    let user = await userModel.findOne({ email });
+    if (!user) {
+      const salt = await bcrypt.genSalt(10);
+      const randomPassword = crypto.randomBytes(16).toString("hex");
+      const hashed = await bcrypt.hash(randomPassword, salt);
+      user = await userModel.create({ name, email, password: hashed, role: "user" });
+    }
+
+    if (!user.isActive) {
+      return res.json({ success: false, message: "Account is deactivated" });
+    }
+
+    user.lastLogin = new Date();
+    await user.save();
+
+    const token = createToken(user);
+    res.json({
+      success: true,
+      token,
+      user: { id: user._id, name: user.name, email: user.email, role: user.role },
+      message: "Logged in with Google",
+    });
+  } catch (error) {
+    console.log("Google Login Code Error", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
 const removeUser = async (req, res) => {
   try {
     // First, find the user to get their avatar URL
@@ -480,7 +556,13 @@ const updateUser = async (req, res) => {
     const { _id, name, email, password, role, avatar, addresses, isActive } =
       req.body;
 
-    const user = await userModel.findById(_id);
+    // Support both URL param :id and body _id
+    const targetUserId = req.params?.id || _id;
+    if (!targetUserId) {
+      return res.json({ success: false, message: "Missing user id" });
+    }
+
+    const user = await userModel.findById(targetUserId);
     if (!user) {
       return res.json({ success: false, message: "User not found" });
     }
@@ -849,6 +931,7 @@ export {
   resetPasswordWithToken,
   resetPasswordDirect,
   googleLogin,
+  googleLoginWithCode,
 };
 
 // Get user profile

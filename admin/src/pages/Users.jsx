@@ -133,7 +133,7 @@ const Users = ({ token }) => {
         const response = await axios.post(
           serverUrl + "/api/user/remove",
           { _id },
-          { headers: { token } }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         const data = response?.data;
         if (data?.success) {

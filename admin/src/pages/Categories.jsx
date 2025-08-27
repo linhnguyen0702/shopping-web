@@ -479,7 +479,7 @@ const Categories = () => {
               <form onSubmit={handleSubmit} className="p-6 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tên danh mục *
+                    Tên danh mục 
                   </label>
                   <input
                     type="text"
@@ -508,7 +508,7 @@ const Categories = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Ảnh danh mục *
+                    Ảnh danh mục 
                   </label>
                   <input
                     type="file"

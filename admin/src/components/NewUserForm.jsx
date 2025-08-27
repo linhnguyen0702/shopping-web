@@ -5,6 +5,7 @@ import Input, { Label } from "./ui/input";
 import axios from "axios";
 import { serverUrl } from "../../config";
 import { MdClose, MdLocationOn } from "react-icons/md";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import PropTypes from "prop-types";
 import AddressModal from "./AddressModal";
 
@@ -30,13 +31,14 @@ const NewUserForm = ({
   const [userAddresses, setUserAddresses] = useState([]);
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const fetchUserAddresses = useCallback(
     async (userId) => {
       try {
         const response = await axios.get(
           `${serverUrl}/api/user/${userId}/addresses`,
-          { headers: { token } }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
 
         if (response.data.success) {
@@ -124,7 +126,7 @@ const NewUserForm = ({
         {
           headers: {
             "Content-Type": "multipart/form-data",
-            token,
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -179,13 +181,13 @@ const NewUserForm = ({
         response = await axios.put(
           `${serverUrl}/api/user/update/${selectedUser._id}`,
           userData,
-          { headers: { token } }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
       } else {
         response = await axios.post(
           `${serverUrl}/api/user/register`,
           userData,
-          { headers: { token } }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
       }
 
@@ -271,6 +273,7 @@ const NewUserForm = ({
             <form
               onSubmit={handleAddOrUpdateUser}
               className="space-y-4 sm:space-y-6"
+              autoComplete="off"
             >
               {/* Basic Information */}
               <div className="space-y-3 sm:space-y-4">
@@ -281,7 +284,7 @@ const NewUserForm = ({
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <Label htmlFor="name">Họ và tên *</Label>
+                    <Label htmlFor="name">Họ và tên </Label>
                     <Input
                       id="name"
                       type="text"
@@ -295,17 +298,21 @@ const NewUserForm = ({
                     />
                   </div>
                   <div>
-                    <Label htmlFor="email">Email *</Label>
+                    <Label htmlFor="email">Email </Label>
                     <Input
                       id="email"
                       type="email"
-                      name="email"
+                      name="new-user-email"
                       placeholder="Nhập email"
                       onChange={handleChange}
                       value={formData.email}
                       required
                       disabled={isReadOnly}
                       className={isReadOnly ? "bg-gray-50" : ""}
+                      autoComplete="off"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      inputMode="email"
                     />
                   </div>
                 </div>
@@ -349,22 +356,41 @@ const NewUserForm = ({
                     </select>
                   </div>
                 </div>
-
+                  {/* from them moi nguoi dung */}
                 <div>
                   <Label htmlFor="password">
-                    {selectedUser ? "Mật khẩu mới (tùy chọn)" : "Mật khẩu *"}
+                    {selectedUser ? "Mật khẩu mới (tùy chọn)" : "Mật khẩu "}
                   </Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    name="password"
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      name="new-user-password"
                       placeholder="Nhập mật khẩu"
-                    onChange={handleChange}
-                    value={formData.password}
-                    required={!selectedUser}
-                    disabled={isReadOnly}
-                    className={isReadOnly ? "bg-gray-50" : ""}
-                  />
+                      onChange={handleChange}
+                      value={formData.password}
+                      required={!selectedUser}
+                      disabled={isReadOnly}
+                      className={`${isReadOnly ? "bg-gray-50" : ""} pr-10`}
+                      autoComplete="new-password"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                    />
+                    {!isReadOnly && (
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((v) => !v)}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
+                        aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                      >
+                        {showPassword ? (
+                          <FaEyeSlash className="h-5 w-5" />
+                        ) : (
+                          <FaEye className="h-5 w-5" />
+                        )}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Avatar Upload */}

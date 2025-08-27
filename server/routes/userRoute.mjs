@@ -24,6 +24,7 @@ import {
   resetPasswordWithToken,
   resetPasswordDirect,
   googleLogin,
+  googleLoginWithCode,
 } from "../controllers/userController.mjs";
 import adminAuth from "../middleware/adminAuth.js";
 import userAuth from "../middleware/userAuth.js";
@@ -38,6 +39,7 @@ router.post(`${routeValue}register`, userRegister);
 router.post(`${routeValue}login`, userLogin);
 router.post(`${routeValue}admin`, adminLogin);
 router.post(`${routeValue}google`, googleLogin);
+router.post(`${routeValue}google/code`, googleLoginWithCode);
 
 // Password reset public routes
 router.post(`${routeValue}password/otp/send`, sendPasswordResetOtp);

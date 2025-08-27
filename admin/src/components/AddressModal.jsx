@@ -36,7 +36,7 @@ const AddressModal = ({ isOpen, close, userId, token, onAddressesChange }) => {
       setLoading(true);
       const response = await axios.get(
         `${serverUrl}/api/user/${userId}/addresses`,
-        { headers: { token } }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (response.data.success) {
@@ -122,14 +122,14 @@ const AddressModal = ({ isOpen, close, userId, token, onAddressesChange }) => {
         response = await axios.put(
           `${serverUrl}/api/user/${userId}/addresses/${editingAddress._id}`,
           addressForm,
-          { headers: { token } }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
       } else {
         // Add new address
         response = await axios.post(
           `${serverUrl}/api/user/${userId}/addresses`,
           addressForm,
-          { headers: { token } }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
       }
 
@@ -158,7 +158,7 @@ const AddressModal = ({ isOpen, close, userId, token, onAddressesChange }) => {
       setLoading(true);
       const response = await axios.delete(
         `${serverUrl}/api/user/${userId}/addresses/${addressId}`,
-        { headers: { token } }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (response.data.success) {
@@ -182,7 +182,7 @@ const AddressModal = ({ isOpen, close, userId, token, onAddressesChange }) => {
       const response = await axios.put(
         `${serverUrl}/api/user/${userId}/addresses/${addressId}/default`,
         {},
-        { headers: { token } }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (response.data.success) {

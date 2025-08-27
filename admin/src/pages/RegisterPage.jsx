@@ -2,9 +2,11 @@ import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { useGoogleLogin } from "@react-oauth/google";
+import { serverUrl } from "../config";
 import { logo } from "../assets/images";
 import { authService } from "../services/authService";
-import { setLoading, setError, clearError } from "../redux/authSlice";
+import { setLoading, setError, clearError, loginSuccess } from "../redux/authSlice";
 
 const RegisterPage = () => {
   const dispatch = useDispatch();
@@ -19,7 +21,38 @@ const RegisterPage = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  // Google sign-up button will behave like the Login page (placeholder toast)
+  const googleLogin = useGoogleLogin({
+    flow: "auth-code",
+    onSuccess: async ({ code }) => {
+      try {
+        const res = await fetch(`${serverUrl}/api/user/google/code`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code }),
+        });
+        const data = await res.json();
+        if (data?.success) {
+          if (data.user?.role !== "admin") {
+            toast.error("Tài khoản Google không có quyền admin");
+            return;
+          }
+          dispatch(
+            loginSuccess({
+              token: data.token,
+              user: data.user,
+            })
+          );
+          toast.success("Đăng ký/Đăng nhập Google thành công");
+          navigate("/");
+        } else {
+          toast.error(data?.message || "Google thất bại");
+        }
+      } catch (err) {
+        toast.error("Không gọi được máy chủ");
+      }
+    },
+    onError: () => toast.error("Google login thất bại"),
+  });
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -337,7 +370,7 @@ const RegisterPage = () => {
             </div>
             <button
               type="button"
-              onClick={() => toast("Google Login sẽ được cấu hình")}
+              onClick={() => googleLogin()}
               disabled={loading}
               className="w-full border border-gray-300 bg-white text-gray-700 py-3 px-6 rounded-xl font-semibold hover:bg-gray-50 focus:ring-4 focus:ring-blue-100 transform hover:scale-[1.01] transition-all duration-200 shadow-sm disabled:opacity-50"
             >
