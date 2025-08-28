@@ -141,7 +141,7 @@ const SignIn = () => {
                   htmlFor="email"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Email 
+                  Email
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -153,6 +153,7 @@ const SignIn = () => {
                     type="email"
                     value={email}
                     onChange={handleEmail}
+                    autoComplete="username" // Thêm dòng này
                     className={`block w-full pl-10 pr-3 py-3 border ${
                       errEmail ? "border-red-300" : "border-gray-300"
                     } rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-colors`}
@@ -189,6 +190,7 @@ const SignIn = () => {
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={handlePassword}
+                    autoComplete="new-password" // Thêm dòng này
                     className={`block w-full pl-10 pr-12 py-3 border ${
                       errPassword ? "border-red-300" : "border-gray-300"
                     } rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-colors`}

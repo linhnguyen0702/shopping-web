@@ -212,6 +212,7 @@ const SignUp = () => {
                     type="email"
                     value={email}
                     onChange={handleEmail}
+                    autoComplete="username"
                     className={`block w-full pl-10 pr-3 py-3 border ${
                       errEmail ? "border-red-300" : "border-gray-300"
                     } rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-colors`}
@@ -248,6 +249,7 @@ const SignUp = () => {
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={handlePassword}
+                    autoComplete="new-password"
                     className={`block w-full pl-10 pr-12 py-3 border ${
                       errPassword ? "border-red-300" : "border-gray-300"
                     } rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-colors`}
