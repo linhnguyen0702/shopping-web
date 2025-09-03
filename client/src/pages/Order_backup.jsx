@@ -64,13 +64,13 @@ const Order = () => {
         // Update order count in Redux
         dispatch(setOrderCount(data.orders.length));
       } else {
-        setError(data.message || "Failed to fetch orders");
-        toast.error("Failed to load orders");
+        setError(data.message || "Không thể tải đơn hàng");
+        toast.error("Không thể tải danh sách đơn hàng");
       }
     } catch (error) {
-      console.error("Error fetching orders:", error);
-      setError("Failed to load orders");
-      toast.error("Failed to load orders");
+      console.error("Lỗi khi lấy đơn hàng:", error);
+      setError("Không thể tải danh sách đơn hàng");
+      toast.error("Không thể tải danh sách đơn hàng");
     } finally {
       setLoading(false);
     }
@@ -79,9 +79,11 @@ const Order = () => {
   useEffect(() => {
     if (!userInfo) {
       navigate("/signin");
+      // Chuyển hướng đến trang đăng nhập nếu userInfo không tồn tại
       return;
     }
     fetchUserOrders();
+    // Fetch orders khi userInfo thay đổi hoặc fetchUserOrders thay đổi
   }, [userInfo, navigate, fetchUserOrders]);
 
   const handleSort = (key) => {
@@ -189,7 +191,7 @@ const Order = () => {
         toast(
           (t) => (
             <div className="flex items-center gap-3">
-              <span>View your updated cart?</span>
+              <span>Xem giỏ hàng của bạn?</span>
               <button
                 onClick={() => {
                   navigate("/cart");
@@ -197,7 +199,7 @@ const Order = () => {
                 }}
                 className="bg-gray-900 text-white px-3 py-1 rounded text-sm hover:bg-gray-800"
               >
-                View Cart
+                Xem Giỏ Hàng
               </button>
               <button
                 onClick={() => toast.dismiss(t.id)}
@@ -216,8 +218,8 @@ const Order = () => {
 
       setConfirmModal({ isOpen: false, order: null });
     } catch (error) {
-      console.error("Error adding items to cart:", error);
-      toast.error("Failed to add items to cart");
+      console.error("Lỗi khi thêm sản phẩm vào giỏ hàng:", error);
+      toast.error("Không thể thêm sản phẩm vào giỏ hàng");
       setConfirmModal({ isOpen: false, order: null });
     }
   };
@@ -279,7 +281,7 @@ const Order = () => {
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
             <div className="w-12 h-12 border-4 border-gray-900 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading your orders...</p>
+            <p className="text-gray-600">Đang tải đơn hàng của bạn...</p>
           </div>
         </div>
       </Container>
@@ -293,14 +295,14 @@ const Order = () => {
           <div className="text-center">
             <FaTimes className="w-16 h-16 text-red-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Error Loading Orders
+              Lỗi Khi Tải Đơn Hàng
             </h2>
             <p className="text-gray-600 mb-4">{error}</p>
             <button
               onClick={fetchUserOrders}
               className="bg-gray-900 text-white px-6 py-2 rounded-md hover:bg-gray-800 transition-colors"
             >
-              Try Again
+              Thử Lại
             </button>
           </div>
         </div>
@@ -316,14 +318,14 @@ const Order = () => {
           <div className="flex flex-col space-y-2">
             <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
               <FaShoppingBag className="w-8 h-8" />
-              My Orders
+              Đơn Hàng Của Tôi
             </h1>
             <nav className="flex text-sm text-gray-500">
               <Link to="/" className="hover:text-gray-700 transition-colors">
-                Home
+                Trang Chủ
               </Link>
               <span className="mx-2">/</span>
-              <span className="text-gray-900">Orders</span>
+              <span className="text-gray-900">Đơn Hàng</span>
             </nav>
           </div>
         </Container>
@@ -340,15 +342,15 @@ const Order = () => {
             <div className="max-w-md mx-auto">
               <FaShoppingBag className="w-24 h-24 text-gray-300 mx-auto mb-6" />
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                No Orders Yet
+                Không Có Đơn Hàng Nào
               </h2>
               <p className="text-gray-600 mb-8">
-                You haven&apos;t placed any orders yet. Start shopping to see
-                your orders here!
+                Bạn chưa đặt đơn hàng nào. Bắt đầu mua sắm để xem đơn hàng của
+                bạn ở đây!
               </p>
               <Link to="/shop">
                 <button className="bg-gray-900 text-white px-8 py-3 rounded-md hover:bg-gray-800 transition-colors font-medium">
-                  Start Shopping
+                  Bắt Đầu Mua Sắm
                 </button>
               </Link>
             </div>
@@ -357,13 +359,14 @@ const Order = () => {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <p className="text-gray-600">
-                {orders.length} order{orders.length !== 1 ? "s" : ""} found
+                {orders.length} đơn hàng{orders.length !== 1 ? "s" : ""} được tìm
+                thấy
               </p>
               <button
                 onClick={fetchUserOrders}
                 className="text-blue-600 hover:text-blue-700 font-medium text-sm"
               >
-                Refresh
+                Làm Mới
               </button>
             </div>
 
@@ -378,7 +381,7 @@ const Order = () => {
                           onClick={() => handleSort("_id")}
                           className="flex items-center gap-1 hover:text-gray-700"
                         >
-                          Order ID
+                          Mã Đơn Hàng
                           {sortConfig.key === "_id" ? (
                             sortConfig.direction === "asc" ? (
                               <FaSortUp />
@@ -395,7 +398,7 @@ const Order = () => {
                           onClick={() => handleSort("date")}
                           className="flex items-center gap-1 hover:text-gray-700"
                         >
-                          Date
+                          Ngày Đặt Đơn
                           {sortConfig.key === "date" ? (
                             sortConfig.direction === "asc" ? (
                               <FaSortUp />
@@ -408,14 +411,14 @@ const Order = () => {
                         </button>
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Items
+                        Sản Phẩm
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         <button
                           onClick={() => handleSort("amount")}
                           className="flex items-center gap-1 hover:text-gray-700"
                         >
-                          Total
+                          Tổng Tiền
                           {sortConfig.key === "amount" ? (
                             sortConfig.direction === "asc" ? (
                               <FaSortUp />
@@ -432,7 +435,7 @@ const Order = () => {
                           onClick={() => handleSort("status")}
                           className="flex items-center gap-1 hover:text-gray-700"
                         >
-                          Status
+                          Trạng Thái
                           {sortConfig.key === "status" ? (
                             sortConfig.direction === "asc" ? (
                               <FaSortUp />
@@ -445,10 +448,10 @@ const Order = () => {
                         </button>
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Payment
+                        Thanh Toán
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
+                        Hành Động
                       </th>
                     </tr>
                   </thead>
@@ -552,21 +555,21 @@ const Order = () => {
                                 openOrderModal(order);
                               }}
                               className="text-blue-600 hover:text-blue-900 transition-colors"
-                              title="View Details"
+                              title="Xem Chi Tiết"
                             >
                               <FaEye className="w-4 h-4" />
                             </button>
                             <button
                               onClick={(e) => handleAddOrderToCart(order, e)}
                               className="text-green-600 hover:text-green-900 transition-colors"
-                              title="Add to Cart"
+                              title="Thêm Vào Giỏ Hàng"
                             >
                               <FaShoppingCart className="w-4 h-4" />
                             </button>
                             <Link
                               to={`/checkout/${order._id}`}
                               className="text-gray-600 hover:text-gray-900 transition-colors"
-                              title="Order Details"
+                              title="Chi Tiết Đơn Hàng"
                               onClick={(e) => e.stopPropagation()}
                             >
                               <FaShoppingBag className="w-4 h-4" />
@@ -575,7 +578,7 @@ const Order = () => {
                               <Link
                                 to={`/checkout/${order._id}`}
                                 className="text-orange-600 hover:text-orange-900 transition-colors"
-                                title="Pay Now"
+                                title="Thanh Toán Ngay"
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 <FaCreditCard className="w-4 h-4" />
@@ -596,7 +599,7 @@ const Order = () => {
         <PremiumModal
           isOpen={isPremiumModalOpen}
           onClose={closeOrderModal}
-          title="Order Details"
+          title="Chi Tiết Đơn Hàng"
           description="Access to order details and management features is available in the premium version of this code."
         />
 
@@ -613,7 +616,7 @@ const Order = () => {
                 <div className="flex items-center justify-between p-6 border-b border-gray-200">
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900">
-                      Order Details
+                      Chi Tiết Đơn Hàng
                     </h2>
                     <p className="text-gray-600">
                       Order #{selectedOrder._id.slice(-8).toUpperCase()}
@@ -633,29 +636,29 @@ const Order = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">
                       <h3 className="text-lg font-semibold text-gray-900">
-                        Order Information
+                        Thông Tin Đơn Hàng
                       </h3>
                       <div className="space-y-2">
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Order Date:</span>
+                          <span className="text-gray-600">Ngày Đặt Đơn:</span>
                           <span className="font-medium">
                             {new Date(selectedOrder.date).toLocaleString()}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Total Amount:</span>
+                          <span className="text-gray-600">Tổng Tiền:</span>
                           <span className="font-bold text-lg">
                             <PriceFormat amount={selectedOrder.amount} />
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Payment Method:</span>
+                          <span className="text-gray-600">Phương Thức Thanh Toán:</span>
                           <span className="font-medium capitalize">
                             {selectedOrder.paymentMethod}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Status:</span>
+                          <span className="text-gray-600">Trạng Thái:</span>
                           <span
                             className={`inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(
                               selectedOrder.status
@@ -667,7 +670,7 @@ const Order = () => {
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Payment Status:</span>
+                          <span className="text-gray-600">Trạng Thái Thanh Toán:</span>
                           <span
                             className={`inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-xs font-medium border ${getPaymentStatusColor(
                               selectedOrder.paymentStatus
@@ -692,7 +695,7 @@ const Order = () => {
                       <div className="space-y-4">
                         <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                           <FaMapMarkerAlt className="w-5 h-5" />
-                          Delivery Address
+                          Địa Chỉ Giao Hàng
                         </h3>
                         <div className="space-y-2 text-sm">
                           <div className="flex items-center gap-2">
@@ -758,10 +761,10 @@ const Order = () => {
                               {item.name}
                             </h4>
                             <p className="text-sm text-gray-600">
-                              Quantity: {item.quantity}
+                              Số Lượng: {item.quantity}
                             </p>
                             <p className="text-sm text-gray-600">
-                              Unit Price: <PriceFormat amount={item.price} />
+                              Đơn Giá: <PriceFormat amount={item.price} />
                             </p>
                           </div>
                           <div className="text-right">
@@ -780,14 +783,14 @@ const Order = () => {
                 {/* Modal Footer */}
                 <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
                   <div className="text-lg font-bold text-gray-900">
-                    Total: <PriceFormat amount={selectedOrder.amount} />
+                    Tổng Tiền: <PriceFormat amount={selectedOrder.amount} />
                   </div>
                   <div className="flex gap-3">
                     <button
                       onClick={closeOrderModal}
                       className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
                     >
-                      Close
+                      Đóng
                     </button>
                     <button
                       onClick={(e) => {
@@ -797,14 +800,14 @@ const Order = () => {
                       className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center gap-2"
                     >
                       <FaShoppingCart className="w-4 h-4" />
-                      Add to Cart
+                      Thêm Vào Giỏ Hàng
                     </button>
                     <Link
                       to={`/checkout/${selectedOrder._id}`}
                       className="px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-colors"
                       onClick={closeOrderModal}
                     >
-                      View Full Details
+                      Xem Chi Tiết
                     </Link>
                     {selectedOrder.paymentStatus === "pending" && (
                       <Link
@@ -812,7 +815,7 @@ const Order = () => {
                         className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                         onClick={closeOrderModal}
                       >
-                        Pay Now
+                        Thanh Toán Ngay
                       </Link>
                     )}
                   </div>
@@ -844,24 +847,24 @@ const Order = () => {
                     <FaShoppingCart className="h-6 w-6 text-yellow-600" />
                   </div>
                   <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Add Order to Cart
+                    Thêm Đơn Hàng Vào Giỏ Hàng
                   </h3>
                   <p className="text-sm text-gray-500 mb-6">
-                    Are you sure you want to move all items from order{" "}
+                    Bạn có chắc chắn muốn chuyển tất cả sản phẩm từ đơn hàng{" "}
                     <span className="font-semibold">
                       #{confirmModal.order._id.slice(-8).toUpperCase()}
                     </span>{" "}
-                    to your cart? This will add{" "}
+                    vào giỏ hàng của bạn? Điều này sẽ thêm{" "}
                     {confirmModal.order.items.length} item
-                    {confirmModal.order.items.length !== 1 ? "s" : ""} to your
-                    cart.
+                    {confirmModal.order.items.length !== 1 ? "s" : ""} vào
+                    giỏ hàng của bạn.
                   </p>
 
                   {/* Order Items Preview */}
                   <div className="bg-gray-50 rounded-lg p-3 mb-6 max-h-40 overflow-y-auto">
                     <div className="text-xs text-gray-500 mb-2 flex justify-between font-medium">
-                      <span>Items to add:</span>
-                      <span>Qty × Price</span>
+                      <span>Sản Phẩm Để Thêm:</span>
+                      <span>Số Lượng × Đơn Giá</span>
                     </div>
                     {confirmModal.order.items.map((item, index) => {
                       const isInCart = cartProducts.find(
@@ -887,8 +890,8 @@ const Order = () => {
                               </span>
                               {isInCart && (
                                 <span className="text-xs text-blue-600">
-                                  Already in cart (qty: {isInCart.quantity}) -
-                                  will be updated
+                                  Đã có trong giỏ hàng (số lượng: {isInCart.quantity}) -
+                                  sẽ được cập nhật
                                 </span>
                               )}
                             </div>
@@ -903,7 +906,7 @@ const Order = () => {
                     })}
                     <div className="pt-2 mt-2 border-t border-gray-300">
                       <div className="flex justify-between text-sm font-medium">
-                        <span>Total Value:</span>
+                        <span>Tổng Tiền:</span>
                         <PriceFormat amount={confirmModal.order.amount} />
                       </div>
                     </div>
@@ -914,14 +917,14 @@ const Order = () => {
                       onClick={cancelAddToCart}
                       className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
                     >
-                      Cancel
+                      Hủy Bỏ
                     </button>
                     <button
                       onClick={confirmAddToCart}
                       className="flex-1 px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
                     >
                       <FaShoppingCart className="w-4 h-4" />
-                      Add to Cart
+                      Thêm Vào Giỏ Hàng
                     </button>
                   </div>
                 </div>

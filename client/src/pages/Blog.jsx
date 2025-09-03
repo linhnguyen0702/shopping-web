@@ -19,11 +19,11 @@ const Blog = () => {
               <IoBookOutline className="w-12 h-12 text-white" />
             </div>
             <h1 className="text-5xl font-bold text-gray-900 mb-4">
-              Blog Coming Soon
+              Blog sắp tới
             </h1>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              We&apos;re working hard to bring you amazing content about
-              fashion, style tips, and the latest trends. Stay tuned!
+              Chúng tôi đang làm việc chăm chỉ để mang đến cho bạn nội dung tuyệt vời về
+              thời trang, mẹo thời trang và xu hướng mới nhất. Hãy theo dõi!
             </p>
           </div>
 
@@ -34,11 +34,10 @@ const Blog = () => {
                 <IoPencilOutline className="w-8 h-8 text-blue-600" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Style Guides
+                Hướng dẫn thời trang
               </h3>
               <p className="text-gray-600">
-                Expert fashion advice and styling tips to help you look your
-                best.
+                Kinh nghiệm thời trang và mẹo thời trang để giúp bạn trông đẹp nhất.
               </p>
             </div>
 
@@ -47,11 +46,10 @@ const Blog = () => {
                 <IoCalendarOutline className="w-8 h-8 text-green-600" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Seasonal Trends
+                Xu hướng thời trang
               </h3>
               <p className="text-gray-600">
-                Stay updated with the latest fashion trends and seasonal
-                collections.
+                Cập nhật với xu hướng thời trang mới nhất và bộ sưu tập theo mùa.
               </p>
             </div>
 
@@ -60,10 +58,10 @@ const Blog = () => {
                 <IoBookOutline className="w-8 h-8 text-purple-600" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Brand Stories
+                Câu chuyện thương hiệu
               </h3>
               <p className="text-gray-600">
-                Discover the stories behind your favorite brands and designers.
+                Khám phá câu chuyện đằng sau các thương hiệu và nhà thiết kế yêu thích của bạn.
               </p>
             </div>
           </div>
@@ -71,7 +69,7 @@ const Blog = () => {
           {/* Mockup Blog Posts */}
           <div className="mb-12">
             <h2 className="text-2xl font-bold text-gray-900 mb-8">
-              What to Expect
+            Nội dung blog sắp tới
             </h2>
             <div className="grid md:grid-cols-2 gap-6">
               {/* Mock Blog Post 1 */}
@@ -80,14 +78,13 @@ const Blog = () => {
                 <div className="p-6">
                   <div className="flex items-center text-sm text-gray-500 mb-2">
                     <IoCalendarOutline className="w-4 h-4 mr-1" />
-                    Coming Soon
+                    Sắp ra mắt
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    10 Must-Have Fashion Pieces for Every Season
+                      10 Món đồ thời trang bắt buộc cho mọi mùa
                   </h3>
                   <p className="text-gray-600 text-sm">
-                    Discover the essential fashion pieces that will keep you
-                    stylish throughout the year...
+                    Khám phá những món đồ thời trang cơ bản sẽ giúp bạn trông đẹp suốt năm...
                   </p>
                 </div>
               </div>
@@ -98,14 +95,13 @@ const Blog = () => {
                 <div className="p-6">
                   <div className="flex items-center text-sm text-gray-500 mb-2">
                     <IoCalendarOutline className="w-4 h-4 mr-1" />
-                    Coming Soon
+                    Sắp ra mắt
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    How to Build a Capsule Wardrobe on a Budget
+                    Cách xây dựng bộ đồ Capsule trên một ngân sách hạn chế
                   </h3>
                   <p className="text-gray-600 text-sm">
-                    Learn how to create a versatile and stylish wardrobe without
-                    breaking the bank...
+                    Tìm hiểu cách tạo ra bộ đồ linh hoạt và đẹp mà không phải vượt quá ngân sách...
                   </p>
                 </div>
               </div>
@@ -116,14 +112,13 @@ const Blog = () => {
                 <div className="p-6">
                   <div className="flex items-center text-sm text-gray-500 mb-2">
                     <IoCalendarOutline className="w-4 h-4 mr-1" />
-                    Coming Soon
+                    Sắp ra mắt
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Sustainable Fashion: Making Eco-Friendly Choices
+                    Thời trang bền vững: Lựa chọn phù hợp với môi trường
                   </h3>
                   <p className="text-gray-600 text-sm">
-                    Explore how to make more sustainable fashion choices that
-                    are good for you and the planet...
+                    Khám phá cách lựa chọn thời trang bền vững cho bạn và môi trường...
                   </p>
                 </div>
               </div>
@@ -134,14 +129,13 @@ const Blog = () => {
                 <div className="p-6">
                   <div className="flex items-center text-sm text-gray-500 mb-2">
                     <IoCalendarOutline className="w-4 h-4 mr-1" />
-                    Coming Soon
+                    Sắp ra mắt
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Styling Tips from Fashion Experts
+                    Mẹo thời trang từ các chuyên gia thời trang
                   </h3>
                   <p className="text-gray-600 text-sm">
-                    Get insider tips from professional stylists on how to
-                    elevate your everyday looks...
+                    Nhận được những mẹo thời trang từ các chuyên gia thời trang về cách nâng cao ngoại hình của bạn...
                   </p>
                 </div>
               </div>
@@ -151,37 +145,37 @@ const Blog = () => {
           {/* Newsletter Signup */}
           <div className="bg-white rounded-lg shadow-md p-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Be the First to Know
+                Đăng ký nhận thông báo
             </h2>
             <p className="text-gray-600 mb-6">
-              Subscribe to our newsletter to get notified when our blog launches
-              and receive exclusive fashion content.
+              Đăng ký nhận thông báo để nhận được thông báo khi blog của chúng tôi ra mắt
+              và nhận được nội dung thời trang độc quyền.
             </p>
             <div className="flex flex-col sm:flex-row max-w-md mx-auto gap-4">
               <input
                 type="email"
-                placeholder="Enter your email"
+                placeholder="Nhập email"
                 className="flex-1 px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
               />
               <button className="bg-gray-900 text-white px-8 py-3 rounded-md hover:bg-gray-800 transition-colors duration-200">
-                Subscribe
+                Đăng ký
               </button>
             </div>
             <p className="text-sm text-gray-500 mt-4">
-              We respect your privacy. Unsubscribe at any time.
+              Chúng tôi tôn trọng sự riêng tư của bạn. Hủy đăng ký bất cứ lúc nào.
             </p>
           </div>
 
           {/* Back to Shopping */}
           <div className="mt-12">
             <p className="text-gray-600 mb-4">
-              While you wait, check out our latest products!
+              Trong khi bạn đợi, hãy xem sản phẩm mới nhất của chúng tôi!
             </p>
             <a
               href="/shop"
               className="inline-block bg-gray-900 text-white px-8 py-3 rounded-md hover:bg-gray-800 transition-colors duration-200"
             >
-              Shop Now
+              Mua sắm ngay
             </a>
           </div>
         </div>

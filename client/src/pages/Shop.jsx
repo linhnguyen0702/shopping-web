@@ -46,7 +46,7 @@ const Shop = () => {
         setProducts(data?.products || []);
         setFilteredProducts(data?.products || []);
       } catch (error) {
-        console.error("Error fetching products:", error);
+        console.error("Lỗi khi lấy sản phẩm:", error);
         setProducts([]);
         setFilteredProducts([]);
       } finally {
@@ -56,11 +56,11 @@ const Shop = () => {
     getProducts();
   }, [endpoint]);
 
-  // Filter and sort products
+  // Lọc và sắp xếp sản phẩm
   useEffect(() => {
     let filtered = [...products];
 
-    // Apply filters
+    // Áp dụng các bộ lọc
     if (filters.category) {
       filtered = filtered.filter((product) =>
         product.category?.toLowerCase().includes(filters.category.toLowerCase())
@@ -83,7 +83,7 @@ const Shop = () => {
       );
     }
 
-    // Apply sorting
+    // Áp dụng sắp xếp
     switch (sortBy) {
       case "price-low":
         filtered.sort((a, b) => a.price - b.price);
@@ -96,17 +96,18 @@ const Shop = () => {
         break;
       case "newest":
       default:
-        // Keep original order (newest first from API)
+        // Giữ nguyên thứ tự (mới nhất trước từ API)
         break;
     }
 
     setFilteredProducts(filtered);
-    setCurrentPage(1); // Reset to first page when filters change
+    setCurrentPage(1); // Đặt lại về trang đầu khi bộ lọc thay đổi
   }, [products, filters, sortBy]);
 
   const handleFilterChange = (newFilters) => {
     setFilters((prev) => ({ ...prev, ...newFilters }));
-    // Auto-close mobile filters when a filter is applied (optional UX enhancement)
+    // Tự động đóng bộ lọc trên di động khi áp dụng bộ lọc (cải thiện trải nghiệm người dùng, tùy chọn)
+
     if (window.innerWidth < 1024) {
       setTimeout(() => setMobileFiltersOpen(false), 500);
     }
@@ -119,7 +120,6 @@ const Shop = () => {
       priceRange: "",
       search: "",
     });
-    // Auto-close mobile filters when clearing (optional UX enhancement)
     if (window.innerWidth < 1024) {
       setTimeout(() => setMobileFiltersOpen(false), 500);
     }
@@ -134,10 +134,10 @@ const Shop = () => {
             <h1 className="text-3xl font-bold text-gray-900">Shop</h1>
             <nav className="flex text-sm text-gray-500">
               <a href="/" className="hover:text-gray-700 transition-colors">
-                Home
+                Trang chủ
               </a>
               <span className="mx-2">/</span>
-              <span className="text-gray-900">Shop</span>
+              <span className="text-gray-900">Cửa hàng</span>
             </nav>
           </div>
         </Container>
@@ -154,7 +154,7 @@ const Shop = () => {
                   onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
                   className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors"
                 >
-                  <span className="font-medium">Filters</span>
+                  <span className="font-medium">Bộ lọc</span>
                   <svg
                     className={`w-5 h-5 transform transition-transform duration-200 ${
                       mobileFiltersOpen ? "rotate-180" : ""
@@ -220,7 +220,7 @@ const Shop = () => {
                 {/* Items per page */}
                 <div className="flex items-center gap-2">
                   <label htmlFor="perPage" className="text-sm text-gray-600">
-                    Show:
+                    Hiển thị:
                   </label>
                   <select
                     id="perPage"
@@ -234,10 +234,10 @@ const Shop = () => {
                   </select>
                 </div>
 
-                {/* Sort by */}
+                {/* sắp xếp theo*/}
                 <div className="flex items-center gap-2">
                   <label htmlFor="sortBy" className="text-sm text-gray-600">
-                    Sort by:
+                    sắp xếp theo:
                   </label>
                   <select
                     id="sortBy"
@@ -245,10 +245,10 @@ const Shop = () => {
                     onChange={(e) => setSortBy(e.target.value)}
                     className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                   >
-                    <option value="newest">Newest</option>
-                    <option value="price-low">Price: Low to High</option>
-                    <option value="price-high">Price: High to Low</option>
-                    <option value="name">Name: A to Z</option>
+                    <option value="newest">Mới nhất</option>
+                    <option value="price-low">Giá: Thấp → Cao</option>
+                    <option value="price-high">Giá: Cao → Thấp</option>
+                    <option value="name">Tên: A → Z</option>
                   </select>
                 </div>
 
@@ -303,10 +303,10 @@ const Shop = () => {
             {/* Active Filters */}
             {(filters.category || filters.brand || filters.search) && (
               <div className="flex flex-wrap items-center gap-2 mb-6">
-                <span className="text-sm text-gray-600">Active filters:</span>
+                <span className="text-sm text-gray-600">Bộ lọc đang áp dụng:</span>
                 {filters.category && (
                   <span className="inline-flex items-center gap-1 px-3 py-1 bg-gray-900 text-white text-sm rounded-full">
-                    Category: {filters.category}
+                    Danh mục: {filters.category}
                     <button
                       onClick={() => handleFilterChange({ category: "" })}
                       className="ml-1 hover:text-gray-300"
@@ -341,7 +341,7 @@ const Shop = () => {
                   onClick={clearFilters}
                   className="text-sm text-gray-600 hover:text-gray-900 underline"
                 >
-                  Clear all
+                  Xóa tất cả
                 </button>
               </div>
             )}

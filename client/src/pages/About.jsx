@@ -5,30 +5,30 @@ import { FaUsers, FaGlobe, FaAward, FaHeart } from "react-icons/fa";
 import { MdSecurity, MdLocalShipping, MdSupport } from "react-icons/md";
 
 const stats = [
-  { number: "50K+", label: "Happy Customers", icon: <FaUsers /> },
-  { number: "100+", label: "Countries Served", icon: <FaGlobe /> },
-  { number: "5 Years", label: "Industry Experience", icon: <FaAward /> },
-  { number: "99%", label: "Customer Satisfaction", icon: <FaHeart /> },
+  { number: "50K+", label: "Khách hàng", icon: <FaUsers /> },
+  { number: "100+", label: "Quốc gia", icon: <FaGlobe /> },
+  { number: "5 Years", label: "Kinh nghiệm", icon: <FaAward /> },
+  { number: "99%", label: "Sự hài lòng", icon: <FaHeart /> },
 ];
 
 const values = [
   {
     icon: <MdSecurity />,
-    title: "Trust & Security",
+    title: "Tin cậy & An toàn",
     description:
-      "Your security is our priority. We use industry-leading encryption and security measures to protect your data and transactions.",
+      "An toàn là sự ưu tiên của chúng tôi. Chúng tôi sử dụng các biện pháp bảo mật hàng đầu để bảo vệ dữ liệu và giao dịch của bạn.",
   },
   {
     icon: <MdLocalShipping />,
-    title: "Fast & Reliable",
+    title: "Nhanh & Tin cậy",
     description:
-      "Quick delivery and reliable service. We partner with trusted shipping providers to ensure your orders arrive on time.",
+      "Giao hàng nhanh và dịch vụ tin cậy. Chúng tôi hợp tác với các nhà vận chuyển tin cậy để đảm bảo đơn hàng của bạn đến đúng hạn.",
   },
   {
     icon: <MdSupport />,
-    title: "Customer First",
+    title: "Khách hàng đầu tiên",
     description:
-      "24/7 customer support and hassle-free returns. Our dedicated team is always here to help you with any questions or concerns.",
+      "Dịch vụ khách hàng 24/7 và hoàn trả dễ dàng. Đội ngũ chuyên nghiệp của chúng tôi luôn sẵn sàng giúp đỡ bạn với bất kỳ câu hỏi hoặc có thể có vấn đề.",
   },
 ];
 
@@ -45,13 +45,12 @@ const About = () => {
             className="text-center max-w-4xl mx-auto"
           >
             <h1 className="text-4xl md:text-5xl font-bold mb-6">
-              About Orebi Shopping
+              Về Orebi Shopping
             </h1>
             <p className="text-xl text-gray-300 leading-relaxed">
-              We&apos;re passionate about bringing you the best shopping
-              experience with quality products, exceptional service, and
-              unbeatable prices. Discover why millions trust us for their
-              shopping needs.
+            Chúng tôi luôn nỗ lực mang đến cho bạn trải nghiệm mua sắm tuyệt vời nhất 
+            với những sản phẩm chất lượng, dịch vụ tận tâm và mức giá không thể cạnh tranh hơn. 
+            Hãy khám phá lý do vì sao hàng triệu khách hàng tin tưởng lựa chọn chúng tôi cho nhu cầu mua sắm của mình.
             </p>
           </motion.div>
         </Container>
@@ -92,28 +91,25 @@ const About = () => {
               transition={{ duration: 0.6 }}
             >
               <h2 className="text-3xl font-bold text-gray-900 mb-6">
-                Our Story
+                Câu chuyện của chúng tôi
               </h2>
               <div className="space-y-4 text-gray-700 leading-relaxed">
                 <p>
-                  Founded in 2019, Orebi Shopping began with a simple mission:
-                  to make quality products accessible to everyone, everywhere.
-                  What started as a small online store has grown into a trusted
-                  marketplace serving customers across the globe.
+                Được thành lập vào năm 2019, Orebi Shopping khởi đầu với một sứ mệnh đơn giản: 
+                mang những sản phẩm chất lượng đến với mọi người, ở bất kỳ đâu. 
+                Từ một cửa hàng trực tuyến nhỏ, chúng tôi đã phát triển thành một sàn thương mại uy tín, 
+                phục vụ khách hàng trên toàn thế giới.
                 </p>
                 <p>
-                  We believe that shopping should be more than just a
-                  transaction – it should be an experience that delights and
-                  inspires. That&apos;s why we carefully curate our product
-                  selection, partner with reliable suppliers, and invest in
-                  cutting-edge technology to ensure every interaction with our
-                  platform is seamless.
+                Chúng tôi tin rằng mua sắm không chỉ đơn thuần là một giao dịch – 
+                mà còn là một trải nghiệm mang lại niềm vui và cảm hứng. 
+                Vì vậy, Orebi Shopping luôn chọn lọc kỹ lưỡng sản phẩm, hợp tác với những nhà cung cấp đáng tin cậy 
+                và đầu tư vào công nghệ tiên tiến để đảm bảo mọi trải nghiệm của bạn trên nền tảng đều diễn ra mượt mà.
                 </p>
                 <p>
-                  Today, we&apos;re proud to serve over 50,000 happy customers
-                  worldwide, offering everything from the latest fashion trends
-                  to innovative gadgets, all backed by our commitment to
-                  quality, affordability, and exceptional customer service.
+                Hôm nay, chúng tôi tự hào được phục vụ hơn 50.000 khách hàng hài lòng trên toàn thế giới, 
+                mang đến mọi thứ từ xu hướng thời trang mới nhất đến các sản phẩm công nghệ sáng tạo — 
+                tất cả đều được bảo chứng bởi cam kết về chất lượng, giá cả hợp lý và dịch vụ khách hàng tận tâm.
                 </p>
               </div>
             </motion.div>
@@ -129,10 +125,10 @@ const About = () => {
                     <span className="text-4xl text-white">🛍️</span>
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900">
-                    Quality First
+                    Chất lượng đầu tiên
                   </h3>
                   <p className="text-gray-600 mt-2">
-                    Every product is carefully selected
+                    Mọi sản phẩm đều được chọn lọc kỹ lưỡng
                   </p>
                 </div>
               </div>
@@ -146,11 +142,10 @@ const About = () => {
         <Container>
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Our Values
+              Giá trị cốt lõi của chúng tôi
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              These core principles guide everything we do and shape the
-              experience we create for our customers.
+              Những nguyên tắc cốt lõi này định hình mọi hành động của chúng tôi và tạo nên trải nghiệm mà chúng tôi tạo ra cho khách hàng.
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
@@ -187,21 +182,21 @@ const About = () => {
             className="text-center max-w-3xl mx-auto"
           >
             <h2 className="text-3xl font-bold mb-6">
-              Ready to Start Shopping?
+            Sẵn sàng mua sắm cùng chúng tôi?
             </h2>
             <p className="text-gray-300 text-lg mb-8">
-              Join thousands of satisfied customers and discover why Orebi
-              Shopping is the preferred choice for online shopping.
+            Hãy cùng hàng ngàn khách hàng hài lòng và khám phá lý do vì sao 
+            Orebi Shopping là lựa chọn hàng đầu cho trải nghiệm mua sắm trực tuyến.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/shop">
                 <button className="px-8 py-4 bg-white text-gray-900 rounded-lg hover:bg-gray-100 transition-colors font-semibold">
-                  Shop Now
+                  Mua sắm ngay
                 </button>
               </Link>
               <Link to="/contact">
                 <button className="px-8 py-4 border border-white text-white rounded-lg hover:bg-white hover:text-gray-900 transition-colors font-semibold">
-                  Contact Us
+                  Liên hệ chúng tôi
                 </button>
               </Link>
             </div>

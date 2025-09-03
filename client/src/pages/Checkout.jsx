@@ -38,12 +38,12 @@ const Checkout = () => {
       if (data.success) {
         setOrder(data.order);
       } else {
-        toast.error("Order not found");
+        toast.error("Không tìm thấy đơn hàng");
         navigate("/orders");
       }
     } catch (error) {
-      console.error("Error fetching order:", error);
-      toast.error("Failed to load order details");
+      console.error("Lỗi khi tải đơn hàng", error);
+      toast.error("Không thể tải chi tiết đơn hàng");
       navigate("/orders");
     } finally {
       setLoading(false);
@@ -60,12 +60,12 @@ const Checkout = () => {
     if (paymentMethod === "stripe") {
       setPaymentStep("stripe");
     } else if (paymentMethod === "cod") {
-      toast.success("Order confirmed with Cash on Delivery");
+      toast.success("Đơn hàng đã được xác nhận với thanh toán khi giao hàng");
     }
   };
 
   const handleStripeSuccess = (paymentIntentId) => {
-    // Redirect to success page with payment details
+    // Chuyển hướng đến trang thành công với chi tiết thanh toán
     navigate(
       `/payment-success?order_id=${orderId}&payment_intent=${paymentIntentId}`
     );
@@ -114,7 +114,7 @@ const Checkout = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-gray-900 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading order details...</p>
+          <p className="text-gray-600">Đang tải chi tiết đơn hàng...</p>
         </div>
       </div>
     );
@@ -125,16 +125,16 @@ const Checkout = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Order Not Found
+            Không tìm thấy đơn hàng
           </h2>
           <p className="text-gray-600 mb-4">
-            The requested order could not be found.
+            Đơn hàng được yêu cầu không thể được tìm thấy.
           </p>
           <button
             onClick={() => navigate("/orders")}
             className="bg-gray-900 text-white px-6 py-2 rounded-md hover:bg-gray-800 transition-colors"
           >
-            View All Orders
+            Xem tất cả đơn hàng
           </button>
         </div>
       </div>
@@ -150,7 +150,7 @@ const Checkout = () => {
             <FaCheckCircle className="w-8 h-8 text-green-600" />
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                Order Confirmation
+                Xác nhận đơn hàng
               </h1>
               <p className="text-gray-600">Order ID: #{order._id}</p>
             </div>
@@ -165,12 +165,12 @@ const Checkout = () => {
             {/* Order Status */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                Order Status
+                Trạng thái đơn hàng
               </h2>
               <div className="flex flex-wrap gap-4">
                 <div className="flex items-center space-x-2">
                   <span className="text-sm font-medium text-gray-700">
-                    Order Status:
+                    Trạng thái đơn hàng:
                   </span>
                   <span
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(
@@ -183,7 +183,7 @@ const Checkout = () => {
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-sm font-medium text-gray-700">
-                    Payment:
+                    Thanh toán:
                   </span>
                   <span
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getPaymentStatusColor(
@@ -197,7 +197,7 @@ const Checkout = () => {
                 <div className="flex items-center space-x-2">
                   <FaClock className="w-4 h-4 text-gray-500" />
                   <span className="text-sm text-gray-600">
-                    Placed on {new Date(order.date).toLocaleDateString()}
+                    Đặt hàng vào {new Date(order.date).toLocaleDateString()}
                   </span>
                 </div>
               </div>
@@ -207,7 +207,7 @@ const Checkout = () => {
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
               <div className="p-6 border-b border-gray-200">
                 <h2 className="text-xl font-semibold text-gray-900">
-                  Order Items
+                  Sản phẩm trong đơn hàng
                 </h2>
               </div>
               <div className="divide-y divide-gray-200">
@@ -227,7 +227,7 @@ const Checkout = () => {
                         {item.name}
                       </h3>
                       <p className="text-sm text-gray-600">
-                        Quantity: {item.quantity}
+                        Số lượng: {item.quantity}
                       </p>
                     </div>
                     <div className="text-right">
@@ -235,7 +235,7 @@ const Checkout = () => {
                         <PriceFormat amount={item.price} />
                       </div>
                       <div className="text-sm text-gray-600">
-                        Total:{" "}
+                        Tổng tiền:{" "}
                         <PriceFormat amount={item.price * item.quantity} />
                       </div>
                     </div>
@@ -248,7 +248,7 @@ const Checkout = () => {
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <FaMapMarkerAlt className="w-5 h-5" />
-                Delivery Address
+                Địa chỉ giao hàng
               </h2>
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
@@ -286,22 +286,22 @@ const Checkout = () => {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg border border-gray-200 p-6 sticky top-8">
               <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                Payment
+                Thanh toán
               </h2>
 
               {/* Order Summary */}
               <div className="space-y-3 mb-6 pb-6 border-b border-gray-200">
                 <div className="flex justify-between">
                   <span className="text-gray-600">
-                    Subtotal ({order.items.length} items)
+                    Tổng tiền ({order.items.length} sản phẩm)
                   </span>
                   <span className="font-medium">
                     <PriceFormat amount={order.amount} />
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Shipping</span>
-                  <span className="font-medium text-green-600">Free</span>
+                  <span className="text-gray-600">Vận chuyển</span>
+                  <span className="font-medium text-green-600">Miễn phí vận chuyển</span>
                 </div>
                 <div className="flex justify-between text-lg font-semibold">
                   <span className="text-gray-900">Total</span>
@@ -317,7 +317,7 @@ const Checkout = () => {
                   {paymentStep === "selection" && (
                     <>
                       <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                        Choose Payment Method
+                        Chọn phương thức thanh toán
                       </h3>
 
                       {order.paymentMethod === "cod" ? (
@@ -327,10 +327,10 @@ const Checkout = () => {
                               <FaMoneyBillWave className="w-6 h-6 text-green-600" />
                               <div>
                                 <h4 className="font-semibold text-green-800">
-                                  Cash on Delivery
+                                  Thanh toán khi giao hàng
                                 </h4>
                                 <p className="text-sm text-green-700">
-                                  Pay when your order is delivered
+                                  Thanh toán trực tiếp khi đơn hàng được giao đến bạn
                                 </p>
                               </div>
                             </div>
@@ -341,7 +341,7 @@ const Checkout = () => {
                             className="w-full flex items-center justify-center gap-3 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
                           >
                             <FaCreditCard className="w-5 h-5" />
-                            Pay Online Now
+                            Thanh toán online ngay
                           </button>
                         </div>
                       ) : (
@@ -351,7 +351,7 @@ const Checkout = () => {
                             className="w-full flex items-center justify-center gap-3 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
                           >
                             <FaCreditCard className="w-5 h-5" />
-                            Pay with Card
+                            Thanh toán bằng thẻ
                           </button>
 
                           <button
@@ -359,7 +359,7 @@ const Checkout = () => {
                             className="w-full flex items-center justify-center gap-3 bg-gray-100 text-gray-900 py-3 px-4 rounded-lg hover:bg-gray-200 transition-colors font-medium"
                           >
                             <FaMoneyBillWave className="w-5 h-5" />
-                            Cash on Delivery
+                            Thanh toán khi giao hàng
                           </button>
                         </>
                       )}
@@ -376,7 +376,7 @@ const Checkout = () => {
                           <FaArrowLeft className="w-4 h-4 text-gray-600" />
                         </button>
                         <h3 className="text-lg font-semibold text-gray-900">
-                          Payment Details
+                          Chi tiết thanh toán
                         </h3>
                       </div>
 
@@ -397,10 +397,10 @@ const Checkout = () => {
                     <FaCheckCircle className="w-6 h-6 text-green-600" />
                     <div>
                       <h4 className="font-semibold text-green-800">
-                        Payment Completed
+                        Thanh toán thành công
                       </h4>
                       <p className="text-sm text-green-700">
-                        Your payment has been processed successfully
+                        Thanh toán của bạn đã được xử lý thành công
                       </p>
                     </div>
                   </div>
@@ -412,7 +412,7 @@ const Checkout = () => {
                   onClick={() => navigate("/orders")}
                   className="w-full bg-gray-100 text-gray-900 py-3 px-4 rounded-lg hover:bg-gray-200 transition-colors font-medium"
                 >
-                  View All Orders
+                  Xem tất cả đơn hàng
                 </button>
               </div>
             </div>
