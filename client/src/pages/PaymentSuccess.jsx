@@ -145,9 +145,7 @@ const PaymentSuccess = () => {
               <FaCheckCircle className="w-12 h-12 text-green-600" />
             </motion.div>
             <h1 className="text-4xl font-bold mb-4">Thanh Toán Thành Công!</h1>
-            <p className="text-xl opacity-90 mb-2">
-              Cảm ơn bạn đã mua hàng
-            </p>
+            <p className="text-xl opacity-90 mb-2">Cảm ơn bạn đã mua hàng</p>
             <p className="text-lg opacity-80">
               Order #{order._id.slice(-8).toUpperCase()}
             </p>
@@ -170,7 +168,9 @@ const PaymentSuccess = () => {
             >
               <div className="text-center">
                 <FaHome className="w-6 h-6 text-gray-600 group-hover:text-blue-600 mx-auto mb-2 transition-colors" />
-                <span className="text-sm font-medium text-gray-900">Trang Chủ</span>
+                <span className="text-sm font-medium text-gray-900">
+                  Trang Chủ
+                </span>
               </div>
             </Link>
 
@@ -253,7 +253,9 @@ const PaymentSuccess = () => {
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <FaCalendarAlt className="w-4 h-4" />
-                    <span>Thanh Toán Vào {new Date().toLocaleDateString()}</span>
+                    <span>
+                      Thanh Toán Vào {new Date().toLocaleDateString()}
+                    </span>
                   </div>
                 </div>
               </motion.div>
@@ -333,9 +335,12 @@ const PaymentSuccess = () => {
                       2
                     </div>
                     <div>
-                      <p className="font-medium text-blue-900">Xử Lý Đơn Hàng</p>
+                      <p className="font-medium text-blue-900">
+                        Xử Lý Đơn Hàng
+                      </p>
                       <p className="text-sm text-blue-700">
-                        Chúng tôi sẽ bắt đầu xử lý đơn hàng của bạn trong vòng 24 giờ.
+                        Chúng tôi sẽ bắt đầu xử lý đơn hàng của bạn trong vòng
+                        24 giờ.
                       </p>
                     </div>
                   </div>
@@ -346,7 +351,8 @@ const PaymentSuccess = () => {
                     <div>
                       <p className="font-medium text-blue-900">Vận Chuyển</p>
                       <p className="text-sm text-blue-700">
-                        Theo dõi trạng thái đơn hàng trong phần &quot;Đơn Hàng Của Tôi&quot;.
+                        Theo dõi trạng thái đơn hàng trong phần &quot;Đơn Hàng
+                        Của Tôi&quot;.
                       </p>
                     </div>
                   </div>
@@ -377,7 +383,9 @@ const PaymentSuccess = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Vận Chuyển</span>
-                    <span className="font-medium text-green-600">Miễn Phí vận chuyển</span>
+                    <span className="font-medium text-green-600">
+                      Miễn phí vận chuyển (đơn từ 150.000đ)
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Thuế</span>

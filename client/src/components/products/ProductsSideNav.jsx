@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import { getData } from "../../helpers";
 import { config } from "../../../config";
 
@@ -60,14 +61,14 @@ const ProductsSideNav = ({ onFilterChange, filters, onClearFilters }) => {
       {/* Search */}
       <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Search Products
+          Tìm kiếm sản phẩm
         </h3>
         <div className="relative">
           <input
             type="text"
             value={searchTerm}
             onChange={handleSearchChange}
-            placeholder="Search products..."
+            placeholder="Tìm kiếm sản phẩm..."
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
           />
           <svg
@@ -88,7 +89,7 @@ const ProductsSideNav = ({ onFilterChange, filters, onClearFilters }) => {
 
       {/* Categories */}
       <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Categories</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Danh mục</h3>
         <div className="space-y-3">
           {categories.map((category) => (
             <label
@@ -111,7 +112,9 @@ const ProductsSideNav = ({ onFilterChange, filters, onClearFilters }) => {
 
       {/* Brands */}
       <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Brands</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Thương hiệu
+        </h3>
         <div className="space-y-3 max-h-60 overflow-y-auto">
           {brands.map((brand) => (
             <label
@@ -134,14 +137,12 @@ const ProductsSideNav = ({ onFilterChange, filters, onClearFilters }) => {
 
       {/* Price Range */}
       <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Price Range
-        </h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Khoảng giá</h3>
         <div className="space-y-4">
           <div className="flex gap-3">
             <div className="flex-1">
               <label className="block text-sm text-gray-600 mb-1">
-                Min Price
+                Giá tối thiểu
               </label>
               <input
                 type="number"
@@ -155,7 +156,7 @@ const ProductsSideNav = ({ onFilterChange, filters, onClearFilters }) => {
             </div>
             <div className="flex-1">
               <label className="block text-sm text-gray-600 mb-1">
-                Max Price
+                Giá tối đa
               </label>
               <input
                 type="number"
@@ -172,19 +173,19 @@ const ProductsSideNav = ({ onFilterChange, filters, onClearFilters }) => {
             onClick={() => handlePriceChange(priceRange.min, priceRange.max)}
             className="w-full bg-gray-900 text-white py-2 px-4 rounded-md hover:bg-gray-800 transition-colors"
           >
-            Apply Price Filter
+            Áp dụng lọc giá
           </button>
         </div>
 
         {/* Preset Price Ranges */}
         <div className="mt-4 space-y-2">
-          <h4 className="text-sm font-medium text-gray-700">Quick Filters:</h4>
+          <h4 className="text-sm font-medium text-gray-700">Bộ lọc nhanh:</h4>
           <div className="flex flex-wrap gap-2">
             {[
-              { label: "Under $50", min: 0, max: 50 },
-              { label: "$50-$100", min: 50, max: 100 },
-              { label: "$100-$200", min: 100, max: 200 },
-              { label: "Over $200", min: 200, max: 1000 },
+              { label: "Dưới 1.250.000đ", min: 0, max: 1250000 },
+              { label: "1.250.000đ - 2.500.000đ", min: 1250000, max: 2500000 },
+              { label: "2.500.000đ - 5.000.000đ", min: 2500000, max: 5000000 },
+              { label: "Trên 5.000.000đ", min: 5000000, max: 500000000 },
             ].map((range) => (
               <button
                 key={range.label}
@@ -200,9 +201,7 @@ const ProductsSideNav = ({ onFilterChange, filters, onClearFilters }) => {
 
       {/* Rating Filter */}
       <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Customer Rating
-        </h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Đánh giá</h3>
         <div className="space-y-3">
           {[5, 4, 3, 2, 1].map((rating) => (
             <label
@@ -228,7 +227,7 @@ const ProductsSideNav = ({ onFilterChange, filters, onClearFilters }) => {
                     </svg>
                   ))}
                 </div>
-                <span className="ml-2 text-sm text-gray-600">& up</span>
+                <span className="ml-2 text-sm text-gray-600">trở lên</span>
               </div>
             </label>
           ))}
@@ -241,11 +240,20 @@ const ProductsSideNav = ({ onFilterChange, filters, onClearFilters }) => {
           onClick={onClearFilters}
           className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-200 transition-colors font-medium"
         >
-          Clear All Filters
+          Xoá tất cả bộ lọc
         </button>
       </div>
     </div>
   );
+};
+
+ProductsSideNav.propTypes = {
+  onFilterChange: PropTypes.func.isRequired,
+  onClearFilters: PropTypes.func.isRequired,
+  filters: PropTypes.shape({
+    category: PropTypes.string,
+    brand: PropTypes.string,
+  }).isRequired,
 };
 
 export default ProductsSideNav;

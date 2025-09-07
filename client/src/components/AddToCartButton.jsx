@@ -40,7 +40,7 @@ const AddToCartButton = ({ item, className }) => {
             disabled={existingProduct?.quantity <= 1}
             onClick={() => {
               dispatch(decreaseQuantity(item?._id));
-              toast.success("Quantity decreased successfully!");
+              toast.success("Giảm số lượng thành công!");
             }}
             className="border border-gray-300 text-gray-700 p-2 hover:border-black hover:text-black rounded-md text-sm transition-all duration-200 cursor-pointer disabled:text-gray-300 disabled:border-gray-200 disabled:hover:border-gray-200 disabled:hover:text-gray-300"
           >
@@ -52,7 +52,7 @@ const AddToCartButton = ({ item, className }) => {
           <button
             onClick={() => {
               dispatch(increaseQuantity(item?._id));
-              toast.success("Quantity increased successfully!");
+              toast.success("Số lượng đã được tăng thành công!");
             }}
             className="border border-gray-300 text-gray-700 p-2 hover:border-black hover:text-black rounded-md text-sm transition-all duration-200 cursor-pointer"
           >
@@ -64,7 +64,7 @@ const AddToCartButton = ({ item, className }) => {
           onClick={handleAddToCart}
           className="w-full border border-black text-black text-xs font-medium py-3 px-6 uppercase tracking-wide hover:bg-black hover:text-white transition-all duration-200"
         >
-          Add to cart
+          Thêm vào giỏ hàng
         </button>
       )}
     </>

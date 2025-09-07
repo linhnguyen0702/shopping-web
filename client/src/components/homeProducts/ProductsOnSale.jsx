@@ -20,7 +20,7 @@ const ProductsOnSale = () => {
           setProducts(onSaleProducts.slice(0, 6)); // Limit to 6 products
         }
       } catch (error) {
-        console.error("Error fetching on sale products:", error);
+        console.error("Lỗi khi lấy sản phẩm:", error);
       }
     };
 
@@ -31,9 +31,9 @@ const ProductsOnSale = () => {
     return (
       <div>
         <h3 className="font-titleFont text-xl font-semibold mb-6 underline underline-offset-4 decoration-[1px]">
-          Products on sale
+          Sản phẩm khuyến mãi
         </h3>
-        <p className="text-gray-500">No products on sale at the moment.</p>
+        <p className="text-gray-500">Không có sản phẩm khuyến mãi tại thời điểm hiện tại.</p>
       </div>
     );
   }
@@ -41,7 +41,7 @@ const ProductsOnSale = () => {
   return (
     <div>
       <h3 className="font-titleFont text-xl font-semibold mb-6 underline underline-offset-4 decoration-[1px]">
-        Products on sale
+        Sản phẩm khuyến mãi
       </h3>
       <div className="flex flex-col gap-2">
         {products.map((item) => (

@@ -55,21 +55,21 @@ const NewArrivals = () => {
         // Handle the new API response format that includes success field
         setProducts(data?.products || []);
       } catch (error) {
-        console.error("Error fetching products:", error);
+        console.error("Lỗi khi lấy sản phẩm:", error);
         setProducts([]);
       } finally {
         setLoading(false);
       }
     };
     getProducts();
-  }, []);
+  }, [endpoint]);
 
   // Render skeleton loading state
   if (loading) {
     return (
       <div className="w-full py-10">
         <div className="flex items-center justify-between">
-          <Title className="text-2xl mb-3 font-bold">New Arrivals</Title>
+          <Title className="text-2xl mb-3 font-bold">Sản phẩm mới về</Title>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {Array.from({ length: 4 }).map((_, index) => (
@@ -93,7 +93,7 @@ const NewArrivals = () => {
   return (
     <div className="w-full py-10">
       <div className="flex items-center justify-between">
-        <Title className="text-2xl mb-3 font-bold">New Arrivals</Title>
+        <Title className="text-2xl mb-3 font-bold">Sản phẩm mới về</Title>
         {/* <Link to={"/shop"}>See all</Link> */}
       </div>
 
@@ -119,7 +119,7 @@ const NewArrivals = () => {
       {/* Show message when no products */}
       {(!products || products.length === 0) && (
         <div className="text-center py-8 text-gray-500">
-          <p>No new arrivals available at the moment.</p>
+          <p>Không có sản phẩm mới tại thời điểm hiện tại.</p>
         </div>
       )}
     </div>

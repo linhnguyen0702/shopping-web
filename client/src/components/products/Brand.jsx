@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import NavTitle from "./NavTitle";
 
@@ -33,7 +33,7 @@ const Brand = () => {
         onClick={() => setShowBrands(!showBrands)}
         className="cursor-pointer"
       >
-        <NavTitle icons={true}>Shop by Brand</NavTitle>
+        <NavTitle icons={true}>Thương hiệu</NavTitle>
       </div>
       {showBrands && (
         <motion.div

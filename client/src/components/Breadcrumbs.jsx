@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { HiOutlineChevronRight } from "react-icons/hi";
 import { useLocation } from "react-router-dom";
 import { cn } from "./ui/cn";
+import PropTypes from "prop-types";
 
 const Breadcrumbs = ({ prevLocation, title, className }) => {
   const location = useLocation();
@@ -32,6 +33,12 @@ const Breadcrumbs = ({ prevLocation, title, className }) => {
       </p>
     </div>
   );
+};
+
+Breadcrumbs.propTypes = {
+  prevLocation: PropTypes.string,
+  title: PropTypes.string.isRequired,
+  className: PropTypes.string,
 };
 
 export default Breadcrumbs;

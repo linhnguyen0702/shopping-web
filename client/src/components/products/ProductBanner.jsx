@@ -1,11 +1,12 @@
 import { GoTriangleDown } from "react-icons/go";
+import PropTypes from "prop-types";
 
 const ProductBanner = ({ itemsPerPageFromBanner, getTypes }) => {
   const sortArr = [
-    { title: "Select option", _type: "" },
-    { title: "New Arrivals", _type: "new_arrivals" },
-    { title: "Best Sellers", _type: "best_sellers" },
-    { title: "Offers", _type: "offers" },
+    { title: "Chọn tuỳ chọn", _type: "" },
+    { title: "Sản phẩm mới", _type: "new_arrivals" },
+    { title: "Bán chạy", _type: "best_sellers" },
+    { title: "Ưu đãi", _type: "offers" },
   ];
 
   const handleSortChange = (e) => {
@@ -17,7 +18,7 @@ const ProductBanner = ({ itemsPerPageFromBanner, getTypes }) => {
     <div className="w-full flex flex-col md:flex-row md:items-center justify-end">
       <div className="flex items-center gap-2 md:gap-6 mt-4 md:mt-0">
         <div className="flex items-center gap-2 text-base text-[#767676] relative">
-          <label className="block">Sort by:</label>
+          <label className="block">Sắp xếp:</label>
           <select
             id="countries"
             onChange={handleSortChange}
@@ -38,7 +39,7 @@ const ProductBanner = ({ itemsPerPageFromBanner, getTypes }) => {
           </span>
         </div>
         <div className="flex items-center gap-2 text-[#767676] relative">
-          <label className="block">Show:</label>
+          <label className="block">Hiển thị:</label>
           <select
             onChange={(e) => itemsPerPageFromBanner(+e.target.value)}
             id="countries"
@@ -59,3 +60,8 @@ const ProductBanner = ({ itemsPerPageFromBanner, getTypes }) => {
 };
 
 export default ProductBanner;
+
+ProductBanner.propTypes = {
+  itemsPerPageFromBanner: PropTypes.func.isRequired,
+  getTypes: PropTypes.func.isRequired,
+};

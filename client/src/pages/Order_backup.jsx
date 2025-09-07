@@ -35,11 +35,13 @@ const Order = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
+  const [isPremiumModalOpen] = useState(false);
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
     order: null,
   });
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [sortConfig, setSortConfig] = useState({
     key: "date",
     direction: "desc",
@@ -111,12 +113,13 @@ const Order = () => {
   }, [orders, sortConfig]);
 
   const openOrderModal = (order) => {
-    // Show premium modal instead of order details
-    setIsPremiumModalOpen(true);
+    setSelectedOrder(order);
+    setIsOrderModalOpen(true);
   };
 
   const closeOrderModal = () => {
-    setIsPremiumModalOpen(false);
+    setIsOrderModalOpen(false);
+    setSelectedOrder(null);
   };
 
   const handleAddOrderToCart = async (order, e) => {
@@ -359,8 +362,8 @@ const Order = () => {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <p className="text-gray-600">
-                {orders.length} đơn hàng{orders.length !== 1 ? "s" : ""} được tìm
-                thấy
+                {orders.length} đơn hàng{orders.length !== 1 ? "s" : ""} được
+                tìm thấy
               </p>
               <button
                 onClick={fetchUserOrders}
@@ -603,8 +606,16 @@ const Order = () => {
           description="Access to order details and management features is available in the premium version of this code."
         />
 
-        {/* Add to Cart Confirmation Modal */}
-
+        {/* Order Details Modal */}
+        <AnimatePresence>
+          {isOrderModalOpen && selectedOrder && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+              onClick={closeOrderModal}
+            >
               <motion.div
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -652,7 +663,9 @@ const Order = () => {
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Phương Thức Thanh Toán:</span>
+                          <span className="text-gray-600">
+                            Phương Thức Thanh Toán:
+                          </span>
                           <span className="font-medium capitalize">
                             {selectedOrder.paymentMethod}
                           </span>
@@ -670,7 +683,9 @@ const Order = () => {
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Trạng Thái Thanh Toán:</span>
+                          <span className="text-gray-600">
+                            Trạng Thái Thanh Toán:
+                          </span>
                           <span
                             className={`inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-xs font-medium border ${getPaymentStatusColor(
                               selectedOrder.paymentStatus
@@ -856,8 +871,8 @@ const Order = () => {
                     </span>{" "}
                     vào giỏ hàng của bạn? Điều này sẽ thêm{" "}
                     {confirmModal.order.items.length} item
-                    {confirmModal.order.items.length !== 1 ? "s" : ""} vào
-                    giỏ hàng của bạn.
+                    {confirmModal.order.items.length !== 1 ? "s" : ""} vào giỏ
+                    hàng của bạn.
                   </p>
 
                   {/* Order Items Preview */}
@@ -890,8 +905,8 @@ const Order = () => {
                               </span>
                               {isInCart && (
                                 <span className="text-xs text-blue-600">
-                                  Đã có trong giỏ hàng (số lượng: {isInCart.quantity}) -
-                                  sẽ được cập nhật
+                                  Đã có trong giỏ hàng (số lượng:{" "}
+                                  {isInCart.quantity}) - sẽ được cập nhật
                                 </span>
                               )}
                             </div>

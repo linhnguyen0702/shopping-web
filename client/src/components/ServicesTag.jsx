@@ -10,66 +10,66 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const services = [
   {
-    title: "Free Delivery",
-    subtitle: "Free shipping on all orders over 500.000đ",
+    title: "Giao hàng miễn phí",
+    subtitle: "Miễn phí vận chuyển cho đơn từ 150.000đ",
     icon: <TbTruckDelivery />,
     details: {
       description:
-        "Enjoy free standard shipping on all orders over 500.000đ. We partner with reliable courier services to ensure your products reach you safely and on time.",
+        "Miễn phí vận chuyển tiêu chuẩn cho đơn hàng từ 150.000đ. Hợp tác cùng đối tác vận chuyển uy tín giúp đơn hàng đến nơi an toàn, đúng hẹn.",
       features: [
-        "Free shipping on orders 500.000đ+",
-        "Standard delivery: 3-5 business days",
-        "Express delivery available",
-        "Real-time tracking",
-        "Secure packaging",
+        "Miễn phí vận chuyển đơn từ 150.000đ",
+        "Giao tiêu chuẩn: 3-5 ngày làm việc",
+        "Có tuỳ chọn giao nhanh",
+        "Theo dõi đơn theo thời gian thực",
+        "Đóng gói an toàn",
       ],
     },
   },
   {
-    title: "Easy Returns",
-    subtitle: "30-day return guarantee",
+    title: "Đổi trả dễ dàng",
+    subtitle: "Bảo đảm đổi trả trong 30 ngày",
     icon: <HiOutlineCurrencyDollar />,
     details: {
       description:
-        "Not satisfied with your purchase? No problem! Our hassle-free return policy allows you to return any item within 30 days of purchase.",
+        "Không hài lòng với sản phẩm? Không sao! Chính sách đổi trả đơn giản của chúng tôi cho phép bạn trả lại bất kỳ sản phẩm nào trong vòng 30 ngày kể từ ngày mua.",
       features: [
-        "30-day return window",
-        "Full refund guarantee",
-        "Free return shipping",
-        "Easy online return process",
-        "No restocking fees",
+        "Thời gian đổi trả 30 ngày",
+        "Đảm bảo hoàn tiền đầy đủ",
+        "Miễn phí vận chuyển khi trả lại",
+        "Quy trình đổi trả trực tuyến dễ dàng",
+        "Không tính phí lưu kho",
       ],
     },
   },
   {
-    title: "24/7 Support",
-    subtitle: "Expert support anytime",
+    title: "Hỗ trợ 24/7",
+    subtitle: "Hỗ trợ chuyên gia mọi lúc",
     icon: <BiSupport />,
     details: {
       description:
-        "Our dedicated customer support team is available 24/7 to assist you with any questions, concerns, or issues you may have.",
+        "Đội ngũ chăm sóc khách hàng tận tâm của chúng tôi sẵn sàng 24/7 để hỗ trợ bạn về mọi thắc mắc, vấn đề hoặc yêu cầu.",
       features: [
-        "Round-the-clock availability",
-        "Live chat support",
-        "Email and phone support",
-        "Expert product guidance",
-        "Order tracking assistance",
+        "Hỗ trợ suốt 24/7",
+        "Hỗ trợ chat trực tiếp",
+        "Hỗ trợ qua email và điện thoại",
+        "Hướng dẫn sản phẩm chuyên nghiệp",
+        "Hỗ trợ theo dõi đơn hàng",
       ],
     },
   },
   {
-    title: "Secure Payment",
-    subtitle: "100% secure transactions",
+    title: "Thanh toán an toàn",
+    subtitle: "Giao dịch 100% bảo mật",
     icon: <MdOutlinePayment />,
     details: {
       description:
-        "Shop with confidence knowing that all your transactions are protected by industry-leading security measures and encryption technology.",
+        "Mua sắm tự tin với các giao dịch được bảo vệ bởi các biện pháp bảo mật hàng đầu và công nghệ mã hóa tiên tiến.",
       features: [
-        "SSL encryption",
-        "Multiple payment options",
-        "Fraud protection",
-        "PCI DSS compliance",
-        "Secure checkout process",
+        "Mã hóa SSL",
+        "Nhiều phương thức thanh toán",
+        "Bảo vệ chống gian lận",
+        "Tuân thủ PCI DSS",
+        "Quy trình thanh toán an toàn",
       ],
     },
   },
@@ -164,7 +164,7 @@ const ServicesTag = () => {
                 </p>
 
                 <h4 className="font-semibold text-gray-900 mb-3">
-                  Key Features:
+                  Tính năng chính:
                 </h4>
                 <ul className="space-y-2">
                   {selectedService.details.features.map((feature, index) => (
@@ -185,11 +185,11 @@ const ServicesTag = () => {
                   onClick={closeModal}
                   className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
                 >
-                  Close
+                  Đóng
                 </button>
                 <Link to="/shop" className="flex-1" onClick={closeModal}>
                   <button className="w-full px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium">
-                    Shop Now
+                    Mua ngay
                   </button>
                 </Link>
               </div>

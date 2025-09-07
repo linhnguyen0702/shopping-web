@@ -34,7 +34,7 @@ function App() {
           dispatch(setOrderCount(data.orders.length));
         }
       } catch (error) {
-        console.error("Error fetching order count:", error);
+        console.error("Lỗi khi lấy số lượng đơn hàng:", error);
         // Don't show error to user as this is not critical
       }
     },
@@ -49,7 +49,7 @@ function App() {
         // Fetch order count for authenticated users
         fetchUserOrderCount(token);
       } catch (error) {
-        console.error("Invalid token", error);
+        console.error("Token không hợp lệ", error);
         localStorage.removeItem("token");
         dispatch(resetOrderCount());
       }

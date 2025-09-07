@@ -1,3 +1,4 @@
+import PropTypes from "prop-types";
 import { cn } from "./ui/cn";
 
 const Container = ({ children, className }) => {
@@ -6,6 +7,11 @@ const Container = ({ children, className }) => {
       {children}
     </div>
   );
+};
+
+Container.propTypes = {
+  children: PropTypes.node,
+  className: PropTypes.string,
 };
 
 export default Container;

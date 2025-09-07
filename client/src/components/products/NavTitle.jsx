@@ -1,4 +1,4 @@
-import React from "react";
+import PropTypes from "prop-types";
 import { BiCaretDown } from "react-icons/bi";
 
 const NavTitle = ({ children, icons }) => {
@@ -19,3 +19,8 @@ const NavTitle = ({ children, icons }) => {
 };
 
 export default NavTitle;
+
+NavTitle.propTypes = {
+  children: PropTypes.node,
+  icons: PropTypes.bool,
+};

@@ -53,7 +53,7 @@ const Pagination = ({
     <div className="flex flex-col sm:flex-row justify-between items-center gap-4 py-8">
       {/* Items info */}
       <div className="text-sm text-gray-600">
-        Showing {startItem} to {endItem} of {totalItems} results
+        Hiển thị {startItem} đến {endItem} trên {totalItems} kết quả
       </div>
 
       {/* Pagination controls */}
@@ -142,7 +142,7 @@ const Pagination = ({
 
       {/* Jump to page */}
       <div className="flex items-center space-x-2 text-sm">
-        <span className="text-gray-600">Go to page:</span>
+        <span className="text-gray-600">Tới trang:</span>
         <input
           type="number"
           min="1"
@@ -156,7 +156,7 @@ const Pagination = ({
           }}
           className="w-16 px-2 py-1 border border-gray-300 rounded-md text-center focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
         />
-        <span className="text-gray-600">of {totalPages}</span>
+        <span className="text-gray-600">trên {totalPages}</span>
       </div>
     </div>
   );

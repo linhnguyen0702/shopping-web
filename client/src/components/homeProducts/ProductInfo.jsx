@@ -1,4 +1,4 @@
-import React from "react";
+import PropTypes from "prop-types";
 import AddToCartButton from "../AddToCartButton";
 import { MdStar } from "react-icons/md";
 import PriceContainer from "../PriceContainer";
@@ -32,21 +32,30 @@ const ProductInfo = ({ productInfo }) => {
         </div>
         <p className="text-base font-semibold">{`(${productInfo?.ratings?.toFixed(
           1
-        )} reviews)`}</p>
+        )} đánh giá)`}</p>
       </div>
       <p className="text-base text-gray-600">{productInfo.description}</p>
-      <p className="text-sm">Be the first to leave a review.</p>
+      <p className="text-sm">Hãy là người đầu tiên để lại đánh giá.</p>
 
       <AddToCartButton item={productInfo} />
 
       <p className="font-normal text-sm">
-        <span className="text-base font-normal"> Categories:</span>{" "}
+        <span className="text-base font-normal"> Danh mục:</span>{" "}
         <span className="text-lg font-semibold capitalize">
           {productInfo.category}
         </span>
       </p>
     </div>
   );
+};
+
+ProductInfo.propTypes = {
+  productInfo: PropTypes.shape({
+    name: PropTypes.string,
+    ratings: PropTypes.number,
+    description: PropTypes.string,
+    category: PropTypes.string,
+  }).isRequired,
 };
 
 export default ProductInfo;

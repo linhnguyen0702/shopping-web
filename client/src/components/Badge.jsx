@@ -1,4 +1,4 @@
-import React from "react";
+import PropTypes from "prop-types";
 
 const Badge = ({ text }) => {
   return (
@@ -6,6 +6,10 @@ const Badge = ({ text }) => {
       {text}
     </div>
   );
+};
+
+Badge.propTypes = {
+  text: PropTypes.string.isRequired,
 };
 
 export default Badge;

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import PriceFormat from "../components/PriceFormat";
 import Container from "../components/Container";
 import { MdStar, MdFavoriteBorder, MdShare } from "react-icons/md";
 import { motion } from "framer-motion";
@@ -40,7 +41,7 @@ const SingleProduct = () => {
             setRelatedProducts(filtered);
           }
         } catch (error) {
-          console.error("Error fetching related products:", error);
+          console.error("Lỗi khi lấy sản phẩm liên quan:", error);
         } finally {
           setLoadingRelated(false);
         }
@@ -159,15 +160,18 @@ const SingleProduct = () => {
             <div className="flex items-center gap-4">
               {productInfo?.oldPrice && (
                 <span className="text-2xl text-gray-400 line-through">
-                  ${productInfo.oldPrice}
+                  <PriceFormat amount={productInfo.oldPrice} />
                 </span>
               )}
               <span className="text-3xl font-light text-gray-900">
-                ${productInfo?.price}
+                <PriceFormat amount={productInfo?.price} />
               </span>
               {productInfo?.oldPrice && (
                 <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-medium">
-                  Save ${(productInfo.oldPrice - productInfo.price).toFixed(2)}
+                  Tiết kiệm{" "}
+                  <PriceFormat
+                    amount={productInfo.oldPrice - productInfo.price}
+                  />
                 </span>
               )}
             </div>
@@ -187,8 +191,9 @@ const SingleProduct = () => {
                 ))}
               </div>
               <span className="text-sm text-gray-600">
-                Rated {productInfo?.ratings?.toFixed(1) || "0.0"} out of 5 based
-                on {productInfo?.reviews?.length || 0} customer reviews
+                Được đánh giá {productInfo?.ratings?.toFixed(1) || "0.0"} trên 5
+                dựa trên {productInfo?.reviews?.length || 0} đánh giá của khách
+                hàng
               </span>
             </div>
 
@@ -201,7 +206,7 @@ const SingleProduct = () => {
             <div className="space-y-4">
               <div className="flex items-center gap-4">
                 <label className="text-sm font-medium text-gray-900">
-                  Quantity:
+                  Số lượng:
                 </label>
                 <div className="flex items-center border border-gray-300 rounded-md">
                   <button
@@ -223,7 +228,7 @@ const SingleProduct = () => {
               </div>
 
               <button className="w-full bg-black text-white py-4 px-8 rounded-md hover:bg-gray-800 transition-all duration-300 font-medium uppercase tracking-wider transform hover:scale-[1.02] active:scale-[0.98]">
-                Add to Cart
+                Thêm vào giỏ hàng
               </button>
             </div>
 
@@ -231,11 +236,11 @@ const SingleProduct = () => {
             <div className="flex items-center gap-4 pt-4 border-t border-gray-200">
               <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors">
                 <MdFavoriteBorder className="w-5 h-5" />
-                Add to Wishlist
+                Thêm vào danh sách yêu thích
               </button>
               <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors">
                 <MdShare className="w-5 h-5" />
-                Share
+                Chia sẻ
               </button>
             </div>
 
@@ -248,14 +253,14 @@ const SingleProduct = () => {
                 </span>
               </p>
               <p>
-                <span className="font-medium">Category:</span>{" "}
+                <span className="font-medium">Danh mục:</span>{" "}
                 <span className="text-gray-600 capitalize">
                   {productInfo?.category}
                 </span>
               </p>
               {productInfo?.tags && (
                 <p>
-                  <span className="font-medium">Tags:</span>{" "}
+                  <span className="font-medium">Tags:</span>
                   <span className="text-gray-600">{productInfo.tags}</span>
                 </p>
               )}
@@ -293,7 +298,7 @@ const SingleProduct = () => {
           <div className="min-h-[200px]">
             {activeTab === "description" && (
               <div className="prose prose-lg max-w-none">
-                <h3 className="text-2xl font-light mb-4">Description</h3>
+                <h3 className="text-2xl font-light mb-4">Mô tả</h3>
                 <p className="text-gray-600 leading-relaxed">
                   {productInfo?.description || "No description available."}
                 </p>
@@ -311,7 +316,9 @@ const SingleProduct = () => {
 
             {activeTab === "reviews" && (
               <div className="space-y-6">
-                <h3 className="text-2xl font-light mb-6">Customer Reviews</h3>
+                <h3 className="text-2xl font-light mb-6">
+                  Đánh giá khách hàng
+                </h3>
                 {productInfo?.reviews?.length > 0 ? (
                   <div className="space-y-6">
                     {productInfo.reviews.map((review, index) => (
@@ -355,7 +362,7 @@ const SingleProduct = () => {
                   </div>
                 ) : (
                   <p className="text-gray-500">
-                    No reviews yet. Be the first to leave a review!
+                    Chưa có đánh giá. Hãy là người đầu tiên để đánh giá!
                   </p>
                 )}
               </div>
@@ -371,7 +378,7 @@ const SingleProduct = () => {
           className="border-t border-gray-200 pt-16 mt-16"
         >
           <h2 className="text-2xl font-light text-center mb-12">
-            Related Products
+            Sản phẩm liên quan
           </h2>
 
           {loadingRelated ? (
@@ -435,15 +442,16 @@ const SingleProduct = () => {
                   <div className="flex items-center gap-2 mb-3">
                     {product.discountedPercentage > 0 && (
                       <span className="text-sm text-gray-400 line-through">
-                        $
-                        {(
-                          product.price /
-                          (1 - product.discountedPercentage / 100)
-                        ).toFixed(2)}
+                        <PriceFormat
+                          amount={
+                            product.price /
+                            (1 - product.discountedPercentage / 100)
+                          }
+                        />
                       </span>
                     )}
                     <span className="text-lg font-light text-gray-900">
-                      ${product.price}
+                      <PriceFormat amount={product.price} />
                     </span>
                     {product.discountedPercentage > 0 && (
                       <span className="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-medium">
@@ -459,7 +467,7 @@ const SingleProduct = () => {
                       console.log("Add to cart:", product.name);
                     }}
                   >
-                    Add to Cart
+                    Thêm vào giỏ hàng
                   </button>
                 </div>
               ))}
@@ -467,7 +475,7 @@ const SingleProduct = () => {
           ) : (
             <div className="text-center py-12">
               <p className="text-gray-500 text-lg">
-                No related products found.
+                Không tìm thấy sản phẩm liên quan.
               </p>
             </div>
           )}

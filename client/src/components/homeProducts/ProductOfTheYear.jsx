@@ -14,15 +14,15 @@ const ProductOfTheYear = () => {
         <div className="w-full md:w-2/3 xl:w-1/2 h-96 absolute px-6 md:px-8 top-0 right-0 flex flex-col items-start gap-8 justify-center bg-gradient-to-r md:bg-gradient-to-l from-white/95 via-white/90 to-transparent backdrop-blur-sm">
           <div className="space-y-4">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight drop-shadow-sm">
-              Product of The Year
+              Sản phẩm của năm
             </h1>
             <p className="text-lg font-medium text-gray-700 max-w-[500px] leading-relaxed">
-              Discover our most innovative and popular product that has captured
-              hearts worldwide. Experience excellence in every detail.
+            Khám phá sản phẩm sáng tạo và phổ biến nhất của chúng tôi, đã chiếm trọn trái tim người dùng trên toàn thế giới.
+            Trải nghiệm sự xuất sắc trong từng chi tiết.
             </p>
           </div>
           <Button className="px-8 py-4 text-lg font-semibold bg-black hover:bg-gray-800 text-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 hover:-translate-y-1 transition-all duration-300">
-            Shop Now
+            Mua ngay
           </Button>
         </div>
       </div>

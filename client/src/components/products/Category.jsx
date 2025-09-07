@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 
 import { ImPlus } from "react-icons/im";
 import NavTitle from "./NavTitle";
@@ -8,30 +8,30 @@ const Category = () => {
   const items = [
     {
       _id: 990,
-      title: "New Arrivals",
+      title: "Sản phẩm mới",
       icons: true,
     },
     {
       _id: 991,
-      title: "Gudgets",
+      title: "Thiết bị",
     },
     {
       _id: 992,
-      title: "Accessories",
+      title: "Phụ kiện",
       icons: true,
     },
     {
       _id: 993,
-      title: "Electronics",
+      title: "Điện tử",
     },
     {
       _id: 994,
-      title: "Others",
+      title: "Khác",
     },
   ];
   return (
     <div className="w-full">
-      <NavTitle>Shop by Category</NavTitle>
+      <NavTitle>Danh mục</NavTitle>
       <div>
         <ul className="flex flex-col gap-4 text-sm lg:text-base text-[#767676]">
           {items.map(({ _id, title, icons }) => (

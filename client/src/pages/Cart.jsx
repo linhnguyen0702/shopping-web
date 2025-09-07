@@ -526,7 +526,7 @@ const Cart = () => {
                           onClick={() => setShowAddressModal(true)}
                           className="text-blue-600 hover:text-blue-700 font-medium text-sm"
                         >
-                          Thêm địa chỉ giao hàng 
+                          Thêm địa chỉ giao hàng
                         </button>
                       </div>
                     ) : (
@@ -692,7 +692,9 @@ const Cart = () => {
 
                   <div className="flex justify-between py-2">
                     <span className="text-gray-600">Vận chuyển</span>
-                    <span className="font-medium text-gray-900">Miễn phí vận chuyển</span>
+                    <span className="font-medium text-gray-900">
+                      Miễn phí vận chuyển (đơn từ 150.000đ)
+                    </span>
                   </div>
 
                   <div className="border-t border-gray-200 pt-4">
@@ -727,7 +729,8 @@ const Cart = () => {
                 </button>
 
                 <p className="text-sm text-gray-500 text-center mt-4">
-                  Vận chuyển và thuế được tính toán tại thanh toán
+                  Vận chuyển và thuế được tính toán tại thanh toán. Miễn phí vận
+                  chuyển cho đơn từ 150.000đ.
                 </p>
               </div>
             </div>
@@ -749,8 +752,8 @@ const Cart = () => {
                 Giỏ hàng của bạn trống
               </h2>
               <p className="text-gray-600 mb-8">
-                Có vẻ như bạn chưa thêm bất kỳ sản phẩm nào vào giỏ hàng của bạn.
-                Bắt đầu mua sắm để đầy đủ giỏ hàng của bạn!
+                Có vẻ như bạn chưa thêm bất kỳ sản phẩm nào vào giỏ hàng của
+                bạn. Bắt đầu mua sắm để đầy đủ giỏ hàng của bạn!
               </p>
               <Link to="/shop">
                 <button className="bg-gray-900 text-white px-8 py-3 rounded-md hover:bg-gray-800 transition-colors font-medium">
@@ -817,7 +820,7 @@ const Cart = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Địa chỉ 
+                  Địa chỉ
                 </label>
                 <input
                   type="text"
@@ -834,7 +837,7 @@ const Cart = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Thành phố 
+                    Thành phố
                   </label>
                   <input
                     type="text"
@@ -848,7 +851,7 @@ const Cart = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tỉnh/Thành phố 
+                    Tỉnh/Thành phố
                   </label>
                   <input
                     type="text"
@@ -865,7 +868,7 @@ const Cart = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Mã bưu điện 
+                    Mã bưu điện
                   </label>
                   <input
                     type="text"
@@ -882,7 +885,7 @@ const Cart = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Quốc gia 
+                    Quốc gia
                   </label>
                   <input
                     type="text"

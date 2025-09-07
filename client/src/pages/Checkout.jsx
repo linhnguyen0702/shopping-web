@@ -301,7 +301,9 @@ const Checkout = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Vận chuyển</span>
-                  <span className="font-medium text-green-600">Miễn phí vận chuyển</span>
+                  <span className="font-medium text-green-600">
+                    Miễn phí vận chuyển (đơn từ 150.000đ)
+                  </span>
                 </div>
                 <div className="flex justify-between text-lg font-semibold">
                   <span className="text-gray-900">Total</span>
@@ -330,7 +332,8 @@ const Checkout = () => {
                                   Thanh toán khi giao hàng
                                 </h4>
                                 <p className="text-sm text-green-700">
-                                  Thanh toán trực tiếp khi đơn hàng được giao đến bạn
+                                  Thanh toán trực tiếp khi đơn hàng được giao
+                                  đến bạn
                                 </p>
                               </div>
                             </div>

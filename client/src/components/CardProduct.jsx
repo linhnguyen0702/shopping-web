@@ -1,4 +1,4 @@
-import React from "react";
+import PropTypes from "prop-types";
 import { ImCross } from "react-icons/im";
 import { useDispatch } from "react-redux";
 import { deleteItem } from "../redux/orebiSlice";
@@ -16,7 +16,7 @@ const CartProduct = ({ item }) => {
           onClick={() => {
             dispatch(deleteItem(item._id));
             toast.success(
-              `${item?.name.substring(0, 10)}... is deleted successfully!`
+              `${item?.name.substring(0, 10)}... đã được xóa thành công!`
             );
           }}
           className="text-primeColor hover:text-red-500 duration-300 cursor-pointer"
@@ -38,6 +38,16 @@ const CartProduct = ({ item }) => {
       </div>
     </div>
   );
+};
+
+CartProduct.propTypes = {
+  item: PropTypes.shape({
+    _id: PropTypes.string.isRequired,
+    name: PropTypes.string.isRequired,
+    image: PropTypes.string,
+    price: PropTypes.number,
+    quantity: PropTypes.number,
+  }).isRequired,
 };
 
 export default CartProduct;

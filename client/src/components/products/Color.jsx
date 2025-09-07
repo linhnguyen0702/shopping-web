@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import NavTitle from "./NavTitle";
 
@@ -38,7 +38,7 @@ const Color = () => {
         onClick={() => setShowColors(!showColors)}
         className="cursor-pointer"
       >
-        <NavTitle icons={true}>Shop by Color</NavTitle>
+        <NavTitle icons={true}>Màu sắc</NavTitle>
       </div>
       {showColors && (
         <motion.div

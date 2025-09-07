@@ -14,35 +14,35 @@ import { HiChevronLeft, HiChevronRight } from "react-icons/hi2";
 
 const bannerData = [
   {
-    title: "Premium Collection",
-    subtitle: "Top selling smartphone and accessories",
-    description:
-      "Discover the latest in mobile technology with exclusive discounts",
-    discount: "Up to 40% off",
-    from: 599.99,
-    sale: "Limited Time",
+    title: "Bộ sưu tập cao cấp",
+    subtitle: "Điện thoại và phụ kiện bán chạy nhất",
+    description: "Khám phá thị trường điện tử với ưu đãi độc quyền",
+    discount: "Giảm đến 40%",
+    from: 599000,
+    sale: "Thời gian giới hạn",
     image: bannerImgOne,
-    buttonText: "Shop Collection",
+    buttonText: "Mua ngay",
   },
   {
-    title: "Household Chairs",
-    subtitle: "The best deals on Chairs",
-    description: "Professional-grade chairs for creatives and professionals",
-    discount: "$250 off",
-    from: 2349.99,
-    sale: "Special Offer",
+    title: "Ghế gia đình",
+    subtitle: "Ưu đãi tốt nhất cho ghế",
+    description: "Ghế chất lượng chuyên nghiệp cho nhà sáng tạo và chuyên gia",
+    discount: "Giảm đến 250.000đ",
+    from: 2349000,
+    sale: "Ưu đãi đặc biệt",
     image: bannerImgTwo,
-    buttonText: "Explore Home Decor",
+    buttonText: "Khám phá nội thất",
   },
   {
-    title: "Lighting Excellence",
-    subtitle: "Premium lighting collection",
-    description: "Experience crystal-clear light with our curated selection",
-    discount: "Free shipping",
-    from: 199.99,
-    sale: "Weekend Deal",
+    title: "Ánh sáng xuất sắc",
+    subtitle: "Bộ sưu tập đèn cao cấp",
+    description:
+      "Trải nghiệm ánh sáng trong suốt với lựa chọn tinh tế của chúng tôi",
+    discount: "Miễn phí vận chuyển",
+    from: 150000,
+    sale: "Ưu đãi cuối tuần",
     image: bannerImgThree,
-    buttonText: "Shop Lights",
+    buttonText: "Mua đèn",
   },
 ];
 
@@ -189,7 +189,7 @@ const Banner = () => {
                       </div>
                       <div className="flex items-center justify-center lg:justify-start gap-3">
                         <span className="text-base sm:text-lg text-gray-600 font-medium">
-                          Starting from
+                          Bắt đầu từ
                         </span>
                         <PriceFormat
                           amount={item?.from}

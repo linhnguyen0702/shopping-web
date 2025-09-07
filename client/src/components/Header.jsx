@@ -13,19 +13,19 @@ import { useSelector } from "react-redux";
 import { FaUserAlt } from "react-icons/fa";
 export const headerNavigation = [
   {
-    title: "Home",
+    title: "Trang chủ",
     link: "/",
   },
   {
-    title: "Shop",
+    title: "Cửa hàng",
     link: "/shop",
   },
   {
-    title: "About",
+    title: "Giới thiệu",
     link: "/about",
   },
   {
-    title: "Contact",
+    title: "Liên hệ",
     link: "/contact",
   },
   // {
@@ -37,7 +37,7 @@ export const headerNavigation = [
   //   link: "/faq",
   // },
   {
-    title: "Orders",
+    title: "Đơn hàng",
     link: "/orders",
   },
 ];
@@ -76,7 +76,7 @@ const Header = () => {
             >
               <div className="relative flex items-center">
                 {item?.title}
-                {item?.title === "Orders" && userInfo && orderCount > 0 && (
+                {item?.link === "/orders" && userInfo && orderCount > 0 && (
                   <span className="absolute -right-1 -top-2 w-4 h-4 rounded-full text-xs bg-red-500 text-white flex items-center justify-center font-medium animate-pulse">
                     {orderCount}
                   </span>
@@ -144,7 +144,7 @@ const Header = () => {
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
                   <Title className="text-xl font-bold text-gray-900">
-                    Menu
+                    Danh mục
                   </Title>
                   <button
                     onClick={() => setIsOpen(false)}
@@ -178,7 +178,7 @@ const Header = () => {
                           />
                           {item?.title}
                         </div>
-                        {item?.title === "Orders" &&
+                        {item?.link === "/orders" &&
                           userInfo &&
                           orderCount > 0 && (
                             <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
@@ -196,7 +196,7 @@ const Header = () => {
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-2 h-2 rounded-full bg-gray-300" />
-                      <span>Cart</span>
+                      <span>Giỏ hàng</span>
                       {products?.length > 0 && (
                         <span className="ml-auto bg-black text-white text-xs px-2 py-1 rounded-full">
                           {products.length}
@@ -213,7 +213,7 @@ const Header = () => {
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-2 h-2 rounded-full bg-gray-300" />
-                        <span>Profile ({userInfo?.name})</span>
+                        <span>Hồ sơ ({userInfo?.name})</span>
                       </div>
                     </Link>
                   ) : (
@@ -224,7 +224,7 @@ const Header = () => {
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-2 h-2 rounded-full bg-gray-300" />
-                        Sign In
+                        Đăng nhập
                       </div>
                     </Link>
                   )}

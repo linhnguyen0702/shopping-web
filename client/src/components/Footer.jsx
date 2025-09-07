@@ -18,9 +18,9 @@ const Footer = () => {
 
   const handleSubscription = () => {
     if (emailInfo === "") {
-      setErrMsg("Please provide an Email !");
+      setErrMsg("Vui lòng nhập email!");
     } else if (!emailValidation(emailInfo)) {
-      setErrMsg("Please give a valid Email!");
+      setErrMsg("Vui lòng nhập email hợp lệ!");
     } else {
       setSubscription(true);
       setErrMsg("");
@@ -37,8 +37,9 @@ const Footer = () => {
           <div className="lg:col-span-1">
             <h3 className="text-2xl font-bold text-gray-900 mb-6">Orebi</h3>
             <p className="text-gray-600 mb-6 leading-relaxed">
-              Discover premium quality products with exceptional service. Your
-              trusted shopping destination for modern lifestyle essentials.
+              Khám phá những sản phẩm chất lượng cao cùng dịch vụ tận tâm. Điểm
+              đến mua sắm đáng tin cậy cho các nhu cầu thiết yếu của phong cách
+              sống hiện đại.
             </p>
             <SocialLinks
               className="text-gray-400 hover:text-gray-900"
@@ -49,7 +50,7 @@ const Footer = () => {
           {/* Quick Links */}
           <div>
             <h4 className="text-lg font-semibold text-gray-900 mb-6">
-              Quick Links
+              Liên kết nhanh
             </h4>
             <ul className="space-y-3">
               <li>
@@ -57,7 +58,7 @@ const Footer = () => {
                   href="/about"
                   className="text-gray-600 hover:text-gray-900 transition-colors duration-200 text-sm"
                 >
-                  About Us
+                  Về chúng tôi
                 </a>
               </li>
               <li>
@@ -65,7 +66,7 @@ const Footer = () => {
                   href="/shop"
                   className="text-gray-600 hover:text-gray-900 transition-colors duration-200 text-sm"
                 >
-                  Shop
+                  Mua sắm
                 </a>
               </li>
               <li>
@@ -73,7 +74,7 @@ const Footer = () => {
                   href="/contact"
                   className="text-gray-600 hover:text-gray-900 transition-colors duration-200 text-sm"
                 >
-                  Contact
+                  Liên hệ
                 </a>
               </li>
               <li>
@@ -89,7 +90,7 @@ const Footer = () => {
                   href="/faq"
                   className="text-gray-600 hover:text-gray-900 transition-colors duration-200 text-sm"
                 >
-                  FAQ
+                  Câu hỏi thường gặp
                 </a>
               </li>
             </ul>
@@ -98,7 +99,7 @@ const Footer = () => {
           {/* Categories */}
           <div>
             <h4 className="text-lg font-semibold text-gray-900 mb-6">
-              Categories
+              Danh mục
             </h4>
             <ul className="space-y-3">
               <li>
@@ -106,7 +107,7 @@ const Footer = () => {
                   href="/shop?category=Electronics"
                   className="text-gray-600 hover:text-gray-900 transition-colors duration-200 text-sm"
                 >
-                  Electronics
+                  Điện tử
                 </a>
               </li>
               <li>
@@ -114,7 +115,7 @@ const Footer = () => {
                   href="/shop?category=Fashion"
                   className="text-gray-600 hover:text-gray-900 transition-colors duration-200 text-sm"
                 >
-                  Fashion
+                  Thời trang
                 </a>
               </li>
               <li>
@@ -122,7 +123,7 @@ const Footer = () => {
                   href="/shop?category=Home & Garden"
                   className="text-gray-600 hover:text-gray-900 transition-colors duration-200 text-sm"
                 >
-                  Home & Garden
+                  Nhà và vườn
                 </a>
               </li>
               <li>
@@ -130,7 +131,7 @@ const Footer = () => {
                   href="/shop?category=Sports"
                   className="text-gray-600 hover:text-gray-900 transition-colors duration-200 text-sm"
                 >
-                  Sports
+                  Thể thao
                 </a>
               </li>
               <li>
@@ -138,7 +139,7 @@ const Footer = () => {
                   href="/shop?category=Beauty"
                   className="text-gray-600 hover:text-gray-900 transition-colors duration-200 text-sm"
                 >
-                  Beauty
+                  Chăm sóc sắc đẹp
                 </a>
               </li>
             </ul>
@@ -147,10 +148,10 @@ const Footer = () => {
           {/* Newsletter */}
           <div>
             <h4 className="text-lg font-semibold text-gray-900 mb-6">
-              Stay Updated
+              Cập nhật
             </h4>
             <p className="text-gray-600 mb-4 text-sm leading-relaxed">
-              Subscribe to get updates on new products and exclusive offers.
+              Đăng ký để nhận thông tin về các sản phẩm mới và ưu đãi độc quyền.
             </p>
 
             {subscription ? (
@@ -160,7 +161,7 @@ const Footer = () => {
                 className="p-4 bg-green-50 border border-green-200 rounded-lg"
               >
                 <p className="text-green-700 text-sm font-medium">
-                  ✓ Successfully subscribed!
+                  ✓ Đăng ký thành công!
                 </p>
               </motion.div>
             ) : (
@@ -171,7 +172,7 @@ const Footer = () => {
                     value={emailInfo}
                     className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all duration-200 text-sm"
                     type="email"
-                    placeholder="Enter your email"
+                    placeholder="Nhập email của bạn"
                   />
                   {errMsg && (
                     <p className="text-red-500 text-xs mt-2 animate-pulse">
@@ -183,7 +184,7 @@ const Footer = () => {
                   onClick={handleSubscription}
                   className="w-full bg-gray-900 hover:bg-gray-800 text-white py-3 rounded-lg transition-colors duration-200"
                 >
-                  Subscribe
+                  Đăng ký
                 </Button>
               </div>
             )}
@@ -195,12 +196,14 @@ const Footer = () => {
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             {/* Copyright */}
             <p className="text-gray-500 text-sm">
-              © 2025 Orebi. All rights reserved.
+              © 2025 Orebi. Tất cả quyền được bảo lưu.
             </p>
 
             {/* Payment Methods */}
             <div className="flex items-center gap-4">
-              <span className="text-gray-500 text-sm">We accept:</span>
+              <span className="text-gray-500 text-sm">
+                Chúng tôi chấp nhận:
+              </span>
               <img
                 src={paymentCard}
                 alt="Payment methods"
@@ -210,7 +213,7 @@ const Footer = () => {
 
             {/* Legal Links */}
             <div className="flex gap-6">
-              {["Privacy Policy", "Terms of Service"].map((link) => (
+              {["Chính sách bảo mật", "Điều khoản dịch vụ"].map((link) => (
                 <a
                   key={link}
                   href="#"

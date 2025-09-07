@@ -40,11 +40,11 @@ const PaginationProductList = ({
             </svg>
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            No products found
+            Không tìm thấy sản phẩm
           </h3>
           <p className="text-gray-600 max-w-md">
-            We couldn&apos;t find any products matching your criteria. Try
-            adjusting your filters or search terms.
+            Không có sản phẩm nào phù hợp với tiêu chí của bạn. Hãy thử điều
+            chỉnh bộ lọc hoặc từ khoá tìm kiếm.
           </p>
         </div>
       </div>
