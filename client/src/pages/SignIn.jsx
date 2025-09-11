@@ -15,6 +15,7 @@ import {
   FaArrowRight,
 } from "react-icons/fa";
 import Container from "../components/Container";
+import { useGoogleLogin } from "@react-oauth/google";
 
 const SignIn = () => {
   const dispatch = useDispatch();
@@ -25,6 +26,32 @@ const SignIn = () => {
   const [errPassword, setErrPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        const res = await fetch(`${serverUrl}/api/user/google/code`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: tokenResponse.code }),
+        });
+        const data = await res.json();
+        if (data?.success && data?.token) {
+          // Mặc định quyền user do backend cấp; client chỉ lưu token
+          localStorage.setItem("token", data.token);
+          await fetchUserOrderCount(data.token);
+          toast.success("Đăng nhập Google thành công");
+          navigate("/");
+        } else {
+          toast.error(data?.message || "Đăng nhập Google thất bại");
+        }
+      } catch {
+        toast.error("Đăng nhập Google thất bại");
+      }
+    },
+    onError: () => toast.error("Google login thất bại"),
+    flow: "auth-code",
+  });
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -92,7 +119,11 @@ const SignIn = () => {
         localStorage.setItem("token", data?.token);
         // Lấy số lượng đơn hàng
         await fetchUserOrderCount(data?.token);
-        toast.success(data?.message);
+        const successMsg =
+          data?.message === "Người dùng đã đăng nhập thành công"
+            ? "Đăng nhập thành công"
+            : data?.message || "Đăng nhập thành công";
+        toast.success(successMsg);
         navigate("/");
       } else {
         toast.error(data?.message);
@@ -260,10 +291,26 @@ const SignIn = () => {
                 </div>
                 <div className="relative flex justify-center text-sm">
                   <span className="px-2 bg-white text-gray-500">
-                    Bạn chưa có tài khoản?
+                    Hoặc đăng nhập bằng
                   </span>
                 </div>
               </div>
+            </div>
+
+            {/* Google Login */}
+            <div className="mt-6">
+              <button
+                type="button"
+                onClick={() => googleLogin()}
+                className="w-full inline-flex items-center justify-center gap-2 border border-gray-300 rounded-lg py-2.5 hover:bg-gray-50 transition-colors"
+              >
+                <img
+                  src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                  alt="Google"
+                  className="w-5 h-5"
+                />
+                Đăng nhập với Google
+              </button>
             </div>
 
             {/* Sign Up Link */}
@@ -272,7 +319,7 @@ const SignIn = () => {
                 to="/signup"
                 className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium transition-colors"
               >
-                Tạo tài khoản mới
+                Bạn chưa có tài khoản? Tạo tài khoản mới
                 <FaArrowRight className="w-4 h-4" />
               </Link>
             </div>

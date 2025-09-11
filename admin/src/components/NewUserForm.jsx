@@ -265,7 +265,8 @@ const NewUserForm = ({
             {isReadOnly && (
               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-800">
-                  ℹ️ Đây là chế độ chỉ đọc. Chỉ quản trị viên mới có thể chỉnh sửa thông tin người dùng.
+                  ℹ️ Đây là chế độ chỉ đọc. Chỉ quản trị viên mới có thể chỉnh
+                  sửa thông tin người dùng.
                 </p>
               </div>
             )}
@@ -302,7 +303,7 @@ const NewUserForm = ({
                     <Input
                       id="email"
                       type="email"
-                      name="new-user-email"
+                      name="email"
                       placeholder="Nhập email"
                       onChange={handleChange}
                       value={formData.email}
@@ -356,7 +357,7 @@ const NewUserForm = ({
                     </select>
                   </div>
                 </div>
-                  {/* from them moi nguoi dung */}
+                {/* from them moi nguoi dung */}
                 <div>
                   <Label htmlFor="password">
                     {selectedUser ? "Mật khẩu mới (tùy chọn)" : "Mật khẩu "}
@@ -365,7 +366,7 @@ const NewUserForm = ({
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
-                      name="new-user-password"
+                      name="password"
                       placeholder="Nhập mật khẩu"
                       onChange={handleChange}
                       value={formData.password}
@@ -381,7 +382,9 @@ const NewUserForm = ({
                         type="button"
                         onClick={() => setShowPassword((v) => !v)}
                         className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
-                        aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                        aria-label={
+                          showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"
+                        }
                       >
                         {showPassword ? (
                           <FaEyeSlash className="h-5 w-5" />
@@ -529,30 +532,38 @@ const NewUserForm = ({
                       <Label>Trạng thái tài khoản</Label>
                       <p
                         className={`font-medium ${
-                          (formData.isActive ?? true)
+                          formData.isActive ?? true
                             ? "text-green-600"
                             : "text-red-600"
                         }`}
                       >
-                        {(formData.isActive ?? true) ? "Hoạt động" : "Không hoạt động"}
+                        {formData.isActive ?? true
+                          ? "Hoạt động"
+                          : "Không hoạt động"}
                       </p>
                     </div>
                     <div className="bg-gray-50 rounded-lg p-4">
                       <Label>Thành viên từ</Label>
                       <p className="font-medium text-gray-700">
-                        {selectedUser?.createdAt && !isNaN(new Date(selectedUser.createdAt).getTime())
-                          ? new Date(selectedUser.createdAt).toLocaleDateString()
+                        {selectedUser?.createdAt &&
+                        !isNaN(new Date(selectedUser.createdAt).getTime())
+                          ? new Date(
+                              selectedUser.createdAt
+                            ).toLocaleDateString()
                           : "Không xác định"}
                       </p>
                     </div>
-                    {selectedUser?.lastLogin && !isNaN(new Date(selectedUser.lastLogin).getTime()) && (
-                      <div className="bg-gray-50 rounded-lg p-4">
-                        <Label>Đăng nhập gần nhất</Label>
-                        <p className="font-medium text-gray-700">
-                          {new Date(selectedUser.lastLogin).toLocaleDateString()}
-                        </p>
-                      </div>
-                    )}
+                    {selectedUser?.lastLogin &&
+                      !isNaN(new Date(selectedUser.lastLogin).getTime()) && (
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <Label>Đăng nhập gần nhất</Label>
+                          <p className="font-medium text-gray-700">
+                            {new Date(
+                              selectedUser.lastLogin
+                            ).toLocaleDateString()}
+                          </p>
+                        </div>
+                      )}
                   </div>
 
                   {selectedUser?.orders && selectedUser.orders.length > 0 && (
@@ -575,14 +586,15 @@ const NewUserForm = ({
                     </div>
                   )}
 
-                  {selectedUser?.lastLogin && !isNaN(new Date(selectedUser.lastLogin).getTime()) && (
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <Label>Đăng nhập gần nhất</Label>
-                      <p className="font-medium text-gray-700">
-                        {new Date(selectedUser.lastLogin).toLocaleString()}
-                      </p>
-                    </div>
-                  )}
+                  {selectedUser?.lastLogin &&
+                    !isNaN(new Date(selectedUser.lastLogin).getTime()) && (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <Label>Đăng nhập gần nhất</Label>
+                        <p className="font-medium text-gray-700">
+                          {new Date(selectedUser.lastLogin).toLocaleString()}
+                        </p>
+                      </div>
+                    )}
 
                   {selectedUser?.orders && selectedUser.orders.length > 0 && (
                     <div className="bg-gray-50 rounded-lg p-4">
@@ -614,7 +626,9 @@ const NewUserForm = ({
                            focus:ring-2 focus:ring-blue-300 transition-all duration-200 
                            font-medium text-sm sm:text-base shadow-md hover:shadow-lg transform hover:scale-[1.02]"
                   >
-                    {selectedUser ? "💾 Cập nhật người dùng" : "➕ Tạo người dùng"}
+                    {selectedUser
+                      ? "💾 Cập nhật người dùng"
+                      : "➕ Tạo người dùng"}
                   </button>
                 )}
               </div>

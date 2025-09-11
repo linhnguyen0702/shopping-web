@@ -21,6 +21,7 @@ import PaymentSuccess from "./pages/PaymentSuccess.jsx";
 import FAQ from "./pages/FAQ.jsx";
 import Blog from "./pages/Blog.jsx";
 import AuthBridge from "./pages/AuthBridge.jsx";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 const router = createBrowserRouter(
   [
@@ -119,5 +120,7 @@ const router = createBrowserRouter(
 );
 
 createRoot(document.getElementById("root")).render(
-  <RouterProvider router={router} />
+  <GoogleOAuthProvider clientId="356923892224-v7hvk8ttlek527hksiin7tus7e1v3k3f.apps.googleusercontent.com">
+    <RouterProvider router={router} />
+  </GoogleOAuthProvider>
 );

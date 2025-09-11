@@ -15,6 +15,7 @@ import {
   FaCheckCircle,
 } from "react-icons/fa";
 import Container from "../components/Container";
+import { useGoogleLogin } from "@react-oauth/google";
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -34,6 +35,29 @@ const SignUp = () => {
   const [checked, setChecked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const role = "user"; // Fixed role as user, not editable
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        const res = await fetch(`${serverUrl}/api/user/google/code`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: tokenResponse.code }),
+        });
+        const data = await res.json();
+        if (data?.success && data?.token) {
+          localStorage.setItem("token", data.token);
+          toast.success("Đăng ký/Đăng nhập Google thành công");
+          navigate("/");
+        } else {
+          toast.error(data?.message || "Google thất bại");
+        }
+      } catch {
+        toast.error("Google thất bại");
+      }
+    },
+    onError: () => toast.error("Google login thất bại"),
+    flow: "auth-code",
+  });
 
   // ============= Error Messages =================
   const [errClientName, setErrClientName] = useState("");
@@ -200,7 +224,7 @@ const SignUp = () => {
                   htmlFor="email"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Email 
+                  Email
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -371,10 +395,26 @@ const SignUp = () => {
                 </div>
                 <div className="relative flex justify-center text-sm">
                   <span className="px-2 bg-white text-gray-500">
-                    Đã có tài khoản?
+                    Hoặc đăng ký bằng
                   </span>
                 </div>
               </div>
+            </div>
+
+            {/* Google Sign Up */}
+            <div className="mt-6">
+              <button
+                type="button"
+                onClick={() => googleLogin()}
+                className="w-full inline-flex items-center justify-center gap-2 border border-gray-300 rounded-lg py-2.5 hover:bg-gray-50 transition-colors"
+              >
+                <img
+                  src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                  alt="Google"
+                  className="w-5 h-5"
+                />
+                Đăng ký bằng Google
+              </button>
             </div>
 
             {/* Sign In Link */}
@@ -383,7 +423,7 @@ const SignUp = () => {
                 to="/signin"
                 className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium transition-colors"
               >
-                Đăng nhập vào tài khoản của bạn
+                Đã có tài khoản? Đăng nhập
                 <FaArrowRight className="w-4 h-4" />
               </Link>
             </div>

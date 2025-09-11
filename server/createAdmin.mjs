@@ -13,7 +13,7 @@ const createInitialAdmin = async () => {
     const existingAdmin = await userModel.findOne({ role: "admin" });
 
     if (existingAdmin) {
-      console.log("Admin user already exists:", existingAdmin.email);
+      console.log("Người dùng quản trị đã tồn tại:", existingAdmin.email);
       process.exit(0);
     }
 
@@ -36,15 +36,15 @@ const createInitialAdmin = async () => {
 
     await adminUser.save();
 
-    console.log("✅ Initial admin user created successfully!");
+    console.log("✅ Người dùng quản trị ban đầu đã tạo thành công!");
     console.log("Email:", adminEmail);
-    console.log("Password:", adminPassword);
-    console.log("⚠️  Please change the default password after first login");
+    console.log("Mật khẩu:", adminPassword);
+    console.log("⚠️  Vui lòng thay đổi mật khẩu mặc định sau khi đăng nhập lần đầu");
   } catch (error) {
-    console.error("Error creating admin user:", error);
+    console.error("Lỗi tạo người dùng quản trị:", error);
   } finally {
     await mongoose.disconnect();
-    console.log("Disconnected from MongoDB");
+    console.log("Ngắt kết nối với MongoDB");
     process.exit(0);
   }
 };

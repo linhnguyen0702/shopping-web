@@ -1,22 +1,22 @@
 export const headerNavigation = [
   {
-    title: "Home",
+    title: "Trang chủ",
     link: "/",
   },
   {
-    title: "Shop",
+    title: "Cửa hàng",
     link: "/shop",
   },
   {
-    title: "About",
+    title: "Giới thiệu",
     link: "/about",
   },
   {
-    title: "Contact",
+    title: "Liên hệ",
     link: "/contact",
   },
   {
-    title: "Orders",
+    title: "Đơn hàng",
     link: "/orders",
   },
 ];

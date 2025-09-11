@@ -23,12 +23,12 @@ const allowedOrigins = [
 ].filter(Boolean); // Remove any undefined values
 
 // CORS configuration using config system
-console.log("Allowed CORS Origins:", allowedOrigins);
+console.log("Các nguồn CORS được cho phép:", allowedOrigins);
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      console.log("CORS request from origin:", origin);
+      console.log("Yêu cầu CORS từ nguồn (origin):", origin);
 
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
@@ -38,16 +38,16 @@ app.use(
         process.env.NODE_ENV === "development" ||
         process.env.CORS_ALLOW_ALL === "true"
       ) {
-        console.log("Development mode: allowing all origins");
+        console.log("Chế độ phát triển: cho phép tất cả các nguồn");
         return callback(null, true);
       }
 
       if (allowedOrigins.indexOf(origin) !== -1) {
-        console.log("Origin allowed:", origin);
+        console.log("Nguồn được cho phép:", origin);
         callback(null, true);
       } else {
-        console.log("Origin blocked:", origin);
-        callback(new Error("Not allowed by CORS"));
+        console.log("Nguồn bị chặn:", origin);
+        callback(new Error("Không được phép bởi CORS"));
       }
     },
     credentials: true,
@@ -57,7 +57,7 @@ app.use(
 );
 app.use(express.json());
 
-// Connect to services before starting server
+// Kết nối đến các dịch vụ trước khi khởi động server
 await dbConnect();
 connectCloudinary();
 
@@ -72,22 +72,22 @@ routeFiles.map(async (file) => {
 });
 
 app.get("/", (req, res) => {
-  res.send("You should not be here");
+  res.send("Bạn không nên ở đây");
 });
 
 try {
   const server = app.listen(port, () => {
-    console.log(`Server is running on ${port}`);
+    console.log(`Server đang chạy trên ${port}`);
   });
   server.on("error", (err) => {
     if (err?.code === "EADDRINUSE") {
-      console.error(`Port ${port} is already in use. Set a different PORT or free it.`);
+      console.error(`Port ${port} đã được sử dụng. Đặt một PORT khác hoặc giải phóng nó.`);
     } else {
-      console.error("Server error:", err?.message || err);
+      console.error("Lỗi server:", err?.message || err);
     }
     process.exit(1);
   });
 } catch (err) {
-  console.error("Failed to start server:", err?.message || err);
+  console.error("Không thể khởi động server:", err?.message || err);
   process.exit(1);
 }

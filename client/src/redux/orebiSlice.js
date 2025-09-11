@@ -62,6 +62,8 @@ export const orebiSlice = createSlice({
     resetOrderCount: (state) => {
       state.orderCount = 0;
     },
+    // ✅ thêm reducer resetAll (trả về object mới để đảm bảo thay đổi tham chiếu)
+    resetAll: () => ({ ...initialState }),
   },
 });
 
@@ -75,5 +77,6 @@ export const {
   removeUser,
   setOrderCount,
   resetOrderCount,
+  resetAll,
 } = orebiSlice.actions;
 export default orebiSlice.reducer;

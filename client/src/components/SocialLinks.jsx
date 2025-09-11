@@ -1,4 +1,3 @@
-import React from "react";
 import {
   FaEnvelope,
   FaFacebook,
@@ -7,16 +6,17 @@ import {
   FaYoutube,
 } from "react-icons/fa";
 import { twMerge } from "tailwind-merge";
+import PropTypes from "prop-types";
 
 const linkData = [
   { icon: <FaGithub />, href: "https://github.com/" },
-  { icon: <FaYoutube />, href: "https://www.youtube.com/@reactjsBD" },
+  { icon: <FaYoutube />, href: "https://www.youtube.com/" },
   {
     icon: <FaLinkedin />,
     href: "https://www.linkedin.com/in/noor-mohammad-ab2245193/",
   },
-  { icon: <FaFacebook />, href: "https://www.youtube.com/@reactjsBD" },
-  { icon: <FaEnvelope />, href: "https://www.youtube.com/@reactjsBD" },
+  { icon: <FaFacebook />, href: "https://www.facebook.com/" },
+  { icon: <FaEnvelope />, href: "mailto:contact@example.com" },
 ];
 
 const SocialLinks = ({ className, iconStyle }) => {
@@ -44,3 +44,8 @@ const SocialLinks = ({ className, iconStyle }) => {
 };
 
 export default SocialLinks;
+
+SocialLinks.propTypes = {
+  className: PropTypes.string,
+  iconStyle: PropTypes.string,
+};

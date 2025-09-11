@@ -11,36 +11,7 @@ import SocialLinks from "./SocialLinks";
 import { IoMdCart } from "react-icons/io";
 import { useSelector } from "react-redux";
 import { FaUserAlt } from "react-icons/fa";
-export const headerNavigation = [
-  {
-    title: "Trang chủ",
-    link: "/",
-  },
-  {
-    title: "Cửa hàng",
-    link: "/shop",
-  },
-  {
-    title: "Giới thiệu",
-    link: "/about",
-  },
-  {
-    title: "Liên hệ",
-    link: "/contact",
-  },
-  // {
-  //   title: "Blog",
-  //   link: "/blog",
-  // },
-  // {
-  //   title: "FAQ",
-  //   link: "/faq",
-  // },
-  {
-    title: "Đơn hàng",
-    link: "/orders",
-  },
-];
+import { headerNavigation } from "../constants/navigation";
 
 const Header = () => {
   const location = useLocation();

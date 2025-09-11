@@ -3,8 +3,8 @@ import PremiumMessage from "../components/PremiumMessage";
 const Contact = () => {
   return (
     <PremiumMessage
-      title="Contact Features"
-      description="Professional contact system with messaging, admin dashboard, and real-time functionality"
+      title="Luôn Kết nối"
+      description="Trò chuyện nhanh chóng, quản trị dễ dàng, cập nhật ngay khi có thay đổi"
       showFeatures={true}
     />
   );

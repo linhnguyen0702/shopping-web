@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import PropTypes from "prop-types";
 import { FaLock, FaGift, FaTimes } from "react-icons/fa";
 
 const PremiumModal = ({
@@ -45,14 +46,13 @@ const PremiumModal = ({
           {/* Premium Access Info */}
           <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-4 mb-6 border border-amber-200">
             <h4 className="font-semibold text-gray-900 mb-2">
-              💎 Premium Access Required
+              💎 Cần quyền Premium
             </h4>
             <p className="text-sm text-gray-600 mb-4">
-              Get instant access to the complete source code and unlock all
-              functionality.
+              Truy cập ngay toàn bộ mã nguồn và mở khoá tất cả tính năng.
             </p>
             <div className="text-xs text-amber-700 bg-amber-100 px-3 py-1 rounded-full inline-block">
-              ⚡ One-time payment • Lifetime access
+              ⚡ Thanh toán một lần • Truy cập trọn đời
             </div>
           </div>
 
@@ -65,13 +65,13 @@ const PremiumModal = ({
               className="w-full inline-flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-3 rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
             >
               <FaGift className="text-lg" />
-              Get Premium Access Now
+              Mua Premium ngay
             </a>
             <button
               onClick={onClose}
               className="w-full px-6 py-3 text-gray-600 hover:text-gray-800 transition-colors font-medium"
             >
-              Close
+              Đóng
             </button>
           </div>
         </div>
@@ -81,3 +81,10 @@ const PremiumModal = ({
 };
 
 export default PremiumModal;
+
+PremiumModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  title: PropTypes.string,
+  description: PropTypes.string,
+};

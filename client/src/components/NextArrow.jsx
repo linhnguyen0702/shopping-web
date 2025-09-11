@@ -1,5 +1,5 @@
-import React from "react";
 import { FaLongArrowAltRight } from "react-icons/fa";
+import PropTypes from "prop-types";
 
 const NextArrow = (props) => {
   const { onClick } = props;
@@ -16,3 +16,7 @@ const NextArrow = (props) => {
 };
 
 export default NextArrow;
+
+NextArrow.propTypes = {
+  onClick: PropTypes.func,
+};

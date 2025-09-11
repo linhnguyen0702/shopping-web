@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import axios from "axios";
 import { serverUrl } from "../../config";
-import { addUser, removeUser, resetOrderCount } from "../redux/orebiSlice";
+import { addUser, resetAll, removeUser } from "../redux/orebiSlice";
 import Container from "../components/Container";
 import { FaSignOutAlt, FaUserCircle, FaCog, FaHeart } from "react-icons/fa";
 
@@ -20,7 +20,8 @@ const Profile = () => {
       return;
     }
 
-    // Fetch fresh user data from server
+    //Lấy dữ liệu người dùng mới nhất từ server
+    let isActive = true;
     const fetchUserProfile = async () => {
       try {
         const token = localStorage.getItem("token");
@@ -30,7 +31,11 @@ const Profile = () => {
           },
         });
 
-        if (response.data.success) {
+        if (
+          response.data.success &&
+          isActive &&
+          localStorage.getItem("token")
+        ) {
           const userData = response.data.user;
           // cập nhật dữ liệu vào Redux store
           dispatch(addUser(userData));
@@ -41,14 +46,24 @@ const Profile = () => {
     };
 
     fetchUserProfile();
+    return () => {
+      isActive = false;
+    };
   }, [userInfo, navigate, dispatch]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    dispatch(removeUser());
-    dispatch(resetOrderCount());
-    toast.success("Đăng xuất thành công");
-    navigate("/");
+  const handleLogout = async () => {
+    try {
+      localStorage.removeItem("token");
+      // Reset Redux để Header cập nhật ngay
+      dispatch(removeUser());
+      dispatch(resetAll());
+      // Không purge nữa để tránh trạng thái persist rỗng tạm thời
+
+      toast.success("Đăng xuất thành công");
+      navigate("/signin", { replace: true });
+    } catch {
+      navigate("/signin", { replace: true });
+    }
   };
 
   if (!userInfo) {
@@ -74,9 +89,7 @@ const Profile = () => {
                   <h1 className="text-3xl font-bold text-gray-900">
                     Chào mừng trở lại, {userInfo.name}!
                   </h1>
-                  <p className="text-gray-600">
-                    Quản lý tài khoản và cài đặt
-                  </p>
+                  <p className="text-gray-600">Quản lý tài khoản và cài đặt</p>
                 </div>
               </div>
               <button
@@ -106,8 +119,8 @@ const Profile = () => {
                 </h2>
                 <p className="text-lg text-gray-600 mb-8 leading-relaxed">
                   Quyền truy cập vào việc chỉnh sửa tài khoản, lịch sử đơn hàng,
-                  quản lý danh sách yêu thích và các tính năng tài khoản nâng cao
-                  chỉ có trong phiên bản premium của mã nguồn này.
+                  quản lý danh sách yêu thích và các tính năng tài khoản nâng
+                  cao chỉ có trong phiên bản premium của mã nguồn này.
                 </p>
               </div>
 
@@ -143,7 +156,8 @@ const Profile = () => {
                   </div>
                 </div>
                 <div className="text-xs text-amber-700 bg-amber-100 px-3 py-2 rounded-full inline-block mt-4">
-                  ⚡ Thanh toán một lần • Quyền truy cập suốt đời • Mã nguồn hoàn chỉnh
+                  ⚡ Thanh toán một lần • Quyền truy cập suốt đời • Mã nguồn
+                  hoàn chỉnh
                 </div>
               </div>
 

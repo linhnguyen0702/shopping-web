@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { setOrderCount, addUser, removeUser, resetOrderCount } from "../redux/orebiSlice";
+import toast from "react-hot-toast";
+import { setOrderCount } from "../redux/orebiSlice";
 import { serverUrl } from "../../config";
 
 const AuthBridge = () => {
@@ -30,7 +31,11 @@ const AuthBridge = () => {
           if (data?.success) {
             dispatch(setOrderCount(data.orders.length));
           }
-        } catch (_) {}
+        } catch {
+          // im lặng nếu lỗi
+        }
+        // Thông báo đăng nhập thành công (qua bridge)
+        toast.success("Đăng nhập thành công");
       } finally {
         goHome();
       }

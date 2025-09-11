@@ -1,4 +1,3 @@
-import React from "react";
 import { logo } from "../assets/images";
 
 const MainLoader = () => {
@@ -12,7 +11,7 @@ const MainLoader = () => {
         <span className="w-14 h-14 border-8 border-r-orange-500 border-transparent rounded-full absolute -top-2 -left-2 animate-spin" />
       </span>
       <p className="text-xl text-center font-semibold text-slate-600 tracking-wide">
-        Orebi shopping is loading...
+        Orebi đang tải...
       </p>
     </div>
   );
