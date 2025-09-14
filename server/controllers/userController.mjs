@@ -169,7 +169,10 @@ const adminLogin = async (req, res) => {
     }
 
     if (!user.isActive) {
-      return res.json({ success: false, message: "Tài khoản đã bị vô hiệu hóa" });
+      return res.json({
+        success: false,
+        message: "Tài khoản đã bị vô hiệu hóa",
+      });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -219,14 +222,20 @@ const sendPasswordResetOtp = async (req, res) => {
         const domain = normalizedEmail.split("@")[1];
         const mxRecords = await dns.resolveMx(domain);
         if (!mxRecords || mxRecords.length === 0) {
-          return res.json({ success: false, message: "Email không thể nhận thư (không có MX)" });
+          return res.json({
+            success: false,
+            message: "Email không thể nhận thư (không có MX)",
+          });
         }
       } catch (mxErr) {
-        return res.json({ success: false, message: "Email không thể nhận thư (MX lỗi)" });
+        return res.json({
+          success: false,
+          message: "Email không thể nhận thư (MX lỗi)",
+        });
       }
     }
 
-    const otp = (Math.floor(100000 + Math.random() * 900000)).toString();
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const otpHash = crypto.createHash("sha256").update(otp).digest("hex");
     user.resetOtp = otpHash;
     user.resetOtpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 phút
@@ -251,10 +260,17 @@ const sendPasswordResetOtp = async (req, res) => {
           console.log("Ethereal test SMTP created. Login:", smtpUser);
         } catch (e) {
           console.warn("Không tạo được Ethereal account:", e?.message);
-          return res.json({ success: true, message: "Gửi OTP thành công (DEV)", demoOtp: otp });
+          return res.json({
+            success: true,
+            message: "Gửi OTP thành công (DEV)",
+            demoOtp: otp,
+          });
         }
       } else {
-        return res.json({ success: false, message: "Máy chủ email chưa được cấu hình" });
+        return res.json({
+          success: false,
+          message: "Máy chủ email chưa được cấu hình",
+        });
       }
     } else {
       transporter = nodemailer.createTransport({
@@ -273,8 +289,14 @@ const sendPasswordResetOtp = async (req, res) => {
     };
     try {
       const info = await transporter.sendMail(mailOptions);
-      const previewUrl = nodemailer.getTestMessageUrl ? nodemailer.getTestMessageUrl(info) : undefined;
-      return res.json({ success: true, message: "Gửi OTP thành công", previewUrl });
+      const previewUrl = nodemailer.getTestMessageUrl
+        ? nodemailer.getTestMessageUrl(info)
+        : undefined;
+      return res.json({
+        success: true,
+        message: "Gửi OTP thành công",
+        previewUrl,
+      });
     } catch (mailErr) {
       console.log("Email send error", mailErr);
       return res.json({ success: false, message: "Gửi email OTP thất bại" });
@@ -290,14 +312,24 @@ const verifyPasswordResetOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
     if (!email || !otp) {
-      return res.json({ success: false, message: "Email and OTP are required" });
+      return res.json({
+        success: false,
+        message: "Email and OTP are required",
+      });
     }
     const user = await userModel.findOne({ email });
     if (!user) {
       return res.json({ success: false, message: "User doesn't exist" });
     }
-    if (!user.resetOtp || !user.resetOtpExpires || user.resetOtpExpires < new Date()) {
-      return res.json({ success: false, message: "OTP expired or not requested" });
+    if (
+      !user.resetOtp ||
+      !user.resetOtpExpires ||
+      user.resetOtpExpires < new Date()
+    ) {
+      return res.json({
+        success: false,
+        message: "OTP expired or not requested",
+      });
     }
     const otpHash = crypto.createHash("sha256").update(otp).digest("hex");
     if (otpHash !== user.resetOtp) {
@@ -326,7 +358,10 @@ const resetPasswordWithToken = async (req, res) => {
       return res.json({ success: false, message: "Missing data" });
     }
     if (newPassword.length < 8) {
-      return res.json({ success: false, message: "Password must be at least 8 characters" });
+      return res.json({
+        success: false,
+        message: "Password must be at least 8 characters",
+      });
     }
 
     let payload;
@@ -368,7 +403,10 @@ const resetPasswordDirect = async (req, res) => {
       return res.json({ success: false, message: "Email không hợp lệ" });
     }
     if (!newPassword || newPassword.length < 8) {
-      return res.json({ success: false, message: "Mật khẩu tối thiểu 8 ký tự" });
+      return res.json({
+        success: false,
+        message: "Mật khẩu tối thiểu 8 ký tự",
+      });
     }
 
     const user = await userModel.findOne({ email: normalizedEmail });
@@ -400,7 +438,10 @@ const googleLogin = async (req, res) => {
     const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
     let ticket;
     try {
-      ticket = await client.verifyIdToken({ idToken, audience: process.env.GOOGLE_CLIENT_ID });
+      ticket = await client.verifyIdToken({
+        idToken,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
     } catch (err) {
       return res.json({ success: false, message: "Invalid Google token" });
     }
@@ -408,7 +449,10 @@ const googleLogin = async (req, res) => {
     const email = payload.email?.toLowerCase();
     const name = payload.name || payload.email?.split("@")[0] || "User";
     if (!email) {
-      return res.json({ success: false, message: "Google account has no email" });
+      return res.json({
+        success: false,
+        message: "Google account has no email",
+      });
     }
 
     let user = await userModel.findOne({ email });
@@ -417,7 +461,12 @@ const googleLogin = async (req, res) => {
       const salt = await bcrypt.genSalt(10);
       const randomPassword = crypto.randomBytes(16).toString("hex");
       const hashed = await bcrypt.hash(randomPassword, salt);
-      user = await userModel.create({ name, email, password: hashed, role: "user" });
+      user = await userModel.create({
+        name,
+        email,
+        password: hashed,
+        role: "user",
+      });
     }
     if (!user.isActive) {
       return res.json({ success: false, message: "Account is deactivated" });
@@ -430,7 +479,12 @@ const googleLogin = async (req, res) => {
     res.json({
       success: true,
       token,
-      user: { id: user._id, name: user.name, email: user.email, role: user.role },
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
       message: "Logged in with Google",
     });
   } catch (error) {
@@ -445,7 +499,10 @@ const googleLoginWithCode = async (req, res) => {
   try {
     const { code } = req.body || {};
     if (!code) {
-      return res.json({ success: false, message: "Missing authorization code" });
+      return res.json({
+        success: false,
+        message: "Missing authorization code",
+      });
     }
 
     const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -453,10 +510,17 @@ const googleLoginWithCode = async (req, res) => {
     const redirectUri = process.env.GOOGLE_REDIRECT_URI || "postmessage"; // react-oauth/google default
 
     if (!clientId || !clientSecret) {
-      return res.json({ success: false, message: "Google OAuth not configured" });
+      return res.json({
+        success: false,
+        message: "Google OAuth not configured",
+      });
     }
 
-    const oauthClient = new OAuth2Client({ clientId, clientSecret, redirectUri });
+    const oauthClient = new OAuth2Client({
+      clientId,
+      clientSecret,
+      redirectUri,
+    });
 
     // Exchange code for tokens
     let tokensResponse;
@@ -464,12 +528,18 @@ const googleLoginWithCode = async (req, res) => {
       const { tokens } = await oauthClient.getToken({ code });
       tokensResponse = tokens;
     } catch (err) {
-      return res.json({ success: false, message: "Failed to exchange code for tokens" });
+      return res.json({
+        success: false,
+        message: "Failed to exchange code for tokens",
+      });
     }
 
     const idToken = tokensResponse.id_token;
     if (!idToken) {
-      return res.json({ success: false, message: "No id_token returned by Google" });
+      return res.json({
+        success: false,
+        message: "No id_token returned by Google",
+      });
     }
 
     // Verify ID token
@@ -484,7 +554,10 @@ const googleLoginWithCode = async (req, res) => {
     const email = payload.email?.toLowerCase();
     const name = payload.name || payload.email?.split("@")[0] || "User";
     if (!email) {
-      return res.json({ success: false, message: "Google account has no email" });
+      return res.json({
+        success: false,
+        message: "Google account has no email",
+      });
     }
 
     let user = await userModel.findOne({ email });
@@ -492,7 +565,12 @@ const googleLoginWithCode = async (req, res) => {
       const salt = await bcrypt.genSalt(10);
       const randomPassword = crypto.randomBytes(16).toString("hex");
       const hashed = await bcrypt.hash(randomPassword, salt);
-      user = await userModel.create({ name, email, password: hashed, role: "user" });
+      user = await userModel.create({
+        name,
+        email,
+        password: hashed,
+        role: "user",
+      });
     }
 
     if (!user.isActive) {
@@ -506,7 +584,12 @@ const googleLoginWithCode = async (req, res) => {
     res.json({
       success: true,
       token,
-      user: { id: user._id, name: user.name, email: user.email, role: user.role },
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
       message: "Logged in with Google",
     });
   } catch (error) {
@@ -906,6 +989,315 @@ const uploadUserAvatar = async (req, res) => {
   }
 };
 
+// Get user account statistics
+const getUserStats = async (req, res) => {
+  try {
+    const user = await userModel.findById(req.user.id).populate("orders");
+
+    if (!user) {
+      return res.json({ success: false, message: "User not found" });
+    }
+
+    const stats = {
+      totalOrders: user.orders ? user.orders.length : 0,
+      cartItems: Object.keys(user.userCart || {}).length,
+      wishlistItems: 0, // Placeholder for future wishlist feature
+      totalSpent: user.orders
+        ? user.orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0)
+        : 0,
+      memberSince: user.createdAt,
+      lastLogin: user.lastLogin,
+    };
+
+    res.json({ success: true, stats });
+  } catch (error) {
+    console.log("Get User Stats Error", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Update user profile information
+const updateProfileInfo = async (req, res) => {
+  try {
+    const { name, phone, address, city, state, zipCode, country } = req.body;
+    const user = await userModel.findById(req.user.id);
+
+    if (!user) {
+      return res.json({ success: false, message: "User not found" });
+    }
+
+    // Update basic profile info
+    if (name) user.name = name;
+
+    // Handle phone and address - update the first address or create one
+    if (phone || address || city || state || zipCode || country) {
+      if (!user.addresses || user.addresses.length === 0) {
+        // Create a default address entry
+        user.addresses = [
+          {
+            label: "Primary",
+            street: address || "",
+            city: city || "",
+            state: state || "",
+            zipCode: zipCode || "",
+            country: country || "",
+            phone: phone || "",
+            isDefault: true,
+          },
+        ];
+      } else {
+        // Update the first (primary) address
+        if (phone) user.addresses[0].phone = phone;
+        if (address) user.addresses[0].street = address;
+        if (city) user.addresses[0].city = city;
+        if (state) user.addresses[0].state = state;
+        if (zipCode) user.addresses[0].zipCode = zipCode;
+        if (country) user.addresses[0].country = country;
+      }
+    }
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Profile updated successfully",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        phone:
+          user.addresses && user.addresses[0] ? user.addresses[0].phone : "",
+        address:
+          user.addresses && user.addresses[0] ? user.addresses[0].street : "",
+        city: user.addresses && user.addresses[0] ? user.addresses[0].city : "",
+        state:
+          user.addresses && user.addresses[0] ? user.addresses[0].state : "",
+        zipCode:
+          user.addresses && user.addresses[0] ? user.addresses[0].zipCode : "",
+        country:
+          user.addresses && user.addresses[0] ? user.addresses[0].country : "",
+        avatar: user.avatar,
+        createdAt: user.createdAt,
+        lastLogin: user.lastLogin,
+      },
+    });
+  } catch (error) {
+    console.log("Update Profile Info Error", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Update user email
+const updateUserEmail = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await userModel.findById(req.user.id);
+
+    if (!user) {
+      return res.json({ success: false, message: "User not found" });
+    }
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.json({
+        success: false,
+        message: "Current password is incorrect",
+      });
+    }
+
+    // Validate new email
+    if (!validator.isEmail(email)) {
+      return res.json({
+        success: false,
+        message: "Please enter a valid email address",
+      });
+    }
+
+    // Check if email is already taken by another user
+    const existingUser = await userModel.findOne({
+      email: email,
+      _id: { $ne: req.user.id },
+    });
+    if (existingUser) {
+      return res.json({
+        success: false,
+        message: "Email is already taken by another user",
+      });
+    }
+
+    user.email = email;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Email updated successfully",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.log("Update Email Error", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Upload and update user avatar
+const updateUserAvatar = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.json({ success: false, message: "No file uploaded" });
+    }
+
+    const user = await userModel.findById(req.user.id);
+    if (!user) {
+      return res.json({ success: false, message: "User not found" });
+    }
+
+    // Delete old avatar if exists
+    if (user.avatar) {
+      try {
+        await deleteCloudinaryImage(user.avatar);
+      } catch (error) {
+        console.log("Error deleting old avatar:", error);
+      }
+    }
+
+    // Upload new avatar to Cloudinary
+    const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+      folder: "orebi/users",
+      resource_type: "image",
+      transformation: [
+        { width: 400, height: 400, crop: "fill", gravity: "face" },
+        { quality: "auto", fetch_format: "auto" },
+      ],
+    });
+
+    // Clean up temporary file
+    cleanupTempFile(req.file.path);
+
+    // Update user avatar
+    user.avatar = uploadResult.secure_url;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Avatar updated successfully",
+      avatarUrl: uploadResult.secure_url,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar,
+      },
+    });
+  } catch (error) {
+    console.log("Avatar update error", error);
+
+    // Clean up temporary file even on error
+    if (req.file?.path) {
+      cleanupTempFile(req.file.path);
+    }
+
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Change user password
+const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const user = await userModel.findById(req.user.id);
+
+    if (!user) {
+      return res.json({ success: false, message: "User not found" });
+    }
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.json({
+        success: false,
+        message: "Current password is incorrect",
+      });
+    }
+
+    // Validate new password
+    if (newPassword.length < 8) {
+      return res.json({
+        success: false,
+        message: "New password must be at least 8 characters long",
+      });
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    await user.save();
+
+    res.json({ success: true, message: "Password changed successfully" });
+  } catch (error) {
+    console.log("Change Password Error", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Get user preferences/settings
+const getUserPreferences = async (req, res) => {
+  try {
+    const user = await userModel.findById(req.user.id).select("preferences");
+
+    if (!user) {
+      return res.json({ success: false, message: "User not found" });
+    }
+
+    const preferences = user.preferences || {
+      notifications: {
+        email: true,
+        sms: false,
+        push: true,
+      },
+      privacy: {
+        profileVisibility: "public",
+        showEmail: false,
+        showPhone: false,
+      },
+      language: "vi",
+      currency: "VND",
+    };
+
+    res.json({ success: true, preferences });
+  } catch (error) {
+    console.log("Get User Preferences Error", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Update user preferences/settings
+const updateUserPreferences = async (req, res) => {
+  try {
+    const { preferences } = req.body;
+    const user = await userModel.findById(req.user.id);
+
+    if (!user) {
+      return res.json({ success: false, message: "User not found" });
+    }
+
+    // Update preferences
+    user.preferences = { ...user.preferences, ...preferences };
+    await user.save();
+
+    res.json({ success: true, message: "Preferences updated successfully" });
+  } catch (error) {
+    console.log("Update User Preferences Error", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
 export {
   userLogin,
   userRegister,
@@ -932,6 +1324,13 @@ export {
   resetPasswordDirect,
   googleLogin,
   googleLoginWithCode,
+  getUserStats,
+  updateProfileInfo,
+  updateUserEmail,
+  updateUserAvatar,
+  changePassword,
+  getUserPreferences,
+  updateUserPreferences,
 };
 
 // Get user profile

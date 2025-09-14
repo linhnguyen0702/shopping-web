@@ -38,6 +38,24 @@ const userSchema = new mongoose.Schema(
     avatar: { type: String, default: "" },
     resetOtp: { type: String, default: "" },
     resetOtpExpires: { type: Date },
+    preferences: {
+      notifications: {
+        email: { type: Boolean, default: true },
+        sms: { type: Boolean, default: false },
+        push: { type: Boolean, default: true },
+      },
+      privacy: {
+        profileVisibility: {
+          type: String,
+          enum: ["public", "private"],
+          default: "public",
+        },
+        showEmail: { type: Boolean, default: false },
+        showPhone: { type: Boolean, default: false },
+      },
+      language: { type: String, default: "vi" },
+      currency: { type: String, default: "VND" },
+    },
   },
   {
     minimize: false,

@@ -25,6 +25,13 @@ import {
   resetPasswordDirect,
   googleLogin,
   googleLoginWithCode,
+  getUserStats,
+  updateProfileInfo,
+  updateUserEmail,
+  updateUserAvatar,
+  changePassword,
+  getUserPreferences,
+  updateUserPreferences,
 } from "../controllers/userController.mjs";
 import adminAuth from "../middleware/adminAuth.js";
 import userAuth from "../middleware/userAuth.js";
@@ -55,6 +62,22 @@ router.post(`${routeValue}cart/add`, userAuth, addToCart);
 router.put(`${routeValue}cart/update`, userAuth, updateCart);
 router.get(`${routeValue}cart`, userAuth, getUserCart);
 router.delete(`${routeValue}cart/clear`, userAuth, clearCart);
+
+// Profile management routes
+router.get(`${routeValue}stats`, userAuth, getUserStats);
+router.put(`${routeValue}profile/info`, userAuth, updateProfileInfo);
+router.put(`${routeValue}profile/email`, userAuth, updateUserEmail);
+router.put(`${routeValue}password/change`, userAuth, changePassword);
+router.get(`${routeValue}preferences`, userAuth, getUserPreferences);
+router.put(`${routeValue}preferences`, userAuth, updateUserPreferences);
+
+// Avatar upload route (user)
+router.post(
+  `${routeValue}profile/avatar`,
+  userAuth,
+  avatarUpload.single("avatar"),
+  updateUserAvatar
+);
 
 // User address management routes
 router.get(`${routeValue}addresses`, userAuth, getUserAddresses);

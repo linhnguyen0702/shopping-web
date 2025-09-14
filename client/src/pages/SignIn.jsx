@@ -120,7 +120,7 @@ const SignIn = () => {
         // Lấy số lượng đơn hàng
         await fetchUserOrderCount(data?.token);
         const successMsg =
-          data?.message === "Người dùng đã đăng nhập thành công"
+          data?.message === "User logged in successfully"
             ? "Đăng nhập thành công"
             : data?.message || "Đăng nhập thành công";
         toast.success(successMsg);
