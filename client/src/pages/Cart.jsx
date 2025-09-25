@@ -1,3 +1,4 @@
+import { updateUserCart } from "../services/cartService";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
@@ -189,17 +190,41 @@ const Cart = () => {
     }
   };
 
-  const handleQuantityChange = (id, action) => {
+
+
+  const syncCartToBackend = async (newProducts) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      await updateUserCart(token, newProducts);
+    }
+  };
+
+  const handleQuantityChange = async (id, action) => {
     if (action === "increase") {
       dispatch(increaseQuantity(id));
     } else {
       dispatch(decreaseQuantity(id));
     }
+    // Wait for Redux to update, then sync
+    const updatedProducts = products.map((item) =>
+      item._id === id
+        ? {
+            ...item,
+            quantity:
+              action === "increase"
+                ? (item.quantity || 1) + 1
+                : Math.max((item.quantity || 1) - 1, 1),
+          }
+        : item
+    );
+    await syncCartToBackend(updatedProducts);
   };
 
-  const handleRemoveItem = (id, name) => {
+  const handleRemoveItem = async (id, name) => {
     dispatch(deleteItem(id));
     toast.success(`${name} đã được xóa khỏi giỏ hàng!`);
+    const updatedProducts = products.filter((item) => item._id !== id);
+    await syncCartToBackend(updatedProducts);
   };
 
   return (
@@ -431,7 +456,7 @@ const Cart = () => {
                               >
                                 <FaMinus className="w-3 h-3" />
                               </button>
-                              <span className="px-4 py-3 font-medium min-w-[3rem] text-center">
+                              <span className="px-2 py-1 font-medium min-w-[2rem] text-center">
                                 {item?.quantity || 1}
                               </span>
                               <button

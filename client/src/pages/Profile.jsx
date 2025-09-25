@@ -5,7 +5,7 @@ import { useNavigate, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import axios from "axios";
 import { serverUrl } from "../../config";
-import { addUser, resetAll, removeUser } from "../redux/orebiSlice";
+import { addUser, removeUser, resetCart } from "../redux/orebiSlice";
 import Container from "../components/Container";
 import {
   FaSignOutAlt,
@@ -21,6 +21,9 @@ const Profile = () => {
   const navigate = useNavigate();
   const { userInfo, products, orderCount } = useSelector(
     (state) => state.orebiReducer
+  );
+  const favorites = useSelector(
+    (state) => state.favoriteReducer?.favorites || []
   );
 
   // State for edit modal
@@ -88,7 +91,7 @@ const Profile = () => {
       localStorage.removeItem("token");
       // Reset Redux để Header cập nhật ngay
       dispatch(removeUser());
-      dispatch(resetAll());
+      dispatch(resetCart());
       // Không purge nữa để tránh trạng thái persist rỗng tạm thời
 
       toast.success("Đăng xuất thành công");
@@ -461,7 +464,9 @@ const Profile = () => {
                 <div className="text-sm text-gray-600">Tổng đơn hàng</div>
               </div>
               <div className="text-center p-6 bg-red-50 rounded-xl">
-                <div className="text-3xl font-bold text-red-600 mb-2">0</div>
+                <div className="text-3xl font-bold text-red-600 mb-2">
+                  {favorites.length}
+                </div>
                 <div className="text-sm text-gray-600">Sản phẩm yêu thích</div>
               </div>
             </div>

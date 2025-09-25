@@ -1,12 +1,22 @@
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
 import PropTypes from "prop-types";
-import { FaHeart, FaPlus} from "react-icons/fa";
+import { FaHeart, FaPlus } from "react-icons/fa";
 import PriceContainer from "./PriceContainer";
+import { useDispatch, useSelector } from "react-redux";
+import { addToCart } from "../redux/orebiSlice";
+import { updateUserCart } from "../services/cartService";
+import { addToFavorites, removeFromFavorites } from "../redux/favoriteSlice";
+import toast from "react-hot-toast";
 
 const ProductCard = ({ item, className = "" }) => {
   const navigate = useNavigate();
-  const [isLiked, setIsLiked] = useState(false);
+  const dispatch = useDispatch();
+
+  const favorites = useSelector(
+    (state) => state.favoriteReducer?.favorites || []
+  );
+  const products = useSelector((state) => state.orebiReducer.products);
+  const isLiked = favorites.some((fav) => fav._id === item._id);
 
   const handleProductDetails = () => {
     navigate(`/product/${item?._id}`, {
@@ -16,12 +26,24 @@ const ProductCard = ({ item, className = "" }) => {
 
   const handleLike = (e) => {
     e.stopPropagation();
-    setIsLiked((prev) => !prev);
+    if (isLiked) {
+      dispatch(removeFromFavorites(item._id));
+      toast("Đã xoá khỏi yêu thích", { icon: "💔" });
+    } else {
+      dispatch(addToFavorites(item));
+      toast.success("Đã thêm vào yêu thích");
+    }
   };
 
-  const handleAddToCart = (e) => {
+  const handleAddToCart = async (e) => {
     e.stopPropagation();
-    // Thêm logic thêm vào giỏ hàng ở đây
+    dispatch(addToCart({ ...item, quantity: 1 }));
+    toast.success("Đã thêm vào giỏ hàng");
+    // Đồng bộ backend nếu đã đăng nhập
+    const token = localStorage.getItem("token");
+    if (token) {
+      await updateUserCart(token, products.concat([{ ...item, quantity: 1 }]));
+    }
   };
 
   return (

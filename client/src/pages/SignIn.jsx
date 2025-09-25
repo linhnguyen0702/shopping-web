@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import axios from "axios";
 import { serverUrl } from "../../config";
 import { useDispatch } from "react-redux";
-import { setOrderCount } from "../redux/orebiSlice";
+import { setOrderCount, resetCart, addToCart } from "../redux/orebiSlice";
 import {
   FaEnvelope,
   FaLock,
@@ -19,6 +19,27 @@ import { useGoogleLogin } from "@react-oauth/google";
 
 const SignIn = () => {
   const dispatch = useDispatch();
+
+  // Lấy giỏ hàng từ backend và cập nhật Redux
+  const fetchUserCart = async (token) => {
+    try {
+      const response = await fetch(`${serverUrl}/cart`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      if (data.success && data.cart && Array.isArray(data.cart.products)) {
+        dispatch(resetCart());
+        data.cart.products.forEach((item) => {
+          dispatch(addToCart(item));
+        });
+      }
+    } catch (error) {
+      // Không báo lỗi cho user, chỉ log
+      console.error("Lỗi khi lấy giỏ hàng:", error);
+    }
+  };
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -119,6 +140,7 @@ const SignIn = () => {
         localStorage.setItem("token", data?.token);
         // Lấy số lượng đơn hàng
         await fetchUserOrderCount(data?.token);
+        fetchUserCart(data?.token);
         const successMsg =
           data?.message === "User logged in successfully"
             ? "Đăng nhập thành công"
