@@ -6,6 +6,7 @@ const initialState = {
   isAuthenticated: !!localStorage.getItem("token"),
   loading: false,
   error: null,
+  loginTimestamp: null, // Để track khi nào user vừa login
 };
 
 const authSlice = createSlice({
@@ -27,6 +28,7 @@ const authSlice = createSlice({
       state.isAuthenticated = true;
       state.loading = false;
       state.error = null;
+      state.loginTimestamp = Date.now(); // Track login mới
       localStorage.setItem("token", action.payload.token);
       localStorage.setItem("user", JSON.stringify(action.payload.user));
     },
@@ -36,6 +38,7 @@ const authSlice = createSlice({
       state.isAuthenticated = true;
       state.loading = false;
       state.error = null;
+      state.loginTimestamp = Date.now(); // Track register mới
       localStorage.setItem("token", action.payload.token);
       localStorage.setItem("user", JSON.stringify(action.payload.user));
     },
@@ -45,6 +48,7 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.loading = false;
       state.error = null;
+      state.loginTimestamp = null;
       localStorage.removeItem("token");
       localStorage.removeItem("user");
     },

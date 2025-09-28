@@ -2,6 +2,10 @@ import validator from "validator";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import userModel from "../models/userModel.js";
+import {
+  notifyNewUserRegistration,
+  notifyUserLogin,
+} from "../services/notificationService.js";
 import { cloudinary, deleteCloudinaryImage } from "../config/cloudinary.js";
 import fs from "fs";
 import crypto from "crypto";
@@ -54,6 +58,12 @@ const userLogin = async (req, res) => {
       await user.save();
 
       const token = createToken(user);
+
+      // 🔔 Tạo thông báo user login (tất cả accounts, async, không chờ)
+      notifyUserLogin(user).catch((error) => {
+        console.error("Lỗi tạo thông báo login:", error);
+      });
+
       res.json({
         success: true,
         token,
@@ -137,6 +147,11 @@ const userRegister = async (req, res) => {
 
     const token = createToken(user);
 
+    // 🔔 Tạo thông báo user đăng ký mới (async, không chờ)
+    notifyNewUserRegistration(user).catch((error) => {
+      console.error("Lỗi tạo thông báo đăng ký:", error);
+    });
+
     res.json({
       success: true,
       token,
@@ -182,6 +197,17 @@ const adminLogin = async (req, res) => {
       await user.save();
 
       const token = createToken(user);
+
+      // 🔔 Tạo thông báo admin login (async, không chờ)
+      console.log(
+        "🎯 Admin login thành công, tạo notification cho:",
+        user.name,
+        user.email
+      );
+      notifyUserLogin(user).catch((error) => {
+        console.error("❌ Lỗi tạo thông báo admin login:", error);
+      });
+
       res.json({
         success: true,
         token,

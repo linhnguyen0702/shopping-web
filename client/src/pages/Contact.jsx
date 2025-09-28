@@ -12,29 +12,32 @@ const Contact = () => {
         <div className="grid md:grid-cols-3 gap-6 mb-6">
           {/* Thông tin liên hệ */}
           <div className="md:col-span-2 bg-white rounded-xl shadow p-6">
-            <h2 className="text-2xl font-bold text-[#205295] mb-2">
+            <h2 className="text-2xl font-bold text-[#111827] mb-2">
               Thông tin liên hệ
             </h2>
             <p className="mb-4 text-gray-700">
-              Orebi Shopping là đơn vị chuyên cung cấp các sản phẩm máy tính,
-              laptop, thiết bị công nghệ và giải pháp chuyển đổi số chính hãng
-              từ các thương hiệu hàng đầu thế giới. Với phương châm “Uy tín –
-              Chất lượng – Dịch vụ tận tâm”, chúng tôi luôn nỗ lực mang đến cho
-              khách hàng những trải nghiệm mua sắm an toàn, tiện lợi và đáng tin
-              cậy.
+              Decora là thương hiệu chuyên cung cấp nội thất và đồ decor với
+              phong cách hiện đại, tinh tế và bền vững. Chúng tôi mang đến cho
+              khách hàng sản phẩm chính hãng, đa dạng mẫu mã, từ nội thất gia
+              đình, văn phòng đến các phụ kiện trang trí độc đáo, giúp không
+              gian sống và làm việc trở nên ấm cúng – tiện nghi – đậm dấu ấn cá
+              nhân. Với phương châm “Tinh tế – Bền vững – Giá trị thẩm mỹ”,
+              Decora không chỉ chú trọng đến chất lượng sản phẩm, mà còn quan
+              tâm đến dịch vụ hậu mãi và trải nghiệm mua sắm. Chúng tôi cam kết
+              đồng hành cùng khách hàng trong việc kiến tạo những không gian
+              sống hiện đại, sang trọng và đầy cảm hứng.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
               <div className="flex items-start gap-2">
-                <FaMapMarkerAlt className="mt-1 text-[#205295]" />
+                <FaMapMarkerAlt className="mt-1 text-[#111827]" />
                 <div>
                   <span className="font-semibold">Địa chỉ:</span>
                   <br />
-                  Thôn 2 - Hạ Lôi - Mê Linh , Thành Phố Hà Nội,
-                  Việt Nam
+                  Thôn 2 - Hạ Lôi - Mê Linh , Thành Phố Hà Nội, Việt Nam
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <FaClock className="mt-1 text-[#205295]" />
+                <FaClock className="mt-1 text-[#111827]" />
                 <div>
                   <span className="font-semibold">Thời gian làm việc:</span>
                   <br />
@@ -44,7 +47,7 @@ const Contact = () => {
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <FaPhoneAlt className="mt-1 text-[#205295]" />
+                <FaPhoneAlt className="mt-1 text-[#111827]" />
                 <div>
                   <span className="font-semibold">Hotline:</span>
                   <br />
@@ -52,7 +55,7 @@ const Contact = () => {
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <FaEnvelope className="mt-1 text-[#205295]" />
+                <FaEnvelope className="mt-1 text-[#111827]" />
                 <div>
                   <span className="font-semibold">Email:</span>
                   <br />
@@ -63,7 +66,7 @@ const Contact = () => {
           </div>
           {/* Form liên hệ */}
           <div className="bg-white rounded-xl shadow p-6">
-            <h2 className="text-xl font-bold text-[#205295] mb-2">
+            <h2 className="text-xl font-bold text-[#111827] mb-2">
               Liên hệ với chúng tôi
             </h2>
             <p className="mb-4 text-gray-600 text-sm">
@@ -97,7 +100,7 @@ const Contact = () => {
               />
               <button
                 type="submit"
-                className="bg-[#205295] text-white font-semibold rounded py-2 mt-2 hover:bg-[#163a5f] transition"
+                className="bg-[#111827] text-white font-semibold rounded py-2 mt-2 hover:bg-[#163a5f] transition"
               >
                 Gửi thông tin
               </button>

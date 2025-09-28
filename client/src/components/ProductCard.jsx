@@ -37,12 +37,43 @@ const ProductCard = ({ item, className = "" }) => {
 
   const handleAddToCart = async (e) => {
     e.stopPropagation();
+
+    // Thêm vào Redux ngay lập tức để UX mượt mà
     dispatch(addToCart({ ...item, quantity: 1 }));
     toast.success("Đã thêm vào giỏ hàng");
-    // Đồng bộ backend nếu đã đăng nhập
+
+    // Đồng bộ backend nếu đã đăng nhập (chạy background)
     const token = localStorage.getItem("token");
     if (token) {
-      await updateUserCart(token, products.concat([{ ...item, quantity: 1 }]));
+      try {
+        console.log("🛒 Đang đồng bộ giỏ hàng với server...");
+
+        // Tính toán products mới dựa trên state hiện tại
+        const existingItem = products.find((p) => p._id === item._id);
+        let updatedProducts;
+
+        if (existingItem) {
+          // Nếu sản phẩm đã tồn tại, tăng quantity
+          updatedProducts = products.map((p) =>
+            p._id === item._id ? { ...p, quantity: (p.quantity || 1) + 1 } : p
+          );
+        } else {
+          // Nếu sản phẩm mới, thêm vào danh sách
+          updatedProducts = [...products, { ...item, quantity: 1 }];
+        }
+
+        const result = await updateUserCart(token, updatedProducts);
+
+        if (!result.success) {
+          console.error("❌ Lỗi đồng bộ server:", result.message);
+          toast.error("Không thể đồng bộ với server");
+        } else {
+          console.log("✅ Đã đồng bộ giỏ hàng thành công");
+        }
+      } catch (error) {
+        console.error("❌ Lỗi khi đồng bộ giỏ hàng:", error);
+        toast.error("Lỗi kết nối server");
+      }
     }
   };
 

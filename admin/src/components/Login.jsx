@@ -3,7 +3,6 @@ import PropTypes from "prop-types";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { serverUrl } from "../../config";
-import { logo } from "../assets/images";
 
 const Login = ({ setToken }) => {
   const [email, setEmail] = useState("");
@@ -32,23 +31,18 @@ const Login = ({ setToken }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo Section */}
-        <div className="text-center mb-8">
-          <div className="bg-white p-3 rounded-md shadow-lg inline-block mb-4 transform hover:scale-105 transition-transform duration-300">
-            <img src={logo} alt="logo" className="w-20" />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Admin Panel</h1>
-          <p className="text-gray-600">
-            Chào mừng bạn quay trở lại! Vui lòng đăng nhập để tiếp tục.
-          </p>
-        </div>
-
         {/* Login Form */}
         <div className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl border border-white/20">
+          {/* Header Section inside form */}
+          <div className="text-center mb-6">
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Đăng nhập</h1>
+            <p className="text-gray-600">Vui lòng đăng nhập để tiếp tục</p>
+          </div>
+
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
               <label className="text-sm font-semibold text-gray-700 block">
-                Email 
+                Email
               </label>
               <div className="relative">
                 <input

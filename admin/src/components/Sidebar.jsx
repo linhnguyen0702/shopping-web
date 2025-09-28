@@ -14,7 +14,12 @@ import {
   FaTags,
   FaExternalLinkAlt,
 } from "react-icons/fa";
-import { MdDashboard, MdAnalytics, MdInventory } from "react-icons/md";
+import {
+  MdDashboard,
+  MdAnalytics,
+  MdInventory,
+  MdNotifications,
+} from "react-icons/md";
 import { BiPackage } from "react-icons/bi";
 import { HiOutlineClipboardList } from "react-icons/hi";
 import { CLIENT_BASE_URL } from "../config";
@@ -46,7 +51,9 @@ const Sidebar = () => {
       return;
     }
     // Pass token via query to client AuthBridge
-    const url = `${CLIENT_BASE_URL}/auth/bridge${token ? `?token=${encodeURIComponent(token)}` : ""}`;
+    const url = `${CLIENT_BASE_URL}/auth/bridge${
+      token ? `?token=${encodeURIComponent(token)}` : ""
+    }`;
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
@@ -116,6 +123,12 @@ const Sidebar = () => {
       path: "/users",
       description: "Quản lý người dùng",
     },
+    {
+      title: "Thông báo",
+      icon: <MdNotifications />,
+      path: "/notifications",
+      description: "Xem thông báo hệ thống",
+    },
   ];
 
   const renderNavItem = (item, isChild = false) => {
@@ -173,7 +186,9 @@ const Sidebar = () => {
             {item.icon}
           </span>
           <div className="hidden sm:flex flex-col min-w-0 flex-1">
-            <span className={`font-medium truncate ${isChild ? "text-sm" : ""}`}>
+            <span
+              className={`font-medium truncate ${isChild ? "text-sm" : ""}`}
+            >
               {item.title}
             </span>
             {!isChild && (
@@ -201,7 +216,9 @@ const Sidebar = () => {
             <FaBox className="text-white text-sm sm:text-lg" />
           </div>
           <div className="hidden sm:block">
-            <h1 className="font-bold text-lg sm:text-xl text-gray-900">Orebi Admin</h1>
+            <h1 className="font-bold text-lg sm:text-xl text-gray-900">
+              Decora Admin
+            </h1>
             <p className="text-xs text-gray-500 flex items-center gap-1">
               <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
               Hệ thống đang hoạt động
@@ -212,7 +229,9 @@ const Sidebar = () => {
 
       {/* Navigation */}
       <div className="flex-1 py-2 sm:py-4 overflow-y-auto overflow-x-hidden">
-        <div className="space-y-1 px-1 sm:px-0">{sidebarItems.map((item) => renderNavItem(item))}</div>
+        <div className="space-y-1 px-1 sm:px-0">
+          {sidebarItems.map((item) => renderNavItem(item))}
+        </div>
       </div>
 
       {/* Footer */}

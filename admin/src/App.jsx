@@ -15,7 +15,7 @@ import Analytics from "./pages/Analytics";
 import Inventory from "./pages/Inventory";
 import Categories from "./pages/Categories";
 import Brands from "./pages/Brands";
-
+import Notifications from "./pages/Notifications";
 
 function App() {
   const { token } = useSelector((state) => state.auth);
@@ -53,9 +53,14 @@ function App() {
                         element={<Orders token={token} />}
                       />
                       <Route path="/users" element={<Users token={token} />} />
-                      {false && <Route path="/contacts" element={<div />} />}
-                      {false && <Route path="/invoice" element={<div />} />}
-                      {false && <Route path="/api-docs" element={<div />} />}
+                      <Route
+                        path="/notifications"
+                        element={<Notifications />}
+                      />
+                      <Route
+                        path="/notifications/:id"
+                        element={<Notifications />}
+                      />
                     </Routes>
                   </div>
                 </div>

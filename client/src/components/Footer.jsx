@@ -35,7 +35,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
           {/* Brand Section */}
           <div className="lg:col-span-1">
-            <h3 className="text-2xl font-bold text-gray-900 mb-6">Orebi</h3>
+            <h3 className="text-2xl font-bold text-gray-900 mb-6">Decora</h3>
             <p className="text-gray-600 mb-6 leading-relaxed">
               Khám phá những sản phẩm chất lượng cao cùng dịch vụ tận tâm. Điểm
               đến mua sắm đáng tin cậy cho các nhu cầu thiết yếu của phong cách

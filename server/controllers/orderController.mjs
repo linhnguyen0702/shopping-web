@@ -1,6 +1,7 @@
 import orderModel from "../models/orderModel.js";
 import userModel from "../models/userModel.js";
 import productModel from "../models/productModel.js";
+import { notifyNewOrder } from "../services/notificationService.js";
 
 // Create a new order
 const createOrder = async (req, res) => {
@@ -155,6 +156,11 @@ const createOrder = async (req, res) => {
     // Add order to user's orders array
     await userModel.findByIdAndUpdate(userId, {
       $push: { orders: newOrder._id },
+    });
+
+    // 🔔 Tạo thông báo đơn hàng mới (async, không chờ)
+    notifyNewOrder(newOrder).catch((error) => {
+      console.error("Lỗi tạo thông báo đơn hàng:", error);
     });
 
     res.json({

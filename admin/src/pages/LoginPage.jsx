@@ -4,7 +4,6 @@ import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useGoogleLogin } from "@react-oauth/google";
 import { serverUrl } from "../config";
-import { logo } from "../assets/images";
 import { authService } from "../services/authService";
 import {
   setLoading,
@@ -57,7 +56,7 @@ const LoginPage = () => {
         } else {
           toast.error(data?.message || "Đăng nhập Google thất bại");
         }
-      } catch (err) {
+      } catch {
         toast.error("Không gọi được máy chủ");
       }
     },
@@ -157,7 +156,10 @@ const LoginPage = () => {
     }
     try {
       setModalLoading(true);
-      const res = await authService.resetPasswordDirect({ email: resetEmail, newPassword });
+      const res = await authService.resetPasswordDirect({
+        email: resetEmail,
+        newPassword,
+      });
       if (res.success) {
         toast.success("Đặt lại mật khẩu thành công");
         setShowForgotModal(false);
@@ -179,19 +181,13 @@ const LoginPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo Section */}
-        <div className="text-center mb-6">
-          <div className="bg-white p-3 rounded-md shadow-lg inline-block mb-4 transform hover:scale-105 transition-transform duration-300">
-            <img src={logo} alt="logo" className="w-20" />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            Chào mừng bạn quay trở lại!
-          </h1>
-          <p className="text-gray-600">Vui lòng đăng nhập để tiếp tục</p>
-        </div>
-
         {/* Login Form */}
         <div className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl border border-white/20">
+          {/* Header Section inside form */}
+          <div className="text-center mb-6">
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Đăng nhập</h1>
+            <p className="text-gray-600">Vui lòng đăng nhập để tiếp tục</p>
+          </div>
           {error && (
             <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
               {error}
@@ -201,7 +197,7 @@ const LoginPage = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <label className="text-sm font-semibold text-gray-700 block">
-                Email 
+                Email
               </label>
               <div className="relative">
                 <input
@@ -230,7 +226,6 @@ const LoginPage = () => {
                   </svg>
                 </div>
               </div>
-             
             </div>
 
             <div className="space-y-2">
@@ -293,20 +288,20 @@ const LoginPage = () => {
               </div>
             </div>
             <div className="flex justify-end text-sm mt-1 ">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowForgotModal(true);
-                    setResetEmail("");
-                    setNewPassword("");
-                    setConfirmNewPassword("");
-                  }}
-                  className="text-blue-600 hover:text-blue-800 font-semibold"
-                  disabled={loading}
-                >
-                  Quên mật khẩu?
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForgotModal(true);
+                  setResetEmail("");
+                  setNewPassword("");
+                  setConfirmNewPassword("");
+                }}
+                className="text-blue-600 hover:text-blue-800 font-semibold"
+                disabled={loading}
+              >
+                Quên mật khẩu?
+              </button>
+            </div>
             <button
               type="submit"
               disabled={loading}
@@ -340,7 +335,7 @@ const LoginPage = () => {
                 "Đăng nhập"
               )}
             </button>
-            
+
             <div className="relative py-2">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t border-gray-200"></span>
@@ -356,11 +351,27 @@ const LoginPage = () => {
               className="w-full border border-gray-300 bg-white text-gray-700 py-3 px-6 rounded-xl font-semibold hover:bg-gray-50 focus:ring-4 focus:ring-blue-100 transform hover:scale-[1.01] transition-all duration-200 shadow-sm disabled:opacity-50"
             >
               <span className="inline-flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="h-5 w-5">
-                  <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12 s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C32.65,6.053,28.53,4,24,4C12.955,4,4,12.955,4,24 s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
-                  <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,16.108,18.961,14,24,14c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657 C32.65,6.053,28.53,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
-                  <path fill="#4CAF50" d="M24,44c5.176,0,9.86-1.977,13.409-5.197l-6.19-5.238C29.211,35.091,26.715,36,24,36 c-5.202,0-9.619-3.317-11.283-7.946l-6.532,5.028C9.505,39.556,16.227,44,24,44z"/>
-                  <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-3.994,5.565 c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C35.271,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 48 48"
+                  className="h-5 w-5"
+                >
+                  <path
+                    fill="#FFC107"
+                    d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12 s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C32.65,6.053,28.53,4,24,4C12.955,4,4,12.955,4,24 s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"
+                  />
+                  <path
+                    fill="#FF3D00"
+                    d="M6.306,14.691l6.571,4.819C14.655,16.108,18.961,14,24,14c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657 C32.65,6.053,28.53,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"
+                  />
+                  <path
+                    fill="#4CAF50"
+                    d="M24,44c5.176,0,9.86-1.977,13.409-5.197l-6.19-5.238C29.211,35.091,26.715,36,24,36 c-5.202,0-9.619-3.317-11.283-7.946l-6.532,5.028C9.505,39.556,16.227,44,24,44z"
+                  />
+                  <path
+                    fill="#1976D2"
+                    d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-3.994,5.565 c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C35.271,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"
+                  />
                 </svg>
                 Đăng nhập bằng Google
               </span>
@@ -379,7 +390,6 @@ const LoginPage = () => {
               </Link>
             </p>
           </div>
-          
         </div>
 
         {/* Footer */}
@@ -402,7 +412,9 @@ const LoginPage = () => {
               </button>
             </div>
             <form onSubmit={handleResetPassword} className="space-y-4">
-              <p className="text-sm text-gray-600">Nhập email và mật khẩu mới để đổi mật khẩu.</p>
+              <p className="text-sm text-gray-600">
+                Nhập email và mật khẩu mới để đổi mật khẩu.
+              </p>
               <input
                 type="email"
                 value={resetEmail}
@@ -476,7 +488,9 @@ const LoginPage = () => {
                 />
                 <button
                   type="button"
-                  onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)}
+                  onClick={() =>
+                    setShowConfirmNewPassword(!showConfirmNewPassword)
+                  }
                   className="absolute inset-y-0 right-0 pr-3 flex items-center hover:bg-gray-100 rounded-r-xl transition-colors duration-200"
                   disabled={modalLoading}
                 >

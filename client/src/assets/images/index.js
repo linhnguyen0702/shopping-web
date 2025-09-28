@@ -1,5 +1,4 @@
-import logo from "./orebiLogo.png";
-import logoLight from "./logoLight.png";
+import logo from "./Anh3.png";
 import bannerImgOne from "./banner/slideOne.png";
 import bannerImgTwo from "./banner/slideTwo.png";
 import bannerImgThree from "./banner/slideThree.png";
@@ -28,7 +27,6 @@ import contactUs from "./contactUs.jpg";
 
 export {
   logo,
-  logoLight,
   bannerImgOne,
   bannerImgTwo,
   bannerImgThree,

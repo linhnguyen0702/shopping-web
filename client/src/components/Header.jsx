@@ -28,7 +28,7 @@ const Header = () => {
       {" "}
       <Container className="py-4 lg:py-6 flex items-center gap-x-3 md:gap-x-7 justify-between">
         <Link to={"/"} className="flex-shrink-0">
-          <img src={logo} alt="logo" className="h-5 w-auto" />
+          <img src={logo} alt="logo" className="h-12 w-15" />
         </Link>
 
         <SearchInput />

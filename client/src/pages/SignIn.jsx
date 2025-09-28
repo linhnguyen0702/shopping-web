@@ -5,7 +5,12 @@ import toast from "react-hot-toast";
 import axios from "axios";
 import { serverUrl } from "../../config";
 import { useDispatch } from "react-redux";
-import { setOrderCount, resetCart, addToCart } from "../redux/orebiSlice";
+import {
+  setOrderCount,
+  resetCart,
+  addToCart,
+  addUser,
+} from "../redux/orebiSlice";
 import {
   FaEnvelope,
   FaLock,
@@ -29,11 +34,34 @@ const SignIn = () => {
         },
       });
       const data = await response.json();
-      if (data.success && data.cart && Array.isArray(data.cart.products)) {
+      console.log("📦 Dữ liệu giỏ hàng từ server:", data);
+
+      if (data.success && data.cart) {
+        // Reset giỏ hàng trước khi load từ server
         dispatch(resetCart());
-        data.cart.products.forEach((item) => {
-          dispatch(addToCart(item));
-        });
+
+        // Kiểm tra cấu trúc dữ liệu
+        if (Array.isArray(data.cart.products)) {
+          // Cấu trúc: { products: [...] }
+          data.cart.products.forEach((item) => {
+            dispatch(addToCart(item));
+          });
+          console.log(
+            "✅ Đã đồng bộ giỏ hàng từ server:",
+            data.cart.products.length,
+            "sản phẩm"
+          );
+        } else if (data.cart.products) {
+          // Cấu trúc khác, có thể là object
+          console.log(
+            "⚠️ Cấu trúc giỏ hàng không phải array:",
+            typeof data.cart.products
+          );
+        } else {
+          console.log("📦 Giỏ hàng trống hoặc chưa có sản phẩm");
+        }
+      } else {
+        console.log("❌ Không thể lấy giỏ hàng:", data.message);
       }
     } catch (error) {
       // Không báo lỗi cho user, chỉ log
@@ -138,9 +166,17 @@ const SignIn = () => {
       const data = response?.data;
       if (data?.success) {
         localStorage.setItem("token", data?.token);
+
+        // Lưu thông tin user vào Redux
+        if (data?.user) {
+          dispatch(addUser(data.user));
+        }
+
         // Lấy số lượng đơn hàng
         await fetchUserOrderCount(data?.token);
-        fetchUserCart(data?.token);
+        // Đồng bộ giỏ hàng từ server
+        await fetchUserCart(data?.token);
+
         const successMsg =
           data?.message === "User logged in successfully"
             ? "Đăng nhập thành công"

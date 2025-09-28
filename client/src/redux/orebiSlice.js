@@ -77,5 +77,6 @@ export const {
   removeUser,
   setOrderCount,
   resetOrderCount,
+  resetAll,
 } = orebiSlice.actions;
 export default orebiSlice.reducer;

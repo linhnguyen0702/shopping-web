@@ -45,7 +45,7 @@ const About = () => {
             className="text-center max-w-4xl mx-auto"
           >
             <h1 className="text-4xl md:text-5xl font-bold mb-6">
-              Về Orebi Shopping
+              Về Decora Shopping
             </h1>
             <p className="text-xl text-gray-300 leading-relaxed">
             Chúng tôi luôn nỗ lực mang đến cho bạn trải nghiệm mua sắm tuyệt vời nhất 
@@ -95,7 +95,7 @@ const About = () => {
               </h2>
               <div className="space-y-4 text-gray-700 leading-relaxed">
                 <p>
-                Được thành lập vào năm 2019, Orebi Shopping khởi đầu với một sứ mệnh đơn giản: 
+                Được thành lập vào năm 2011, Decora Shopping khởi đầu với một sứ mệnh đơn giản: 
                 mang những sản phẩm chất lượng đến với mọi người, ở bất kỳ đâu. 
                 Từ một cửa hàng trực tuyến nhỏ, chúng tôi đã phát triển thành một sàn thương mại uy tín, 
                 phục vụ khách hàng trên toàn thế giới.
@@ -103,7 +103,7 @@ const About = () => {
                 <p>
                 Chúng tôi tin rằng mua sắm không chỉ đơn thuần là một giao dịch – 
                 mà còn là một trải nghiệm mang lại niềm vui và cảm hứng. 
-                Vì vậy, Orebi Shopping luôn chọn lọc kỹ lưỡng sản phẩm, hợp tác với những nhà cung cấp đáng tin cậy 
+                Vì vậy, Decora Shopping luôn chọn lọc kỹ lưỡng sản phẩm, hợp tác với những nhà cung cấp đáng tin cậy 
                 và đầu tư vào công nghệ tiên tiến để đảm bảo mọi trải nghiệm của bạn trên nền tảng đều diễn ra mượt mà.
                 </p>
                 <p>

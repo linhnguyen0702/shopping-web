@@ -64,9 +64,17 @@ connectCloudinary();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Import specific routes explicitly
+import cartRoute from "./routes/cartRoute.js";
+import notificationRoute from "./routes/notificationRoute.mjs";
+
+app.use("/cart", cartRoute);
+app.use("/api/notifications", notificationRoute);
+
 const routesPath = path.resolve(__dirname, "./routes");
 const routeFiles = readdirSync(routesPath);
 routeFiles.map(async (file) => {
+  if (file === "cartRoute.js" || file === "notificationRoute.mjs") return; // Skip already imported routes
   const routeModule = await import(`./routes/${file}`);
   app.use("/", routeModule.default);
 });
@@ -81,7 +89,9 @@ try {
   });
   server.on("error", (err) => {
     if (err?.code === "EADDRINUSE") {
-      console.error(`Port ${port} đã được sử dụng. Đặt một PORT khác hoặc giải phóng nó.`);
+      console.error(
+        `Port ${port} đã được sử dụng. Đặt một PORT khác hoặc giải phóng nó.`
+      );
     } else {
       console.error("Lỗi server:", err?.message || err);
     }
