@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import axios from "axios";
+import { serverUrl } from "../../config";
 import Container from "./Container";
 import { Button } from "./ui/button";
 import { paymentCard } from "../assets/images";
@@ -9,6 +11,7 @@ const Footer = () => {
   const [emailInfo, setEmailInfo] = useState("");
   const [subscription, setSubscription] = useState(false);
   const [errMsg, setErrMsg] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const emailValidation = () => {
     return String(emailInfo)
@@ -16,15 +19,36 @@ const Footer = () => {
       .match(/^\w+([-]?\w+)*@\w+([-]?\w+)*(\.\w{2,3})+$/);
   };
 
-  const handleSubscription = () => {
+  const handleSubscription = async () => {
     if (emailInfo === "") {
       setErrMsg("Vui lòng nhập email!");
-    } else if (!emailValidation(emailInfo)) {
+      return;
+    }
+
+    if (!emailValidation(emailInfo)) {
       setErrMsg("Vui lòng nhập email hợp lệ!");
-    } else {
-      setSubscription(true);
-      setErrMsg("");
-      setEmailInfo("");
+      return;
+    }
+
+    setLoading(true);
+    setErrMsg("");
+
+    try {
+      const response = await axios.post(`${serverUrl}/api/contact/newsletter`, {
+        email: emailInfo,
+      });
+
+      if (response.data.success) {
+        setSubscription(true);
+        setEmailInfo("");
+      }
+    } catch (error) {
+      setErrMsg(
+        error.response?.data?.message ||
+          "Có lỗi xảy ra khi đăng ký. Vui lòng thử lại!"
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -182,9 +206,10 @@ const Footer = () => {
                 </div>
                 <Button
                   onClick={handleSubscription}
-                  className="w-full bg-gray-900 hover:bg-gray-800 text-white py-3 rounded-lg transition-colors duration-200"
+                  disabled={loading}
+                  className="w-full bg-gray-900 hover:bg-gray-800 text-white py-3 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Đăng ký
+                  {loading ? "Đang đăng ký..." : "Đăng ký"}
                 </Button>
               </div>
             )}
@@ -196,7 +221,7 @@ const Footer = () => {
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             {/* Copyright */}
             <p className="text-gray-500 text-sm">
-              © 2025 Orebi. Tất cả quyền được bảo lưu.
+              © 2025 Decora. Tất cả quyền được bảo lưu.
             </p>
 
             {/* Payment Methods */}

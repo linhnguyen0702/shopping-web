@@ -1,5 +1,9 @@
 import Contact from "../models/contactModel.js";
 import userModel from "../models/userModel.js";
+import {
+  notifyNewContact,
+  notifyNewsletter,
+} from "../services/notificationService.js";
 
 // Create a new contact message (for authenticated users)
 export const createContact = async (req, res) => {
@@ -46,6 +50,19 @@ export const createContact = async (req, res) => {
 
     // Populate user details for response
     await contact.populate("userId", "name email");
+
+    // Gửi thông báo cho admin về liên hệ mới
+    try {
+      await notifyNewContact({
+        name: contact.name,
+        email: contact.email,
+        subject: contact.subject,
+        message: contact.message,
+        phone: req.body.phone,
+      });
+    } catch (notificationError) {
+      console.error("Lỗi gửi thông báo liên hệ:", notificationError);
+    }
 
     res.status(201).json({
       success: true,
@@ -274,6 +291,140 @@ export const getUserContacts = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch your messages",
+    });
+  }
+};
+
+// Create public contact message (không cần đăng nhập)
+export const createPublicContact = async (req, res) => {
+  try {
+    const { name, email, phone, subject, message } = req.body;
+
+    // Validate required fields
+    if (!name || !email || !message) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Vui lòng điền đầy đủ thông tin bắt buộc (Tên, Email, Nội dung)!",
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng nhập email hợp lệ!",
+      });
+    }
+
+    // Create new contact message (without userId for public contacts)
+    const contact = new Contact({
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone?.trim() || "",
+      subject: subject?.trim() || "Liên hệ từ website",
+      message: message.trim(),
+      // userId không có vì là public contact
+    });
+
+    await contact.save();
+
+    // Gửi thông báo cho admin về liên hệ mới
+    try {
+      await notifyNewContact({
+        name: contact.name,
+        email: contact.email,
+        subject: contact.subject,
+        message: contact.message,
+        phone: contact.phone,
+      });
+    } catch (notificationError) {
+      console.error("Lỗi gửi thông báo liên hệ:", notificationError);
+    }
+
+    res.status(201).json({
+      success: true,
+      message:
+        "Tin nhắn của bạn đã được gửi thành công! Chúng tôi sẽ liên hệ lại sớm nhất có thể.",
+    });
+  } catch (error) {
+    console.error("Create public contact error:", error);
+
+    // Handle specific mongoose errors
+    if (error.name === "ValidationError") {
+      const messages = Object.values(error.errors).map((err) => err.message);
+      return res.status(400).json({
+        success: false,
+        message: messages.join(", "),
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Có lỗi xảy ra khi gửi tin nhắn. Vui lòng thử lại!",
+    });
+  }
+};
+
+// Newsletter subscription
+export const subscribeNewsletter = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Validate email
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng nhập email!",
+      });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng nhập email hợp lệ!",
+      });
+    }
+
+    // Tạo một contact entry cho newsletter subscription
+    const newsletterContact = new Contact({
+      name: "Newsletter Subscriber",
+      email: email.trim().toLowerCase(),
+      subject: "Đăng ký nhận thông tin",
+      message: "Đăng ký nhận thông tin sản phẩm mới và ưu đãi",
+      isNewsletter: true, // Flag để phân biệt
+    });
+
+    await newsletterContact.save();
+
+    // Gửi thông báo cho admin về đăng ký newsletter mới
+    try {
+      await notifyNewsletter(email);
+    } catch (notificationError) {
+      console.error("Lỗi gửi thông báo newsletter:", notificationError);
+    }
+
+    res.status(201).json({
+      success: true,
+      message:
+        "Đăng ký thành công! Cảm ơn bạn đã quan tâm đến các sản phẩm của chúng tôi.",
+    });
+  } catch (error) {
+    console.error("Newsletter subscription error:", error);
+
+    // Check for duplicate email
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: "Email này đã đăng ký rồi!",
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Có lỗi xảy ra khi đăng ký. Vui lòng thử lại!",
     });
   }
 };

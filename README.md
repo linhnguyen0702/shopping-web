@@ -1,8 +1,8 @@
-# 🛒 Orebi Shopping - Full Stack E-commerce Platform
+# 🛒 Decora Shopping - Full Stack E-commerce Platform
 
 A complete, production-ready e-commerce solution built with modern technologies including React.js, Node.js, Express, MongoDB, Redux Toolkit, Tailwind CSS, and Stripe payment integration.
 
-![Orebi Shopping Platform](./public/thumbnail.png)
+![Decora Shopping Platform](./public/thumbnail.png)
 
 ## 🌟 Features
 
@@ -68,7 +68,7 @@ After purchasing and downloading the code:
 ```bash
 # Extract the downloaded ZIP file
 # Navigate to the project directory
-cd orebishopping-vitejs
+cd decora-shopping-vitejs
 
 # Install dependencies for all components
 # For Server

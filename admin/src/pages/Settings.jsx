@@ -8,7 +8,7 @@ const Settings = () => {
       icon: <FaCog />,
       color: "blue",
       settings: [
-        { label: "Site Name", value: "Orebi Shopping", type: "text" },
+        { label: "Site Name", value: "Decora shopping", type: "text" },
         {
           label: "Site Description",
           value: "Modern e-commerce platform",

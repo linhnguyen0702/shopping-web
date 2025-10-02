@@ -179,3 +179,53 @@ export const notifySystemEvent = async (
     console.error("Lỗi tạo thông báo hệ thống:", error);
   }
 };
+
+// Notification cho liên hệ mới
+export const notifyNewContact = async (contactData) => {
+  try {
+    const notificationData = {
+      type: "contact",
+      title: `${contactData.subject || "Liên hệ"} mới`,
+      message: `Có tin nhắn ${(
+        contactData.subject || "liên hệ"
+      ).toLowerCase()} mới từ ${contactData.name} (${contactData.email})`,
+      metadata: {
+        name: contactData.name,
+        email: contactData.email,
+        subject: contactData.subject,
+        phone: contactData.phone || "Không có",
+        message: contactData.message,
+        contactTime: new Date().toISOString(),
+        type: "contact",
+      },
+      priority: "medium",
+      isGlobal: true,
+    };
+
+    return await createAndSendNotification(notificationData);
+  } catch (error) {
+    console.error("Lỗi tạo thông báo liên hệ:", error);
+  }
+};
+
+// Notification cho đăng ký newsletter
+export const notifyNewsletter = async (email) => {
+  try {
+    const notificationData = {
+      type: "user",
+      title: "Đăng ký newsletter mới",
+      message: `Có đăng ký newsletter mới từ ${email}`,
+      metadata: {
+        email: email,
+        subscriptionTime: new Date().toISOString(),
+        type: "newsletter",
+      },
+      priority: "low",
+      isGlobal: true,
+    };
+
+    return await createAndSendNotification(notificationData);
+  } catch (error) {
+    console.error("Lỗi tạo thông báo newsletter:", error);
+  }
+};

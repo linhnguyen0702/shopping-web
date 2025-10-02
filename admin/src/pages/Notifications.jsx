@@ -12,6 +12,9 @@ import {
   MdLocationOn,
   MdEmail,
   MdSchedule,
+  MdPhone,
+  MdSubject,
+  MdMessage,
 } from "react-icons/md";
 import {
   FaUser,
@@ -52,6 +55,7 @@ const Notifications = () => {
     { value: "all", label: "Tất cả", icon: <MdNotifications /> },
     { value: "order", label: "Đơn hàng", icon: <FaShoppingCart /> },
     { value: "user", label: "Đăng ký", icon: <FaUser /> },
+    { value: "contact", label: "Liên hệ", icon: <MdEmail /> },
     { value: "login", label: "Đăng nhập", icon: <FaKey /> },
   ];
 
@@ -333,6 +337,7 @@ const Notifications = () => {
     const icons = {
       order: <FaShoppingCart className="text-green-500" />,
       user: <FaUser className="text-blue-500" />,
+      contact: <MdEmail className="text-orange-500" />,
       login: <FaKey className="text-purple-500" />,
       warning: <FaExclamationTriangle className="text-yellow-500" />,
       product: <FaBox className="text-purple-500" />,
@@ -644,6 +649,20 @@ const Notifications = () => {
                               {notification.metadata.email}
                             </span>
                           )}
+                          {notification.metadata.phone &&
+                            notification.type === "contact" && (
+                              <span className="flex items-center gap-1">
+                                <MdPhone />
+                                {notification.metadata.phone}
+                              </span>
+                            )}
+                          {notification.metadata.subject &&
+                            notification.type === "contact" && (
+                              <span className="flex items-center gap-1">
+                                <MdSubject />
+                                {notification.metadata.subject}
+                              </span>
+                            )}
                           {notification.metadata.orderId && (
                             <span className="flex items-center gap-1">
                               <FaShoppingCart />
@@ -668,6 +687,8 @@ const Notifications = () => {
                               ? "bg-green-100 text-green-800"
                               : notification.type === "user"
                               ? "bg-blue-100 text-blue-800"
+                              : notification.type === "contact"
+                              ? "bg-orange-100 text-orange-800"
                               : notification.type === "login"
                               ? "bg-purple-100 text-purple-800"
                               : "bg-gray-100 text-gray-800"
@@ -677,6 +698,8 @@ const Notifications = () => {
                             ? "Đơn hàng"
                             : notification.type === "user"
                             ? "Đăng ký"
+                            : notification.type === "contact"
+                            ? "Liên hệ"
                             : notification.type === "login"
                             ? "Đăng nhập"
                             : notification.type}
@@ -853,6 +876,7 @@ const Notifications = () => {
                       )}
 
                       {(selectedNotification.type === "user" ||
+                        selectedNotification.type === "contact" ||
                         selectedNotification.type === "login") && (
                         <div className="space-y-3">
                           {selectedNotification.metadata.email && (
@@ -869,6 +893,40 @@ const Notifications = () => {
                               <span>{selectedNotification.metadata.name}</span>
                             </div>
                           )}
+                          {selectedNotification.metadata.phone &&
+                            selectedNotification.type === "contact" && (
+                              <div className="flex items-center gap-2">
+                                <MdPhone className="text-green-500" />
+                                <span className="font-medium">
+                                  Số điện thoại:
+                                </span>
+                                <span>
+                                  {selectedNotification.metadata.phone}
+                                </span>
+                              </div>
+                            )}
+                          {selectedNotification.metadata.subject &&
+                            selectedNotification.type === "contact" && (
+                              <div className="flex items-center gap-2">
+                                <MdSubject className="text-blue-500" />
+                                <span className="font-medium">Chủ đề:</span>
+                                <span>
+                                  {selectedNotification.metadata.subject}
+                                </span>
+                              </div>
+                            )}
+                          {selectedNotification.metadata.message &&
+                            selectedNotification.type === "contact" && (
+                              <div className="flex items-start gap-2">
+                                <MdMessage className="text-orange-500 mt-1" />
+                                <span className="font-medium">Nội dung:</span>
+                                <div className="flex-1">
+                                  <p className="text-sm bg-gray-100 p-2 rounded">
+                                    {selectedNotification.metadata.message}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
                           {selectedNotification.metadata.role && (
                             <div className="flex items-center gap-2">
                               <span className="text-indigo-500">👤</span>

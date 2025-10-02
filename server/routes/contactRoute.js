@@ -6,6 +6,8 @@ import {
   updateContactStatus,
   deleteContact,
   getUserContacts,
+  createPublicContact,
+  subscribeNewsletter,
 } from "../controllers/contactController.js";
 import userAuth from "../middleware/userAuth.js";
 import adminAuth from "../middleware/adminAuth.js";
@@ -13,6 +15,10 @@ import adminAuth from "../middleware/adminAuth.js";
 const router = express.Router();
 
 const routeValue = "/api/contact";
+
+// Public routes (không cần authentication)
+router.post(`${routeValue}/public`, createPublicContact);
+router.post(`${routeValue}/newsletter`, subscribeNewsletter);
 
 // User routes (require authentication)
 router.post(`${routeValue}`, userAuth, createContact);

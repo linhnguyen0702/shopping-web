@@ -9,7 +9,7 @@ Thêm các biến sau vào file `.env` của server:
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=linhyang0702@gmail.com
-SMTP_PASS=gpbb opky jkvx pwnz
+SMTP_PASS=nhâp_password_ở_đây
 ```
 
 ## 🔑 Tạo App Password cho Gmail

@@ -23,10 +23,19 @@ const contactSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    phone: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "user",
-      required: true,
+      required: false, // Cho phép public contact không cần userId
+    },
+    isNewsletter: {
+      type: Boolean,
+      default: false,
     },
     status: {
       type: String,

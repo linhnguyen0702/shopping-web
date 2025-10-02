@@ -1,3 +1,6 @@
+import { useState } from "react";
+import axios from "axios";
+import { serverUrl } from "../../config";
 import {
   FaMapMarkerAlt,
   FaPhoneAlt,
@@ -6,6 +9,66 @@ import {
 } from "react-icons/fa";
 
 const Contact = () => {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    subject: "Liên hệ",
+    message: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
+
+  // Danh sách chủ đề liên hệ
+  const subjectOptions = [
+    { value: "Liên hệ", label: "Liên hệ" },
+    { value: "Tư vấn sản phẩm", label: "Tư vấn sản phẩm" },
+    { value: "Hỗ trợ kỹ thuật", label: "Hỗ trợ kỹ thuật" },
+    { value: "Khiếu nại", label: "Khiếu nại" },
+    { value: "Đổi trả", label: "Đổi trả" },
+    { value: "Hợp tác", label: "Hợp tác" },
+    { value: "Khác", label: "Khác" },
+  ];
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await axios.post(
+        `${serverUrl}/api/contact/public`,
+        formData
+      );
+
+      if (response.data.success) {
+        setSuccess(true);
+        setFormData({
+          name: "",
+          email: "",
+          phone: "",
+          subject: "Liên hệ",
+          message: "",
+        });
+      }
+    } catch (error) {
+      setError(
+        error.response?.data?.message ||
+          "Có lỗi xảy ra khi gửi tin nhắn. Vui lòng thử lại!"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#f5f6fa] py-8 px-2">
       <div className="max-w-7xl mx-auto">
@@ -73,38 +136,83 @@ const Contact = () => {
               Nếu bạn có thắc mắc gì, có thể gửi yêu cầu cho chúng tôi, và chúng
               tôi sẽ liên lạc lại với bạn sớm nhất có thể.
             </p>
-            <form className="flex flex-col gap-3">
-              <input
-                type="text"
-                placeholder="Họ và tên"
-                className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#205295]"
-                required
-              />
-              <input
-                type="email"
-                placeholder="Email"
-                className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#205295]"
-                required
-              />
-              <input
-                type="tel"
-                placeholder="Điện thoại*"
-                className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#205295]"
-                required
-              />
-              <textarea
-                placeholder="Nội dung"
-                rows={3}
-                className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#205295]"
-                required
-              />
-              <button
-                type="submit"
-                className="bg-[#111827] text-white font-semibold rounded py-2 mt-2 hover:bg-[#163a5f] transition"
-              >
-                Gửi thông tin
-              </button>
-            </form>
+            {success ? (
+              <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+                <p className="text-green-700 font-medium">
+                  ✓ Tin nhắn đã được gửi thành công!
+                </p>
+                <p className="text-green-600 text-sm mt-1">
+                  Chúng tôi sẽ liên hệ lại với bạn sớm nhất có thể.
+                </p>
+                <button
+                  onClick={() => setSuccess(false)}
+                  className="text-green-600 text-sm underline mt-2"
+                >
+                  Gửi tin nhắn khác
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+                <input
+                  type="text"
+                  name="name"
+                  placeholder="Họ và tên"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#205295]"
+                  required
+                />
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="Email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#205295]"
+                  required
+                />
+                <select
+                  name="subject"
+                  value={formData.subject}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#205295] bg-white"
+                  required
+                >
+                  {subjectOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="tel"
+                  name="phone"
+                  placeholder="Điện thoại"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#205295]"
+                />
+                <textarea
+                  name="message"
+                  placeholder="Nội dung"
+                  rows={3}
+                  value={formData.message}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#205295]"
+                  required
+                />
+
+                {error && <p className="text-red-500 text-sm">{error}</p>}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="bg-[#111827] text-white font-semibold rounded py-2 mt-2 hover:bg-[#163a5f] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? "Đang gửi..." : "Gửi thông tin"}
+                </button>
+              </form>
+            )}
           </div>
         </div>
         {/* Google Map */}

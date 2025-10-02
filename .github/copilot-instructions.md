@@ -1,4 +1,4 @@
-# Copilot Instructions for Orebi Shopping Platform
+# Copilot Instructions for Decora Shopping Platform
 
 ## Project Overview
 

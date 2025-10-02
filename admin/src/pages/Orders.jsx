@@ -249,7 +249,7 @@ const Orders = () => {
       <div>
         <Title>Danh sách đơn hàng</Title>
         <div className="mt-6">
-          <SkeletonLoader type="orders" />// Hiển thị skeleton loader
+          <SkeletonLoader type="orders" />
         </div>
       </div>
     );
