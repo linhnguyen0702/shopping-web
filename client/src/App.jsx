@@ -13,6 +13,9 @@ import {
   setOrderCount,
   resetOrderCount,
 } from "./redux/orebiSlice";
+import { fetchWishlist } from "./redux/wishlistThunks";
+import { hydrateFavorites } from "./redux/favoriteSlice";
+import { restoreFavoritesBackup } from "./redux/favoritesMiddleware";
 import { serverUrl } from "../config";
 
 function App() {
@@ -42,12 +45,20 @@ function App() {
   );
 
   useEffect(() => {
+    // Restore favorites backup immediately for fast UI response
+    const backupFavorites = restoreFavoritesBackup();
+    if (backupFavorites.length > 0) {
+      dispatch(hydrateFavorites(backupFavorites));
+    }
+
     if (token) {
       try {
         const decodedToken = jwtDecode(token);
         dispatch(addUser(decodedToken));
         // Fetch order count for authenticated users
         fetchUserOrderCount(token);
+        // Fetch wishlist for authenticated users (silent background load)
+        dispatch(fetchWishlist({ silent: true }));
       } catch (error) {
         console.error("Token không hợp lệ", error);
         localStorage.removeItem("token");

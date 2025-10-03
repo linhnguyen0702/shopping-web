@@ -32,6 +32,10 @@ import {
   changePassword,
   getUserPreferences,
   updateUserPreferences,
+  getUserWishlist,
+  addToWishlist,
+  removeFromWishlist,
+  clearWishlist,
 } from "../controllers/userController.mjs";
 import adminAuth from "../middleware/adminAuth.js";
 import userAuth from "../middleware/userAuth.js";
@@ -116,6 +120,12 @@ router.put(
   adminAuth,
   setDefaultAddress
 );
+
+// Wishlist routes
+router.get(`${routeValue}wishlist`, userAuth, getUserWishlist);
+router.post(`${routeValue}wishlist/add`, userAuth, addToWishlist);
+router.delete(`${routeValue}wishlist/remove`, userAuth, removeFromWishlist);
+router.delete(`${routeValue}wishlist/clear`, userAuth, clearWishlist);
 
 // Admin-protected routes
 router.get(`${routeValue}users`, adminAuth, getUsers);

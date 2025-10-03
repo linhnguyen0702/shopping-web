@@ -6,6 +6,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { addToCart } from "../redux/orebiSlice";
 import { updateUserCart } from "../services/cartService";
 import { addToFavorites, removeFromFavorites } from "../redux/favoriteSlice";
+import {
+  addToWishlistAsync,
+  removeFromWishlistAsync,
+} from "../redux/wishlistThunks";
 import toast from "react-hot-toast";
 
 const ProductCard = ({ item, className = "" }) => {
@@ -24,14 +28,36 @@ const ProductCard = ({ item, className = "" }) => {
     });
   };
 
-  const handleLike = (e) => {
+  const handleLike = async (e) => {
     e.stopPropagation();
-    if (isLiked) {
-      dispatch(removeFromFavorites(item._id));
-      toast("Đã xoá khỏi yêu thích", { icon: "💔" });
-    } else {
-      dispatch(addToFavorites(item));
-      toast.success("Đã thêm vào yêu thích");
+
+    // Check if user is logged in
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Vui lòng đăng nhập để sử dụng tính năng yêu thích");
+      return;
+    }
+
+    try {
+      if (isLiked) {
+        // Remove from wishlist (database + local state)
+        await dispatch(removeFromWishlistAsync(item._id)).unwrap();
+      } else {
+        // Add to wishlist (database + local state)
+        await dispatch(addToWishlistAsync(item)).unwrap();
+      }
+    } catch (error) {
+      // Error handling is done in thunks, but we can add fallback local updates here
+      console.error("Wishlist error:", error);
+
+      // Fallback to local-only updates if API fails
+      if (isLiked) {
+        dispatch(removeFromFavorites(item._id));
+        toast("Đã xoá khỏi yêu thích (chỉ cục bộ)", { icon: "💔" });
+      } else {
+        dispatch(addToFavorites(item));
+        toast.success("Đã thêm vào yêu thích (chỉ cục bộ)");
+      }
     }
   };
 

@@ -44,6 +44,7 @@ router.get(`${routeValue}list`, listProducts);
 
 // Public routes for frontend
 router.get("/api/products", listProducts);
+router.get("/api/product/:id", singleProducts); // Route cho single product
 router.get("/api/products/:type", (req, res, next) => {
   req.query._type = req.params.type;
   listProducts(req, res, next);

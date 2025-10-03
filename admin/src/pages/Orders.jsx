@@ -33,6 +33,7 @@ const Orders = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [newStatus, setNewStatus] = useState("");
   const [newPaymentStatus, setNewPaymentStatus] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const statusOptions = [
     "pending",
@@ -55,15 +56,19 @@ const Orders = () => {
       });
 
       const data = await response.json();
-      if (data.success) {// Nếu API trả về thành công
-        setOrders(data.orders);// Cập nhật state danh sách đơn hàng
-      } else {// Nếu API trả về thất bại
+      if (data.success) {
+        // Nếu API trả về thành công
+        setOrders(data.orders); // Cập nhật state danh sách đơn hàng
+      } else {
+        // Nếu API trả về thất bại
         toast.error(data.message || "Không thể lấy danh sách đơn hàng");
       }
-    } catch (error) {// Nếu có lỗi trong quá trình fetch hoặc xử lý
+    } catch (error) {
+      // Nếu có lỗi trong quá trình fetch hoặc xử lý
       console.error("Lỗi khi lấy đơn hàng:", error);
       toast.error("Không thể tải danh sách đơn hàng");
-    } finally {// Luôn chạy, dù thành công hay thất bại (thường dùng để tắt loading)
+    } finally {
+      // Luôn chạy, dù thành công hay thất bại (thường dùng để tắt loading)
       setLoading(false);
     }
   };
@@ -71,64 +76,76 @@ const Orders = () => {
   // Cập nhật trạng thái đơn hàng
   const updateOrderStatus = async (orderId, status, paymentStatus = null) => {
     try {
-      const token = localStorage.getItem("token");// Lấy token từ localStorage
-      const updateData = { orderId, status };// Tạo dữ liệu cập nhật
+      setIsUpdating(true);
+      const token = localStorage.getItem("token");
+      const updateData = { orderId, status };
 
-      if (paymentStatus) {// Nếu có paymentStatus
-        updateData.paymentStatus = paymentStatus;// Thêm paymentStatus vào dữ liệu cập nhật
+      if (paymentStatus) {
+        updateData.paymentStatus = paymentStatus;
       }
 
-      const response = await fetch(`${serverUrl}/api/order/update-status`, {// Gửi request cập nhật đơn hàng
+      const response = await fetch(`${serverUrl}/api/order/update-status`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",// Đặt header là JSON
-          Authorization: `Bearer ${token}`,// Thêm token vào header
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(updateData),// Gửi dữ liệu cập nhật dưới dạng JSON
+        body: JSON.stringify(updateData),
       });
 
-      const data = await response.json();// Lấy dữ liệu từ response
-      if (data.success) {// Nếu API trả về thành công
-        toast.success("Đơn hàng đã được cập nhật thành công");// Hiển thị thông báo thành công
+      const data = await response.json();
+
+      if (data.success) {
+        // Nếu API trả về thành công
+        toast.success("Đơn hàng đã được cập nhật thành công"); // Hiển thị thông báo thành công
         fetchOrders(); // Refresh orders
-        setShowEditModal(false);// Đóng modal
-        setEditingOrder(null);// Xóa dữ liệu đơn hàng đang chỉnh sửa
-      } else {// Nếu API trả về thất bại
-        toast.error(data.message || "Không thể cập nhật đơn hàng");// Hiển thị thông báo lỗi
+        setShowEditModal(false); // Đóng modal
+        setEditingOrder(null); // Xóa dữ liệu đơn hàng đang chỉnh sửa
+      } else {
+        // Nếu API trả về thất bại
+        toast.error(data.message || "Không thể cập nhật đơn hàng"); // Hiển thị thông báo lỗi
       }
-    } catch (error) {// Nếu có lỗi trong quá trình xử lý
-      console.error("Lỗi khi cập nhật đơn hàng:", error);// Hiển thị lỗi trong console
-      toast.error("Không thể cập nhật đơn hàng");// Hiển thị thông báo lỗi
+    } catch (error) {
+      // Nếu có lỗi trong quá trình xử lý
+      console.error("Lỗi khi cập nhật đơn hàng:", error); // Hiển thị lỗi trong console
+      toast.error("Không thể cập nhật đơn hàng"); // Hiển thị thông báo lỗi
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   // Xóa đơn hàng
   const deleteOrder = async (orderId) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa đơn hàng này không?")) {// Hiển thị hộp thoại xác nhận
+    if (!window.confirm("Bạn có chắc chắn muốn xóa đơn hàng này không?")) {
+      // Hiển thị hộp thoại xác nhận
       return;
     }
 
     try {
-        const token = localStorage.getItem("token");// Lấy token từ localStorage
-      const response = await fetch(`${serverUrl}/api/order/delete`, {// Gửi request xóa đơn hàng
-        method: "POST",// Phương thức POST
+      const token = localStorage.getItem("token"); // Lấy token từ localStorage
+      const response = await fetch(`${serverUrl}/api/order/delete`, {
+        // Gửi request xóa đơn hàng
+        method: "POST", // Phương thức POST
         headers: {
-          "Content-Type": "application/json",// Đặt header là JSON
-          Authorization: `Bearer ${token}`,// Thêm token vào header
+          "Content-Type": "application/json", // Đặt header là JSON
+          Authorization: `Bearer ${token}`, // Thêm token vào header
         },
-        body: JSON.stringify({ orderId }),// Gửi dữ liệu xóa dưới dạng JSON
+        body: JSON.stringify({ orderId }), // Gửi dữ liệu xóa dưới dạng JSON
       });
 
-      const data = await response.json();// Lấy dữ liệu từ response
-      if (data.success) {// Nếu API trả về thành công
-        toast.success("Đơn hàng đã được xóa thành công");// Hiển thị thông báo thành công
+      const data = await response.json(); // Lấy dữ liệu từ response
+      if (data.success) {
+        // Nếu API trả về thành công
+        toast.success("Đơn hàng đã được xóa thành công"); // Hiển thị thông báo thành công
         fetchOrders(); // Refresh orders
-      } else {// Nếu API trả về thất bại
-        toast.error(data.message || "Không thể xóa đơn hàng");// Hiển thị thông báo lỗi
+      } else {
+        // Nếu API trả về thất bại
+        toast.error(data.message || "Không thể xóa đơn hàng"); // Hiển thị thông báo lỗi
       }
-    } catch (error) {// Nếu có lỗi trong quá trình xử lý
-      console.error("Lỗi khi xóa đơn hàng:", error);// Hiển thị lỗi trong console
-      toast.error("Không thể xóa đơn hàng");// Hiển thị thông báo lỗi
+    } catch (error) {
+      // Nếu có lỗi trong quá trình xử lý
+      console.error("Lỗi khi xóa đơn hàng:", error); // Hiển thị lỗi trong console
+      toast.error("Không thể xóa đơn hàng"); // Hiển thị thông báo lỗi
     }
   };
 
@@ -142,9 +159,26 @@ const Orders = () => {
 
   // Xử lý lưu thay đổi
   const handleSaveChanges = () => {
-    if (editingOrder) {
-      updateOrderStatus(editingOrder._id, newStatus, newPaymentStatus);
+    if (!editingOrder) {
+      toast.error("Không tìm thấy đơn hàng để cập nhật");
+      return;
     }
+
+    if (isUpdating) {
+      return;
+    }
+
+    // Kiểm tra có thay đổi không
+    const hasChanges =
+      newStatus !== editingOrder.status ||
+      newPaymentStatus !== editingOrder.paymentStatus;
+
+    if (!hasChanges) {
+      toast.info("Không có thay đổi nào để lưu");
+      return;
+    }
+
+    updateOrderStatus(editingOrder._id, newStatus, newPaymentStatus);
   };
 
   // Lọc và sắp xếp đơn hàng
@@ -240,11 +274,55 @@ const Orders = () => {
     }
   };
 
-  useEffect(() => {// Sử dụng useEffect để gọi fetchOrders khi component mount
-    fetchOrders();// Gọi hàm fetchOrders để lấy danh sách đơn hàng
-  }, []);// Chỉ chạy khi component mount
+  // Chuyển đổi trạng thái sang tiếng Việt
+  const translateStatus = (status) => {
+    switch (status) {
+      case "pending":
+        return "Chờ xử lý";
+      case "confirmed":
+        return "Đã xác nhận";
+      case "shipped":
+        return "Đang giao";
+      case "delivered":
+        return "Đã giao";
+      case "cancelled":
+        return "Đã hủy";
+      default:
+        return status;
+    }
+  };
 
-  if (loading) {// Nếu đang loading
+  // Chuyển đổi trạng thái thanh toán sang tiếng Việt
+  const translatePaymentStatus = (status) => {
+    switch (status) {
+      case "pending":
+        return "Chờ thanh toán";
+      case "paid":
+        return "Đã thanh toán";
+      case "failed":
+        return "Thanh toán thất bại";
+      default:
+        return status;
+    }
+  };
+
+  // Format tiền VNĐ
+  const formatVND = (amount) => {
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  useEffect(() => {
+    // Sử dụng useEffect để gọi fetchOrders khi component mount
+    fetchOrders(); // Gọi hàm fetchOrders để lấy danh sách đơn hàng
+  }, []); // Chỉ chạy khi component mount
+
+  if (loading) {
+    // Nếu đang loading
     return (
       <div>
         <Title>Danh sách đơn hàng</Title>
@@ -320,10 +398,9 @@ const Orders = () => {
                 Doanh thu
               </p>
               <p className="text-xl lg:text-2xl font-bold text-purple-600">
-                $
-                {orders
-                  .reduce((sum, order) => sum + order.amount, 0)
-                  .toFixed(2)}
+                {formatVND(
+                  orders.reduce((sum, order) => sum + order.amount, 0)
+                )}
               </p>
             </div>
             <FaCreditCard className="w-6 h-6 lg:w-8 lg:h-8 text-purple-600" />
@@ -355,7 +432,7 @@ const Orders = () => {
             <option value="all">Tất cả trạng thái</option>
             {statusOptions.map((status) => (
               <option key={status} value={status}>
-                {status.charAt(0).toUpperCase() + status.slice(1)}
+                {translateStatus(status)}
               </option>
             ))}
           </select>
@@ -369,7 +446,7 @@ const Orders = () => {
             <option value="all">Tất cả thanh toán</option>
             {paymentStatusOptions.map((status) => (
               <option key={status} value={status}>
-                {status.charAt(0).toUpperCase() + status.slice(1)}
+                {translatePaymentStatus(status)}
               </option>
             ))}
           </select>
@@ -461,12 +538,12 @@ const Orders = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
-                      {order.items.length} items
+                      {order.items.length} sản phẩm
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
-                      ${order.amount.toFixed(2)}
+                      {formatVND(order.amount)}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -476,8 +553,7 @@ const Orders = () => {
                       )}`}
                     >
                       {getStatusIcon(order.status)}
-                      {order.status.charAt(0).toUpperCase() +
-                        order.status.slice(1)}
+                      {translateStatus(order.status)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -492,8 +568,7 @@ const Orders = () => {
                         ) : (
                           <FaCreditCard className="w-3 h-3" />
                         )}
-                        {order.paymentStatus.charAt(0).toUpperCase() +
-                          order.paymentStatus.slice(1)}
+                        {translatePaymentStatus(order.paymentStatus)}
                       </span>
                     </div>
                   </td>
@@ -591,7 +666,9 @@ const Orders = () => {
 
               {/* Customer Info */}
               <div className="mb-3">
-                <div className="text-sm text-gray-600 mb-1">Email khách hàng</div>
+                <div className="text-sm text-gray-600 mb-1">
+                  Email khách hàng
+                </div>
                 <div className="text-sm font-medium text-gray-900">
                   {order.userId?.email || "N/A"}
                 </div>
@@ -600,7 +677,9 @@ const Orders = () => {
               {/* Order Details */}
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <div className="text-xs text-gray-500 mb-1">Ngày đặt hàng</div>
+                  <div className="text-xs text-gray-500 mb-1">
+                    Ngày đặt hàng
+                  </div>
                   <div className="flex items-center text-sm text-gray-900">
                     <FaCalendarAlt className="w-3 h-3 mr-1 text-gray-400" />
                     {new Date(order.date).toLocaleDateString()}
@@ -609,7 +688,7 @@ const Orders = () => {
                 <div>
                   <div className="text-xs text-gray-500 mb-1">Sản phẩm</div>
                   <div className="text-sm text-gray-900">
-                    {order.items.length} items
+                    {order.items.length} sản phẩm
                   </div>
                 </div>
               </div>
@@ -618,7 +697,7 @@ const Orders = () => {
               <div className="mb-4">
                 <div className="text-xs text-gray-500 mb-1">Doanh thu</div>
                 <div className="text-lg font-bold text-gray-900">
-                  ${order.amount.toFixed(2)}
+                  {formatVND(order.amount)}
                 </div>
               </div>
 
@@ -630,7 +709,7 @@ const Orders = () => {
                   )}`}
                 >
                   {getStatusIcon(order.status)}
-                  {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                  {translateStatus(order.status)}
                 </span>
                 <span
                   className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${getPaymentStatusColor(
@@ -642,14 +721,14 @@ const Orders = () => {
                   ) : (
                     <FaCreditCard className="w-3 h-3" />
                   )}
-                  {order.paymentStatus.charAt(0).toUpperCase() +
-                    order.paymentStatus.slice(1)}
+                  {translatePaymentStatus(order.paymentStatus)}
                 </span>
               </div>
 
               {/* Payment Method */}
               <div className="text-xs text-gray-500">
-                Phương thức thanh toán: {order.paymentMethod?.toUpperCase() || "N/A"}
+                Phương thức thanh toán:{" "}
+                {order.paymentMethod?.toUpperCase() || "N/A"}
               </div>
             </div>
           ))
@@ -693,7 +772,7 @@ const Orders = () => {
                 >
                   {statusOptions.map((status) => (
                     <option key={status} value={status}>
-                      {status.charAt(0).toUpperCase() + status.slice(1)}
+                      {translateStatus(status)}
                     </option>
                   ))}
                 </select>
@@ -710,7 +789,7 @@ const Orders = () => {
                 >
                   {paymentStatusOptions.map((status) => (
                     <option key={status} value={status}>
-                      {status.charAt(0).toUpperCase() + status.slice(1)}
+                      {translatePaymentStatus(status)}
                     </option>
                   ))}
                 </select>
@@ -719,9 +798,15 @@ const Orders = () => {
               <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={handleSaveChanges}
-                  className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  disabled={isUpdating}
+                  className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
+                    isUpdating
+                      ? "bg-gray-400 text-gray-700 cursor-not-allowed"
+                      : "bg-blue-600 text-white hover:bg-blue-700"
+                  }`}
+                  type="button"
                 >
-                  Lưu thay đổi
+                  {isUpdating ? "Đang lưu..." : "Lưu thay đổi"}
                 </button>
                 <button
                   onClick={() => {

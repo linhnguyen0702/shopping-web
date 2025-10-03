@@ -15,9 +15,7 @@ import { headerNavigation } from "../constants/navigation";
 
 const Header = () => {
   const location = useLocation();
-  const { products, userInfo, orderCount } = useSelector(
-    (state) => state.orebiReducer
-  );
+  const { products, userInfo } = useSelector((state) => state.orebiReducer);
   let [isOpen, setIsOpen] = useState(false);
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -45,14 +43,7 @@ const Header = () => {
               to={item?.link}
               state={{ data: location.pathname.split("/")[1] }}
             >
-              <div className="relative flex items-center">
-                {item?.title}
-                {item?.link === "/orders" && userInfo && orderCount > 0 && (
-                  <span className="absolute -right-1 -top-2 w-4 h-4 rounded-full text-xs bg-red-500 text-white flex items-center justify-center font-medium animate-pulse">
-                    {orderCount}
-                  </span>
-                )}
-              </div>
+              <div className="relative flex items-center">{item?.title}</div>
               <span
                 className={`absolute bottom-0 left-0 inline-block w-full h-0.5 bg-black group-hover:translate-x-0 duration-300 ease-out ${
                   location?.pathname === item?.link
@@ -149,13 +140,6 @@ const Header = () => {
                           />
                           {item?.title}
                         </div>
-                        {item?.link === "/orders" &&
-                          userInfo &&
-                          orderCount > 0 && (
-                            <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                              {orderCount}
-                            </span>
-                          )}
                       </div>
                     </NavLink>
                   ))}

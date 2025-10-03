@@ -2,7 +2,7 @@
 
 A complete, production-ready e-commerce solution built with modern technologies including React.js, Node.js, Express, MongoDB, Redux Toolkit, Tailwind CSS, and Stripe payment integration.
 
-![Decora Shopping Platform](./public/thumbnail.png)
+![Decora Shopping Platform](./public/Home.png)
 
 ## 🌟 Features
 

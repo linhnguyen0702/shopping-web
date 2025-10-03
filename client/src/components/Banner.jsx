@@ -42,7 +42,7 @@ const bannerData = [
     from: 150000,
     sale: "Ưu đãi cuối tuần",
     image: bannerImgThree,
-    buttonText: "Mua đèn",
+    buttonText: "Mua Ngay",
   },
 ];
 

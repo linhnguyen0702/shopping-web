@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import axios from "axios";
 import { serverUrl } from "../../config";
 import { addUser, removeUser, resetCart } from "../redux/orebiSlice";
+import { fetchWishlist } from "../redux/wishlistThunks";
 import Container from "../components/Container";
 import {
   FaSignOutAlt,
@@ -71,7 +72,7 @@ const Profile = () => {
     return () => {
       isActive = false;
     };
-  }, [navigate, dispatch]); // <-- Bỏ userInfo khỏi dependency
+  }, [navigate, dispatch, userInfo]);
 
   // Khởi tạo biểu mẫu chỉnh sửa với dữ liệu người dùng hiện tại
   useEffect(() => {
@@ -82,9 +83,15 @@ const Profile = () => {
         phone: userInfo.phone || "",
         address: userInfo.address || "",
       });
+
+      // Fetch wishlist when user info is available (silent to avoid loading state)
+      const token = localStorage.getItem("token");
+      if (token) {
+        dispatch(fetchWishlist({ silent: true }));
+      }
       setAvatarPreview(userInfo.avatar || null);
     }
-  }, [userInfo]);
+  }, [userInfo, dispatch]);
 
   const handleLogout = async () => {
     try {

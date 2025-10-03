@@ -4,7 +4,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Container from "../components/Container";
 import PriceFormat from "../components/PriceFormat";
-import PremiumModal from "../components/PremiumModal";
 import { addToCart, setOrderCount } from "../redux/orebiSlice";
 import toast from "react-hot-toast";
 import {
@@ -28,10 +27,11 @@ const Order = () => {
   const dispatch = useDispatch();
   const userInfo = useSelector((state) => state.orebiReducer.userInfo);
   const cartProducts = useSelector((state) => state.orebiReducer.products);
+
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
+
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
     order: null,
@@ -104,13 +104,8 @@ const Order = () => {
     return sortableOrders;
   }, [orders, sortConfig]);
 
-  const openOrderModal = () => {
-    // hiển thị modal premium thay vì chi tiết đơn hàng
-    setIsPremiumModalOpen(true);
-  };
-
-  const closeOrderModal = () => {
-    setIsPremiumModalOpen(false);
+  const viewOrderDetail = (order) => {
+    navigate(`/order/${order._id}`);
   };
 
   const handleAddOrderToCart = async (order, e) => {
@@ -175,7 +170,6 @@ const Order = () => {
         } được cập nhật trong giỏ hàng!`;
       }
 
-
       toast.success(message, {
         duration: 4000,
         icon: "🛒",
@@ -226,14 +220,19 @@ const Order = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case "pending":
+      case "Chờ xử lý":
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
       case "confirmed":
+      case "Đã xác nhận":
         return "bg-blue-100 text-blue-800 border-blue-200";
       case "shipped":
+      case "Đang giao":
         return "bg-purple-100 text-purple-800 border-purple-200";
       case "delivered":
+      case "Đã giao":
         return "bg-green-100 text-green-800 border-green-200";
       case "cancelled":
+      case "Đã hủy":
         return "bg-red-100 text-red-800 border-red-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
@@ -243,14 +242,19 @@ const Order = () => {
   const getStatusIcon = (status) => {
     switch (status) {
       case "pending":
+      case "Chờ xử lý":
         return <FaClock className="w-4 h-4" />;
       case "confirmed":
+      case "Đã xác nhận":
         return <FaCheckCircle className="w-4 h-4" />;
       case "shipped":
+      case "Đang giao":
         return <FaTruck className="w-4 h-4" />;
       case "delivered":
+      case "Đã giao":
         return <FaBox className="w-4 h-4" />;
       case "cancelled":
+      case "Đã hủy":
         return <FaTimes className="w-4 h-4" />;
       default:
         return <FaClock className="w-4 h-4" />;
@@ -260,13 +264,46 @@ const Order = () => {
   const getPaymentStatusColor = (status) => {
     switch (status) {
       case "pending":
+      case "Chờ thanh toán":
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
       case "paid":
+      case "Đã thanh toán":
         return "bg-green-100 text-green-800 border-green-200";
       case "failed":
+      case "Thanh toán thất bại":
         return "bg-red-100 text-red-800 border-red-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+  };
+
+  const translateStatus = (status) => {
+    switch (status) {
+      case "pending":
+        return "Chờ xử lý";
+      case "confirmed":
+        return "Đã xác nhận";
+      case "shipped":
+        return "Đang giao";
+      case "delivered":
+        return "Đã giao";
+      case "cancelled":
+        return "Đã hủy";
+      default:
+        return status;
+    }
+  };
+
+  const translatePaymentStatus = (status) => {
+    switch (status) {
+      case "pending":
+        return "Chờ thanh toán";
+      case "paid":
+        return "Đã thanh toán";
+      case "failed":
+        return "Thanh toán thất bại";
+      default:
+        return status;
     }
   };
 
@@ -340,7 +377,8 @@ const Order = () => {
                 Không Có Đơn Hàng
               </h2>
               <p className="text-gray-600 mb-8">
-                Bạn chưa đặt bất kỳ đơn hàng nào. Bắt đầu mua hàng để xem đơn hàng của bạn ở đây!
+                Bạn chưa đặt bất kỳ đơn hàng nào. Bắt đầu mua hàng để xem đơn
+                hàng của bạn ở đây!
               </p>
               <Link to="/shop">
                 <button className="bg-gray-900 text-white px-8 py-3 rounded-md hover:bg-gray-800 transition-colors font-medium">
@@ -353,7 +391,8 @@ const Order = () => {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <p className="text-gray-600">
-                {orders.length} đơn hàng{orders.length !== 1 ? "s" : ""} được tìm thấy
+                {orders.length} đơn hàng{orders.length !== 1 ? "s" : ""} được
+                tìm thấy
               </p>
               <button
                 onClick={fetchUserOrders}
@@ -456,7 +495,7 @@ const Order = () => {
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.3 }}
                         className="hover:bg-gray-50 cursor-pointer"
-                        onClick={() => openOrderModal(order)}
+                        onClick={() => viewOrderDetail(order)}
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">
@@ -498,13 +537,12 @@ const Order = () => {
                             </div>
                             <div>
                               <div className="text-sm text-gray-900">
-                                {order.items.length} item
-                                {order.items.length !== 1 ? "s" : ""}
+                                {order.items.length} sản phẩm
                               </div>
                               <div className="text-sm text-gray-500 truncate max-w-xs">
                                 {order.items[0]?.name}
                                 {order.items.length > 1 &&
-                                  `, +${order.items.length - 1} more`}
+                                  `, +${order.items.length - 1} sản phẩm khác`}
                               </div>
                             </div>
                           </div>
@@ -521,8 +559,7 @@ const Order = () => {
                             )}`}
                           >
                             {getStatusIcon(order.status)}
-                            {order.status.charAt(0).toUpperCase() +
-                              order.status.slice(1)}
+                            {translateStatus(order.status)}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -536,8 +573,7 @@ const Order = () => {
                             ) : (
                               <FaCreditCard className="w-3 h-3" />
                             )}
-                            {order.paymentStatus.charAt(0).toUpperCase() +
-                              order.paymentStatus.slice(1)}
+                            {translatePaymentStatus(order.paymentStatus)}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -545,7 +581,7 @@ const Order = () => {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                openOrderModal(order);
+                                viewOrderDetail(order);
                               }}
                               className="text-blue-600 hover:text-blue-900 transition-colors"
                               title="Xem Chi Tiết"
@@ -588,14 +624,6 @@ const Order = () => {
           </div>
         )}
 
-        {/* Premium Modal */}
-        <PremiumModal
-          isOpen={isPremiumModalOpen}
-          onClose={closeOrderModal}
-          title="Chi Tiết Đơn Hàng"
-          description="Truy cập chi tiết đơn hàng và tính năng quản lý là có sẵn trong phiên bản premium của mã này."
-        />
-
         {/* Add to Cart Confirmation Modal */}
         <AnimatePresence>
           {confirmModal.isOpen && confirmModal.order && (
@@ -627,7 +655,8 @@ const Order = () => {
                     </span>{" "}
                     vào giỏ hàng của bạn? Điều này sẽ thêm{" "}
                     {confirmModal.order.items.length} item
-                    {confirmModal.order.items.length !== 1 ? "s" : ""} vào giỏ hàng của bạn.
+                    {confirmModal.order.items.length !== 1 ? "s" : ""} vào giỏ
+                    hàng của bạn.
                   </p>
 
                   {/* Order Items Preview */}
@@ -660,8 +689,8 @@ const Order = () => {
                               </span>
                               {isInCart && (
                                 <span className="text-xs text-blue-600">
-                                  Đã có trong giỏ hàng (số lượng: {isInCart.quantity}) -
-                                  sẽ được cập nhật
+                                  Đã có trong giỏ hàng (số lượng:{" "}
+                                  {isInCart.quantity}) - sẽ được cập nhật
                                 </span>
                               )}
                             </div>

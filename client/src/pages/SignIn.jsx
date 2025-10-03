@@ -11,6 +11,7 @@ import {
   addToCart,
   addUser,
 } from "../redux/orebiSlice";
+import { fetchWishlist } from "../redux/wishlistThunks";
 import {
   FaEnvelope,
   FaLock,
@@ -176,6 +177,8 @@ const SignIn = () => {
         await fetchUserOrderCount(data?.token);
         // Đồng bộ giỏ hàng từ server
         await fetchUserCart(data?.token);
+        // Đồng bộ wishlist từ server (silent to avoid loading state during login)
+        dispatch(fetchWishlist({ silent: true }));
 
         const successMsg =
           data?.message === "User logged in successfully"

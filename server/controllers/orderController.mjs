@@ -278,7 +278,6 @@ const updateOrderStatus = async (req, res) => {
         message: "Order ID and status are required",
       });
     }
-
     const validStatuses = [
       "pending",
       "confirmed",

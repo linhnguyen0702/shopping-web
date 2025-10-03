@@ -1,14 +1,25 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { useEffect } from "react";
 import Container from "../components/Container";
 import { FaHeart, FaShoppingBag, FaArrowLeft } from "react-icons/fa";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import ProductCard from "../components/ProductCard";
+import { fetchWishlist } from "../redux/wishlistThunks";
 
 const Wishlist = () => {
-  const favorites = useSelector(
-    (state) => state.favoriteReducer?.favorites || []
+  const dispatch = useDispatch();
+  const { favorites, loading } = useSelector(
+    (state) => state.favoriteReducer || { favorites: [], loading: false }
   );
+
+  // Fetch wishlist when component mounts
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      dispatch(fetchWishlist());
+    }
+  }, [dispatch]);
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <Container>
@@ -44,7 +55,17 @@ const Wishlist = () => {
           </motion.div>
 
           {/* Danh sách sản phẩm yêu thích hoặc empty state */}
-          {favorites.length === 0 ? (
+          {loading ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-white rounded-2xl shadow-sm p-12 text-center"
+            >
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mb-4"></div>
+              <p className="text-gray-600">Đang tải danh sách yêu thích...</p>
+            </motion.div>
+          ) : favorites.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

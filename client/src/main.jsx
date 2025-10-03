@@ -9,6 +9,7 @@ import Cart from "./pages/Cart.jsx";
 import Contact from "./pages/Contact.jsx";
 import Offers from "./pages/Offers.jsx";
 import Order from "./pages/Order.jsx";
+import OrderDetail from "./pages/Order_New.jsx";
 import Product from "./pages/Product.jsx";
 import Shop from "./pages/Shop.jsx";
 import SingleProduct from "./pages/SingleProduct.jsx";
@@ -64,6 +65,10 @@ const router = createBrowserRouter(
         {
           path: "/orders",
           element: <Order />,
+        },
+        {
+          path: "/order/:orderId",
+          element: <OrderDetail />,
         },
         {
           path: "/Product",

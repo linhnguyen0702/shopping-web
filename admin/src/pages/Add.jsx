@@ -262,8 +262,8 @@ const Add = ({ token }) => {
                 )}
               </div>
               <p className="text-sm text-gray-500 mt-3">
-                Tải lên tối đa 4 hình ảnh. Hình ảnh đầu tiên sẽ là hình ảnh chính
-                của sản phẩm.
+                Tải lên tối đa 4 hình ảnh. Hình ảnh đầu tiên sẽ là hình ảnh
+                chính của sản phẩm.
               </p>
             </div>
 
@@ -407,9 +407,7 @@ const Add = ({ token }) => {
                     disabled={loadingData}
                   >
                     <option value="">
-                      {loadingData
-                        ? "Đang tải danh mục..."
-                        : "Chọn danh mục"}
+                      {loadingData ? "Đang tải danh mục..." : "Chọn danh mục"}
                     </option>
                     {categories.map((category) => (
                       <option key={category._id} value={category.name}>
@@ -467,11 +465,11 @@ const Add = ({ token }) => {
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
                 {[
-                  "Thời trang",
-                  "Điện tử",
-                  "Thể thao",
-                  "Phụ kiện",
-                  "Khác",
+                  "Phòng khách",
+                  "Phòng ngủ",
+                  "Nhà bếp",
+                  "Trang trí",
+                  "Đồ dùng decor khác",
                 ].map((tag) => (
                   <div className="flex items-center space-x-2" key={tag}>
                     <input
