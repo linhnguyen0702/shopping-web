@@ -995,10 +995,10 @@ const List = ({ token }) => {
                   <Label>Nhãn</Label>
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-2">
                     {[
-                      "Thời trang",
-                      "Điện tử",
-                      "Thể thao",
-                      "Phụ kiện",
+                      "Phòng khách",
+                      "Phòng ngủ",
+                      "Phòng bếp",
+                      "Trang trí",
                       "Khác",
                     ].map((tag) => (
                       <div className="flex items-center space-x-2" key={tag}>

@@ -395,20 +395,22 @@ const SingleProduct = () => {
 
             {/* Price */}
             <div className="flex items-center gap-4">
-              {productInfo?.oldPrice && (
+              {productInfo?.discountedPercentage > 0 && (
                 <span className="text-2xl text-gray-400 line-through">
-                  <PriceFormat amount={productInfo.oldPrice} />
+                  <PriceFormat
+                    amount={
+                      productInfo.price /
+                      (1 - productInfo.discountedPercentage / 100)
+                    }
+                  />
                 </span>
               )}
               <span className="text-3xl font-light text-gray-900">
                 <PriceFormat amount={productInfo?.price} />
               </span>
-              {productInfo?.oldPrice && (
+              {productInfo?.discountedPercentage > 0 && (
                 <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-medium">
-                  Tiết kiệm{" "}
-                  <PriceFormat
-                    amount={productInfo.oldPrice - productInfo.price}
-                  />
+                  Giảm {productInfo.discountedPercentage}%
                 </span>
               )}
             </div>
@@ -434,9 +436,13 @@ const SingleProduct = () => {
               </span>
             </div>
 
-            {/* Description */}
+            {/* Short Description */}
             <p className="text-gray-600 leading-relaxed text-lg">
-              {productInfo?.description}
+              {productInfo?.description
+                ? productInfo.description.length > 150
+                  ? productInfo.description.substring(0, 150) + "..."
+                  : productInfo.description
+                : "Sản phẩm chất lượng cao với thiết kế hiện đại và tính năng ưu việt, mang đến trải nghiệm tuyệt vời cho người sử dụng."}
             </p>
 
             {/* Quantity & Add to Cart */}
@@ -554,19 +560,24 @@ const SingleProduct = () => {
           <div className="min-h-[200px]">
             {activeTab === "description" && (
               <div className="prose prose-lg max-w-none">
-                <h3 className="text-2xl font-light mb-4">Mô tả</h3>
-                <p className="text-gray-600 leading-relaxed">
-                  {productInfo?.description || "No description available."}
-                </p>
-                <p className="text-gray-600 leading-relaxed mt-4">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. In ut
-                  ullamcorper leo, eget euismod orci. Cum sociis natoque
-                  penatibus et magnis dis parturient montes nascetur ridiculus
-                  mus. Vestibulum ultricies aliquam convallis. Maecenas ut
-                  tellus mi. Proin tincidunt, lectus eu volutpat mattis, ante
-                  metus lacinia tellus, vitae condimentum nulla enim bibendum
-                  nibh.
-                </p>
+                <h3 className="text-2xl font-light mb-6">Mô tả chi tiết</h3>
+                <div className="text-gray-600 leading-relaxed space-y-4">
+                  {productInfo?.description ? (
+                    productInfo.description
+                      .split("\n")
+                      .map((paragraph, index) =>
+                        paragraph.trim() ? (
+                          <p key={index} className="mb-4 last:mb-0">
+                            {paragraph.trim()}
+                          </p>
+                        ) : (
+                          <div key={index} className="h-2"></div>
+                        )
+                      )
+                  ) : (
+                    <p>Không có mô tả chi tiết.</p>
+                  )}
+                </div>
               </div>
             )}
 

@@ -250,17 +250,20 @@ const Cart = () => {
             <div className="lg:col-span-2">
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 {/* Desktop Header */}
-                <div className="hidden lg:grid grid-cols-10 gap-4 p-6 bg-gray-50 border-b border-gray-200 text-sm font-semibold text-gray-700 uppercase">
+                <div className="hidden lg:grid grid-cols-12 gap-6 px-8 py-6 bg-gray-50 border-b border-gray-200 text-sm font-semibold text-gray-700 uppercase">
                   <div className="col-span-5">Sản phẩm</div>
                   <div className="col-span-2 text-center">Giá</div>
                   <div className="col-span-2 text-center">Số lượng</div>
-                  <div className="col-span-1 text-center">Tổng</div>
+                  <div className="col-span-2 text-center">Tổng</div>
+                  <div className="col-span-1 text-center whitespace-nowrap">
+                    Thao tác
+                  </div>
                 </div>
 
                 {/* Cart Items List */}
                 <div className="divide-y divide-gray-200">
                   {products.map((item) => (
-                    <div key={item._id} className="p-4 lg:p-6">
+                    <div key={item._id} className="p-4 lg:px-8 lg:py-6">
                       {/* Mobile Layout */}
                       <div className="lg:hidden">
                         <div className="flex space-x-4">
@@ -327,34 +330,42 @@ const Cart = () => {
                         </div>
 
                         {/* Mobile Controls */}
-                        <div className="mt-4 flex items-center justify-between">
-                          {/* Quantity Controls */}
-                          <div className="flex items-center border border-gray-300 rounded-lg">
-                            <button
-                              onClick={() =>
-                                handleQuantityChange(item._id, "decrease")
-                              }
-                              disabled={(item?.quantity || 1) <= 1}
-                              className="p-2 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-l-lg"
-                            >
-                              <FaMinus className="w-3 h-3" />
-                            </button>
-                            <span className="px-4 py-2 font-semibold min-w-[3rem] text-center border-x border-gray-300">
-                              {item?.quantity || 1}
+                        <div className="mt-4 space-y-3">
+                          {/* Quantity Controls Row */}
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-gray-700">
+                              Số lượng:
                             </span>
-                            <button
-                              onClick={() =>
-                                handleQuantityChange(item._id, "increase")
-                              }
-                              className="p-2 hover:bg-gray-50 transition-colors rounded-r-lg"
-                            >
-                              <FaPlus className="w-3 h-3" />
-                            </button>
+                            <div className="flex items-center border border-gray-300 rounded-lg">
+                              <button
+                                onClick={() =>
+                                  handleQuantityChange(item._id, "decrease")
+                                }
+                                disabled={(item?.quantity || 1) <= 1}
+                                className="p-1.5 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-l-lg"
+                              >
+                                <FaMinus className="w-3 h-3" />
+                              </button>
+                              <span className="px-3 py-1.5 font-semibold min-w-[2.5rem] text-center border-x border-gray-300">
+                                {item?.quantity || 1}
+                              </span>
+                              <button
+                                onClick={() =>
+                                  handleQuantityChange(item._id, "increase")
+                                }
+                                className="p-1.5 hover:bg-gray-50 transition-colors rounded-r-lg"
+                              >
+                                <FaPlus className="w-3 h-3" />
+                              </button>
+                            </div>
                           </div>
 
-                          {/* Subtotal and Remove */}
-                          <div className="flex items-center space-x-3">
-                            <div className="text-right">
+                          {/* Total Price and Delete Button Row */}
+                          <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">
+                                Tổng tiền sản phẩm
+                              </div>
                               <div className="text-lg font-bold text-gray-900">
                                 <PriceFormat
                                   amount={
@@ -362,25 +373,23 @@ const Cart = () => {
                                   }
                                 />
                               </div>
-                              <div className="text-xs text-gray-500">
-                                Tổng tiền
-                              </div>
                             </div>
                             <button
                               onClick={() =>
                                 handleRemoveItem(item._id, item.name)
                               }
-                              className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
+                              className="flex items-center gap-2 px-3 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors border border-red-200"
                               title="Xóa sản phẩm"
                             >
                               <FaTrash className="w-4 h-4" />
+                              <span className="text-sm font-medium">Xóa</span>
                             </button>
                           </div>
                         </div>
                       </div>
 
                       {/* Desktop Layout */}
-                      <div className="hidden lg:grid lg:grid-cols-10 gap-4 items-center">
+                      <div className="hidden lg:grid lg:grid-cols-12 gap-6 items-center">
                         {/* Product Info */}
                         <div className="lg:col-span-5">
                           <div className="flex items-start space-x-4">
@@ -454,18 +463,18 @@ const Cart = () => {
                                   handleQuantityChange(item._id, "decrease")
                                 }
                                 disabled={(item?.quantity || 1) <= 1}
-                                className="p-3 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                className="p-1.5 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                               >
                                 <FaMinus className="w-3 h-3" />
                               </button>
-                              <span className="px-2 py-1 font-medium min-w-[2rem] text-center">
+                              <span className="px-3 py-1.5 font-medium min-w-[2.5rem] text-center">
                                 {item?.quantity || 1}
                               </span>
                               <button
                                 onClick={() =>
                                   handleQuantityChange(item._id, "increase")
                                 }
-                                className="p-3 hover:bg-gray-50 transition-colors"
+                                className="p-1.5 hover:bg-gray-50 transition-colors"
                               >
                                 <FaPlus className="w-3 h-3" />
                               </button>
@@ -474,8 +483,8 @@ const Cart = () => {
                         </div>
 
                         {/* Subtotal */}
-                        <div className="lg:col-span-1">
-                          <div className="flex lg:justify-center items-center">
+                        <div className="lg:col-span-2">
+                          <div className="flex lg:justify-center">
                             <div className="lg:text-center">
                               <div className="text-lg font-semibold text-gray-900">
                                 <PriceFormat
@@ -485,12 +494,18 @@ const Cart = () => {
                                 />
                               </div>
                             </div>
-                            {/* Remove button for desktop */}
+                          </div>
+                        </div>
+
+                        {/* Delete Button */}
+                        <div className="lg:col-span-1">
+                          <div className="flex lg:justify-center">
                             <button
                               onClick={() =>
                                 handleRemoveItem(item._id, item.name)
                               }
-                              className="hidden lg:block ml-2 p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
+                              className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors border border-red-200 hover:border-red-300"
+                              title="Xóa sản phẩm"
                             >
                               <FaTrash className="w-4 h-4" />
                             </button>

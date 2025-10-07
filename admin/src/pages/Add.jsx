@@ -467,7 +467,7 @@ const Add = ({ token }) => {
                 {[
                   "Phòng khách",
                   "Phòng ngủ",
-                  "Nhà bếp",
+                  "Phòng bếp",
                   "Trang trí",
                   "Đồ dùng decor khác",
                 ].map((tag) => (

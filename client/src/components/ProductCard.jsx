@@ -105,22 +105,36 @@ const ProductCard = ({ item, className = "" }) => {
 
   return (
     <div
-      className={`bg-white rounded-xl shadow-md p-2 w-56 ${className} transition hover:shadow-lg`}
-      style={{ minWidth: 228 }}
+      className={`bg-white rounded-xl shadow-md p-3 w-64 ${className} transition hover:shadow-lg`}
+      style={{ minWidth: 256 }}
     >
       <div className="relative">
         <img
           src={item?.images?.[0] || item?.image}
           alt={item?.name}
-          className="w-full h-56 object-cover rounded-xl cursor-pointer"
+          className="w-full h-64 object-cover rounded-xl cursor-pointer"
           onClick={handleProductDetails}
         />
         {/* Tag sản phẩm nếu có */}
-        {item.tag && (
+        {(item.tag ||
+          item._type ||
+          item.discountedPercentage > 0 ||
+          item.badge ||
+          item.offer) && (
           <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-semibold rounded-full px-3 py-1 shadow">
-            {item.tag}
+            {item.tag ||
+              (item._type === "new_arrivals" && "Mới") ||
+              (item._type === "best_sellers" && "Bán chạy") ||
+              (item._type === "special_offers" && "Ưu đãi") ||
+              (item._type === "promotions" && "Khuyến mãi") ||
+              (item.discountedPercentage > 0 &&
+                `Giảm ${item.discountedPercentage}%`) ||
+              (item.badge && "Hot") ||
+              (item.offer && "Khuyến mãi") ||
+              "New"}
           </div>
         )}
+
         {/* Like button */}
         <button
           className="absolute top-2 right-2"
@@ -166,7 +180,12 @@ ProductCard.propTypes = {
     name: PropTypes.string,
     image: PropTypes.string,
     images: PropTypes.arrayOf(PropTypes.string),
-    tag: PropTypes.string, // Thêm prop tag
+    tag: PropTypes.string,
+    tags: PropTypes.arrayOf(PropTypes.string),
+    _type: PropTypes.string,
+    badge: PropTypes.bool,
+    offer: PropTypes.bool,
+    discountedPercentage: PropTypes.number,
     description: PropTypes.string,
   }).isRequired,
   className: PropTypes.string,
