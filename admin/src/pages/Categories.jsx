@@ -27,6 +27,10 @@ const Categories = () => {
   const [imagePreview, setImagePreview] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   // Fetch categories
   const fetchCategories = useCallback(async () => {
     try {
@@ -144,7 +148,7 @@ const Categories = () => {
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/category/${categoryId}`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/category/${categoryId}`,
         {
           method: "DELETE",
           headers: {
@@ -206,6 +210,22 @@ const Categories = () => {
     category.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredCategories.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentCategories = filteredCategories.slice(startIndex, endIndex);
+
+  // Handle page change
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  // Reset to first page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
   return (
     <Container>
       <div className="space-y-6">
@@ -215,7 +235,9 @@ const Categories = () => {
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
               Danh mục
             </h1>
-            <p className="text-gray-600 mt-1">Quản lý danh mục sản phẩm</p>
+            <p className="text-gray-600 mt-1">
+              Quản lý danh mục sản phẩm ({categories.length} danh mục)
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -363,7 +385,7 @@ const Categories = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredCategories.map((category) => (
+                    {currentCategories.map((category) => (
                       <tr key={category._id} className="hover:bg-gray-50">
                         <td className="px-6 py-4">
                           <img
@@ -409,7 +431,7 @@ const Categories = () => {
 
             {/* Mobile Card View */}
             <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {filteredCategories.map((category) => (
+              {currentCategories.map((category) => (
                 <div
                   key={category._id}
                   className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow"
@@ -450,6 +472,78 @@ const Categories = () => {
                 </div>
               ))}
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6 mt-6">
+                <div className="flex justify-between flex-1 sm:hidden">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    Trước
+                  </button>
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="relative inline-flex items-center px-4 py-2 ml-3 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    Sau
+                  </button>
+                </div>
+                <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm text-gray-700">
+                      Hiển thị{" "}
+                      <span className="font-medium">{startIndex + 1}</span> đến{" "}
+                      <span className="font-medium">
+                        {Math.min(endIndex, filteredCategories.length)}
+                      </span>{" "}
+                      trong tổng số{" "}
+                      <span className="font-medium">
+                        {filteredCategories.length}
+                      </span>{" "}
+                      danh mục
+                    </p>
+                  </div>
+                  <div>
+                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                      <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                      >
+                        Trước
+                      </button>
+                      {[...Array(totalPages)].map((_, index) => {
+                        const page = index + 1;
+                        return (
+                          <button
+                            key={page}
+                            onClick={() => handlePageChange(page)}
+                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                              currentPage === page
+                                ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
+                                : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        );
+                      })}
+                      <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                      >
+                        Sau
+                      </button>
+                    </nav>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
 
@@ -479,7 +573,7 @@ const Categories = () => {
               <form onSubmit={handleSubmit} className="p-6 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tên danh mục 
+                    Tên danh mục
                   </label>
                   <input
                     type="text"
@@ -508,7 +602,7 @@ const Categories = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Ảnh danh mục 
+                    Ảnh danh mục
                   </label>
                   <input
                     type="file"

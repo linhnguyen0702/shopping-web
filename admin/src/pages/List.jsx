@@ -24,6 +24,10 @@ const List = ({ token }) => {
   const [isLoading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   // Modal states
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -282,7 +286,9 @@ const List = ({ token }) => {
       }
     } catch (error) {
       console.log("Lỗi khi cập nhật sản phẩm", error);
-      toast.error(error?.response?.data?.message || "Lỗi khi cập nhật sản phẩm");
+      toast.error(
+        error?.response?.data?.message || "Lỗi khi cập nhật sản phẩm"
+      );
     } finally {
       setSubmitting(false);
     }
@@ -323,6 +329,23 @@ const List = ({ token }) => {
         product.brand.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredList.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentProducts = filteredList.slice(startIndex, endIndex);
+
+  // Handle page change
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  // Reset to first page when search changes
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1);
+  };
+
   return (
     <Container>
       <div className="space-y-6">
@@ -330,7 +353,7 @@ const List = ({ token }) => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-              Danh sách sản phẩm
+              Danh sách sản phẩm ({filteredList.length})
             </h1>
             <p className="text-gray-600 mt-1">Quản lý kho sản phẩm của bạn</p>
           </div>
@@ -361,7 +384,7 @@ const List = ({ token }) => {
               type="text"
               placeholder="Tìm kiếm sản phẩm..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
             />
           </div>
@@ -454,7 +477,9 @@ const List = ({ token }) => {
           <div className="text-center py-12">
             <FaBox className="mx-auto text-6xl text-gray-300 mb-4" />
             <h3 className="text-xl font-semibold text-gray-700 mb-2">
-              {searchTerm ? "Không tìm thấy sản phẩm nào" : "Chưa có sản phẩm nào"}
+              {searchTerm
+                ? "Không tìm thấy sản phẩm nào"
+                : "Chưa có sản phẩm nào"}
             </h3>
             <p className="text-gray-500 mb-6">
               {searchTerm
@@ -499,7 +524,7 @@ const List = ({ token }) => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredList.map((product) => (
+                    {currentProducts.map((product) => (
                       <tr key={product._id} className="hover:bg-gray-50">
                         <td className="px-6 py-4">
                           <img
@@ -574,7 +599,7 @@ const List = ({ token }) => {
 
             {/* Mobile Card View */}
             <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {filteredList.map((product) => (
+              {currentProducts.map((product) => (
                 <div
                   key={product._id}
                   className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow"
@@ -646,6 +671,69 @@ const List = ({ token }) => {
                 </div>
               ))}
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center space-x-2 mt-8">
+                {/* Desktop Pagination */}
+                <div className="hidden sm:flex space-x-1">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Trước
+                  </button>
+
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (page) => (
+                      <button
+                        key={page}
+                        onClick={() => handlePageChange(page)}
+                        className={`px-3 py-2 text-sm border rounded-md ${
+                          currentPage === page
+                            ? "bg-black text-white border-black"
+                            : "border-gray-300 hover:bg-gray-50"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    )
+                  )}
+
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Sau
+                  </button>
+                </div>
+
+                {/* Mobile Pagination */}
+                <div className="sm:hidden flex items-center space-x-4">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Trước
+                  </button>
+
+                  <span className="text-sm text-gray-700">
+                    Trang {currentPage} / {totalPages}
+                  </span>
+
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Sau
+                  </button>
+                </div>
+              </div>
+            )}
           </>
         )}
 
@@ -1020,8 +1108,8 @@ const List = ({ token }) => {
                 )}
 
                 <p className="text-gray-600 mb-6">
-                  Bạn có chắc chắn muốn xóa sản phẩm này không? Điều này sẽ
-                  xóa vĩnh viễn sản phẩm khỏi kho hàng của bạn.
+                  Bạn có chắc chắn muốn xóa sản phẩm này không? Điều này sẽ xóa
+                  vĩnh viễn sản phẩm khỏi kho hàng của bạn.
                 </p>
 
                 <div className="flex gap-3">

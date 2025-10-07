@@ -18,6 +18,10 @@ const Brands = () => {
   const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [showModal, setShowModal] = useState(false);
   const [editingBrand, setEditingBrand] = useState(null);
   const [formData, setFormData] = useState({
@@ -212,6 +216,23 @@ const Brands = () => {
     brand.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredBrands.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentBrands = filteredBrands.slice(startIndex, endIndex);
+
+  // Handle page change
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  // Reset to first page when search changes
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1);
+  };
+
   return (
     <Container>
       <div className="space-y-6">
@@ -219,7 +240,7 @@ const Brands = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-              Thương hiệu
+              Thương hiệu ({filteredBrands.length})
             </h1>
             <p className="text-gray-600 mt-1">Quản lý thương hiệu sản phẩm</p>
           </div>
@@ -250,7 +271,7 @@ const Brands = () => {
               type="text"
               placeholder="Tìm kiếm thương hiệu"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
             />
           </div>
@@ -335,7 +356,9 @@ const Brands = () => {
           <div className="text-center py-12">
             <FaImage className="mx-auto text-6xl text-gray-300 mb-4" />
             <h3 className="text-xl font-semibold text-gray-700 mb-2">
-              {searchTerm ? "Không tìm thấy thương hiệu" : "Không có thương hiệu"}
+              {searchTerm
+                ? "Không tìm thấy thương hiệu"
+                : "Không có thương hiệu"}
             </h3>
             <p className="text-gray-500 mb-6">
               {searchTerm
@@ -377,7 +400,7 @@ const Brands = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredBrands.map((brand) => (
+                    {currentBrands.map((brand) => (
                       <tr
                         key={brand._id}
                         className="hover:bg-gray-50 transition-colors"
@@ -443,7 +466,7 @@ const Brands = () => {
 
             {/* Card view for small screens */}
             <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {filteredBrands.map((brand) => (
+              {currentBrands.map((brand) => (
                 <div
                   key={brand._id}
                   className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
@@ -495,6 +518,69 @@ const Brands = () => {
                 </div>
               ))}
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center space-x-2 mt-8">
+                {/* Desktop Pagination */}
+                <div className="hidden sm:flex space-x-1">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Trước
+                  </button>
+
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (page) => (
+                      <button
+                        key={page}
+                        onClick={() => handlePageChange(page)}
+                        className={`px-3 py-2 text-sm border rounded-md ${
+                          currentPage === page
+                            ? "bg-black text-white border-black"
+                            : "border-gray-300 hover:bg-gray-50"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    )
+                  )}
+
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Sau
+                  </button>
+                </div>
+
+                {/* Mobile Pagination */}
+                <div className="sm:hidden flex items-center space-x-4">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Trước
+                  </button>
+
+                  <span className="text-sm text-gray-700">
+                    Trang {currentPage} / {totalPages}
+                  </span>
+
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Sau
+                  </button>
+                </div>
+              </div>
+            )}
           </>
         )}
 
@@ -524,7 +610,7 @@ const Brands = () => {
               <form onSubmit={handleSubmit} className="p-6 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tên thương hiệu 
+                    Tên thương hiệu
                   </label>
                   <input
                     type="text"
@@ -567,7 +653,7 @@ const Brands = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Ảnh thương hiệu 
+                    Ảnh thương hiệu
                   </label>
                   <input
                     type="file"
@@ -599,11 +685,7 @@ const Brands = () => {
                     disabled={submitting}
                     className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
                   >
-                    {submitting
-                      ? "Lưu..."
-                      : editingBrand
-                      ? "Cập nhật"
-                      : "Tạo"}
+                    {submitting ? "Lưu..." : editingBrand ? "Cập nhật" : "Tạo"}
                   </button>
                 </div>
               </form>
