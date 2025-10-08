@@ -13,7 +13,9 @@ const ProductsSideNav = ({ onFilterChange, filters, onClearFilters }) => {
     // Fetch categories and brands from products
     const fetchFilterOptions = async () => {
       try {
-        const data = await getData(`${config?.baseUrl}/api/products`);
+        const data = await getData(
+          `${config?.baseUrl}/api/products?_perPage=1000`
+        );
         const products = data?.products || [];
 
         // Extract unique categories
@@ -90,7 +92,7 @@ const ProductsSideNav = ({ onFilterChange, filters, onClearFilters }) => {
       {/* Categories */}
       <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Danh mục</h3>
-        <div className="space-y-3">
+        <div className="space-y-3 max-h-60 overflow-y-auto">
           {categories.map((category) => (
             <label
               key={category}

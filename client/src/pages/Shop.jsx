@@ -23,7 +23,7 @@ const Shop = () => {
   const [itemsPerPage, setItemsPerPage] = useState(12);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  const endpoint = `${config?.baseUrl}/api/products`;
+  const endpoint = `${config?.baseUrl}/api/products?_perPage=1000`;
 
   // Handle URL parameters for category filtering
   useEffect(() => {
@@ -81,6 +81,15 @@ const Shop = () => {
             ?.toLowerCase()
             .includes(filters.search.toLowerCase())
       );
+    }
+
+    // Áp dụng lọc theo khoảng giá
+    if (filters.priceRange) {
+      const [min, max] = filters.priceRange.split("-").map(Number);
+      filtered = filtered.filter((product) => {
+        const price = product.price || 0;
+        return price >= (min || 0) && price <= (max || Infinity);
+      });
     }
 
     // Áp dụng sắp xếp
@@ -207,12 +216,16 @@ const Shop = () => {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 p-4 bg-gray-50 rounded-lg border">
               <div className="flex items-center gap-4">
                 <span className="text-sm text-gray-600">
-                  Showing {(currentPage - 1) * itemsPerPage + 1}-
+                  Hiển thị{" "}
+                  {filteredProducts.length === 0
+                    ? 0
+                    : (currentPage - 1) * itemsPerPage + 1}
+                  -
                   {Math.min(
                     currentPage * itemsPerPage,
                     filteredProducts.length
                   )}{" "}
-                  of {filteredProducts.length} results
+                  của {filteredProducts.length} kết quả
                 </span>
               </div>
 
@@ -303,7 +316,9 @@ const Shop = () => {
             {/* Active Filters */}
             {(filters.category || filters.brand || filters.search) && (
               <div className="flex flex-wrap items-center gap-2 mb-6">
-                <span className="text-sm text-gray-600">Bộ lọc đang áp dụng:</span>
+                <span className="text-sm text-gray-600">
+                  Bộ lọc đang áp dụng:
+                </span>
                 {filters.category && (
                   <span className="inline-flex items-center gap-1 px-3 py-1 bg-gray-900 text-white text-sm rounded-full">
                     Danh mục: {filters.category}

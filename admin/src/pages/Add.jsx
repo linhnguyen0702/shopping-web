@@ -309,7 +309,7 @@ const Add = ({ token }) => {
                     disabled={loadingData}
                   >
                     <option value="">
-                      {loadingData ? "Loading brands..." : "Select brand"}
+                      {loadingData ? "Loading brands..." : "Thương hiệu"}
                     </option>
                     {brands.map((brand) => (
                       <option key={brand._id} value={brand.name}>

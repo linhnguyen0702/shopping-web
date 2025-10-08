@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
 import { FaHeart, FaPlus } from "react-icons/fa";
+import PriceFormat from "./PriceFormat";
 import PriceContainer from "./PriceContainer";
 import { useDispatch, useSelector } from "react-redux";
 import { addToCart } from "../redux/orebiSlice";
@@ -12,7 +13,7 @@ import {
 } from "../redux/wishlistThunks";
 import toast from "react-hot-toast";
 
-const ProductCard = ({ item, className = "" }) => {
+const ProductCard = ({ item, className = "", viewContext = "default" }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -105,14 +106,13 @@ const ProductCard = ({ item, className = "" }) => {
 
   return (
     <div
-      className={`bg-white rounded-xl shadow-md p-3 w-64 ${className} transition hover:shadow-lg`}
-      style={{ minWidth: 256 }}
+      className={`bg-white rounded-xl shadow-md p-4 w-full max-w-sm mx-auto ${className} transition hover:shadow-lg overflow-hidden`}
     >
       <div className="relative">
         <img
           src={item?.images?.[0] || item?.image}
           alt={item?.name}
-          className="w-full h-64 object-cover rounded-xl cursor-pointer"
+          className="w-full h-48 sm:h-56 md:h-64 object-cover rounded-xl cursor-pointer"
           onClick={handleProductDetails}
         />
         {/* Tag sản phẩm nếu có */}
@@ -148,27 +148,74 @@ const ProductCard = ({ item, className = "" }) => {
           />
         </button>
       </div>
-      <div className="mt-2">
-        <div className="font-semibold text-base truncate">{item.name}</div>
-        <div className="text-xs text-gray-500 mb-1 truncate">
+      <div className="mt-3">
+        <div className="font-semibold text-sm sm:text-base truncate mb-1">
+          {item.name}
+        </div>
+        <div className="text-xs text-gray-500 mb-2 truncate">
           {item.description || "Mô tả sản phẩm"}
         </div>
-        <div className="flex items-center justify-between mt-2">
-          {/* Giá và VNĐ */}
-          <span className="flex items-baseline text-[#000000] font-bold text-base">
-            <PriceContainer item={item} />
-            <span className="ml-1 text-xs font-semibold">VNĐ</span>
-          </span>
+        {viewContext === "shop" ? (
+          // Layout cho trang Shop: giá gốc thẳng hàng với nút, cùng chiều cao
+          <div className="flex items-start justify-between gap-2 mt-2">
+            {/* Giá - cố định chiều cao */}
+            <div className="flex-1 min-w-0 h-10 flex flex-col justify-center">
+              {item?.offer && item?.discountedPercentage ? (
+                <div className="flex flex-col">
+                  {/* Giá gốc - gạch ngang */}
+                  <div className="text-xs text-gray-500 line-through leading-tight">
+                    <PriceFormat
+                      amount={
+                        item?.price +
+                        ((item?.discountedPercentage || 0) * item?.price) / 100
+                      }
+                    />
+                    <span className="ml-1">VNĐ</span>
+                  </div>
+                  {/* Giá bán - đậm */}
+                  <div className="text-sm font-bold text-[#000000] leading-tight">
+                    <PriceFormat amount={item?.price || 0} />
+                    <span className="ml-1">VNĐ</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm font-bold text-[#000000] flex items-center h-full">
+                  <div>
+                    <PriceFormat amount={item?.price || 0} />
+                    <span className="ml-1">VNĐ</span>
+                  </div>
+                </div>
+              )}
+            </div>
 
-          {/* Nút thêm vào giỏ */}
-          <button
-            onClick={handleAddToCart}
-            className="bg-[#000000] text-white rounded-full w-7 h-7 flex items-center justify-center shadow hover:bg-[#a67c52] transition ml-2"
-            aria-label="Thêm vào giỏ"
-          >
-            <FaPlus />
-          </button>
-        </div>
+            {/* Nút thêm vào giỏ - căn giữa theo chiều cao */}
+            <button
+              onClick={handleAddToCart}
+              className="bg-[#000000] text-white rounded-full w-8 h-8 flex items-center justify-center shadow hover:bg-[#a67c52] transition flex-shrink-0 mt-1"
+              aria-label="Thêm vào giỏ"
+            >
+              <FaPlus className="text-sm" />
+            </button>
+          </div>
+        ) : (
+          // Layout mặc định: thẳng hàng như cũ
+          <div className="flex items-center justify-between gap-2 mt-2">
+            {/* Giá và VNĐ */}
+            <span className="flex items-baseline text-[#000000] font-bold text-sm min-w-0 flex-1">
+              <PriceContainer item={item} />
+              <span className="ml-1 text-xs font-semibold">VNĐ</span>
+            </span>
+
+            {/* Nút thêm vào giỏ */}
+            <button
+              onClick={handleAddToCart}
+              className="bg-[#000000] text-white rounded-full w-8 h-8 flex items-center justify-center shadow hover:bg-[#a67c52] transition flex-shrink-0"
+              aria-label="Thêm vào giỏ"
+            >
+              <FaPlus className="text-sm" />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -185,10 +232,12 @@ ProductCard.propTypes = {
     _type: PropTypes.string,
     badge: PropTypes.bool,
     offer: PropTypes.bool,
+    price: PropTypes.number,
     discountedPercentage: PropTypes.number,
     description: PropTypes.string,
   }).isRequired,
   className: PropTypes.string,
+  viewContext: PropTypes.string,
 };
 
 export default ProductCard;

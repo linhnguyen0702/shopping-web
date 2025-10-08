@@ -65,7 +65,7 @@ const List = ({ token }) => {
     try {
       setLoading(true);
       const response = await axios.get(
-        `${serverUrl}/api/product/list?isAvailable=false`
+        `${serverUrl}/api/product/list?isAvailable=false&_perPage=1000`
       );
       const data = response?.data;
 
