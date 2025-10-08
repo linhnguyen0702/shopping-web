@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import PriceFormat from "../components/PriceFormat";
@@ -30,6 +30,9 @@ const SingleProduct = () => {
   const [loadingRelated, setLoadingRelated] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const scrollContainerRef = useRef(null);
 
   // Redux state
   const favorites = useSelector(
@@ -86,16 +89,16 @@ const SingleProduct = () => {
       if (productInfo?.category) {
         setLoadingRelated(true);
         try {
-          // Fetch products from the same category
+          // Fetch ALL products from the same category (remove limit)
           const response = await getData(
-            `${serverUrl}/api/products?category=${productInfo.category}&_perPage=8`
+            `${serverUrl}/api/products?category=${productInfo.category}`
           );
 
           if (response?.success && response?.products) {
-            // Filter out the current product and limit to 4 products
-            const filtered = response.products
-              .filter((product) => product._id !== productInfo._id)
-              .slice(0, 4);
+            // Filter out the current product
+            const filtered = response.products.filter(
+              (product) => product._id !== productInfo._id
+            );
             setRelatedProducts(filtered);
           }
         } catch (error) {
@@ -108,6 +111,14 @@ const SingleProduct = () => {
 
     fetchRelatedProducts();
   }, [productInfo]);
+
+  // Check scroll buttons when related products change
+  useEffect(() => {
+    if (relatedProducts.length > 0) {
+      // Small delay to ensure DOM is updated
+      setTimeout(checkScrollButtons, 100);
+    }
+  }, [relatedProducts]);
 
   // Use product images from database if available, otherwise use mock images
   const productImages =
@@ -148,17 +159,90 @@ const SingleProduct = () => {
         await dispatch(addToWishlistAsync(productInfo)).unwrap();
       }
     } catch (error) {
-      // Error handling is done in thunks, but we can add fallback local updates here
       console.error("Wishlist error:", error);
+
+      // Check if error is related to authentication
+      if (
+        error?.message?.includes("token") ||
+        error?.message?.includes("authentication")
+      ) {
+        toast.error("Vui lòng đăng nhập để sử dụng tính năng này");
+        return;
+      }
 
       // Fallback to local-only updates if API fails
       if (isLiked) {
         dispatch(removeFromFavorites(productInfo._id));
-        toast("Đã xoá khỏi yêu thích (chỉ cục bộ)", { icon: "💔" });
+        toast("Đã bỏ khỏi yêu thích (chỉ cục bộ)", { icon: "💔" });
       } else {
         dispatch(addToFavorites(productInfo));
         toast.success("Đã thêm vào yêu thích (chỉ cục bộ)");
       }
+    }
+  };
+
+  // Handle like for products in related products section
+  const handleProductLike = async (product) => {
+    const isProductLiked = favorites.some((fav) => fav._id === product._id);
+
+    try {
+      if (isProductLiked) {
+        // Remove from wishlist (database + local state)
+        await dispatch(removeFromWishlistAsync(product._id)).unwrap();
+        toast.success("Đã bỏ khỏi yêu thích");
+      } else {
+        // Add to wishlist (database + local state)
+        await dispatch(addToWishlistAsync(product)).unwrap();
+        toast.success("Đã thêm vào yêu thích");
+      }
+    } catch (error) {
+      console.error("Wishlist error:", error);
+
+      // Check if error is related to authentication
+      if (
+        error?.message?.includes("token") ||
+        error?.message?.includes("authentication")
+      ) {
+        toast.error("Vui lòng đăng nhập để sử dụng tính năng này");
+        return;
+      }
+
+      // Fallback to local-only updates if API fails
+      if (isProductLiked) {
+        dispatch(removeFromFavorites(product._id));
+        toast("Đã bỏ khỏi yêu thích ", { icon: "💔" });
+      } else {
+        dispatch(addToFavorites(product));
+        toast.success("Đã thêm vào yêu thích ");
+      }
+    }
+  };
+
+  // Handle scroll navigation for related products
+  const checkScrollButtons = () => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } =
+        scrollContainerRef.current;
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
+    }
+  };
+
+  const scrollLeft = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({
+        left: -320, // Width of card (256px) + gap (24px) + padding
+        behavior: "smooth",
+      });
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({
+        left: 320,
+        behavior: "smooth",
+      });
     }
   };
 
@@ -644,107 +728,279 @@ const SingleProduct = () => {
           transition={{ duration: 0.6, delay: 0.6 }}
           className="border-t border-gray-200 pt-16 mt-16"
         >
-          <h2 className="text-2xl font-light text-center mb-12">
-            Sản phẩm liên quan
-          </h2>
+          <div className="flex items-center justify-center mb-8">
+            <h2 className="text-2xl md:text-3xl font-light text-gray-900">
+              Sản phẩm liên quan
+            </h2>
+          </div>
 
           {loadingRelated ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              {[1, 2, 3, 4].map((item) => (
-                <div key={item} className="animate-pulse">
-                  <div className="aspect-square bg-gray-200 rounded-lg mb-4"></div>
-                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/2 mb-3"></div>
-                  <div className="h-8 bg-gray-200 rounded"></div>
-                </div>
-              ))}
+            // Loading skeleton với horizontal scroll
+            <div className="overflow-x-auto pb-4">
+              <div className="flex gap-4 w-max">
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
+                  <div key={item} className="flex-shrink-0 w-64 animate-pulse">
+                    <div className="aspect-square bg-gray-200 rounded-xl mb-3"></div>
+                    <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-3/4 mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  </div>
+                ))}
+              </div>
             </div>
           ) : relatedProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              {relatedProducts.map((product) => (
-                <div
-                  key={product._id}
-                  className="group cursor-pointer"
-                  onClick={() =>
-                    navigate(`/product/${product._id}`, {
-                      state: { item: product },
-                    })
-                  }
+            <div className="relative">
+              {/* Left Arrow */}
+              <button
+                onClick={scrollLeft}
+                className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-white shadow-xl rounded-full flex items-center justify-center transition-all duration-300 border border-gray-100 hover:scale-110 ${
+                  canScrollLeft
+                    ? "hover:bg-gray-50 text-gray-800 hover:shadow-2xl"
+                    : "text-gray-400 cursor-not-allowed opacity-50"
+                }`}
+                disabled={!canScrollLeft}
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden mb-4">
-                    <img
-                      src={
-                        product.image ||
-                        product.images?.[0] ||
-                        "/placeholder-image.jpg"
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </button>
+
+              {/* Right Arrow */}
+              <button
+                onClick={scrollRight}
+                className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-white shadow-xl rounded-full flex items-center justify-center transition-all duration-300 border border-gray-100 hover:scale-110 ${
+                  canScrollRight
+                    ? "hover:bg-gray-50 text-gray-800 hover:shadow-2xl"
+                    : "text-gray-400 cursor-not-allowed opacity-50"
+                }`}
+                disabled={!canScrollRight}
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </button>
+
+              <div
+                ref={scrollContainerRef}
+                className="overflow-x-auto pb-4 scrollbar-hide mx-16"
+                onScroll={checkScrollButtons}
+                onWheel={(e) => {
+                  e.currentTarget.scrollLeft += e.deltaY;
+                  checkScrollButtons();
+                }}
+              >
+                <div className="flex gap-6 w-max">
+                  {relatedProducts.map((product) => (
+                    <div
+                      key={product._id}
+                      className="flex-shrink-0 w-64 h-96 group cursor-pointer bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 flex flex-col"
+                      onClick={() =>
+                        navigate(`/product/${product._id}`, {
+                          state: { item: product },
+                        })
                       }
-                      alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      onError={(e) => {
-                        e.target.src = "/placeholder-image.jpg";
-                      }}
-                    />
-                  </div>
-                  <h3 className="font-medium text-gray-900 mb-2 group-hover:text-gray-600 transition-colors truncate">
-                    {product.name}
-                  </h3>
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="flex items-center">
-                      {Array.from({ length: 5 }).map((_, starIndex) => (
-                        <MdStar
-                          key={starIndex}
-                          className={`w-4 h-4 ${
-                            starIndex < Math.floor(product.ratings || 4)
-                              ? "text-yellow-400"
-                              : "text-gray-300"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <span className="text-sm text-gray-500">
-                      {product.ratings?.toFixed(1) || "4.0"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 mb-3">
-                    {product.discountedPercentage > 0 && (
-                      <span className="text-sm text-gray-400 line-through">
-                        <PriceFormat
-                          amount={
-                            product.price /
-                            (1 - product.discountedPercentage / 100)
+                    >
+                      {/* Product Image */}
+                      <div className="relative aspect-square bg-gray-50 overflow-hidden rounded-t-xl">
+                        <img
+                          src={
+                            product.image ||
+                            product.images?.[0] ||
+                            "/placeholder-image.jpg"
                           }
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                          onError={(e) => {
+                            e.target.src = "/placeholder-image.jpg";
+                          }}
                         />
-                      </span>
-                    )}
-                    <span className="text-lg font-light text-gray-900">
-                      <PriceFormat amount={product.price} />
-                    </span>
-                    {product.discountedPercentage > 0 && (
-                      <span className="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-medium">
-                        {product.discountedPercentage}% off
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    className="w-full mt-3 py-2 border border-gray-300 text-gray-700 hover:border-black hover:bg-black hover:text-white transition-all duration-300 text-sm font-medium uppercase tracking-wider transform hover:scale-[1.02]"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // Add to cart for related product
-                      dispatch(addToCart({ ...product, quantity: 1 }));
-                      toast.success(`Đã thêm ${product.name} vào giỏ hàng`);
-                    }}
-                  >
-                    Thêm vào giỏ hàng
-                  </button>
+
+                        {/* Discount Badge */}
+                        {product?.discountedPercentage > 0 && (
+                          <div className="absolute top-3 left-3 bg-red-500 text-white px-2.5 py-1 rounded-full text-xs font-medium">
+                            Mới
+                          </div>
+                        )}
+
+                        {/* Favorite Button - Top Right */}
+                        <button
+                          className={`absolute top-3 right-3 w-8 h-8 backdrop-blur-sm hover:scale-110 rounded-full flex items-center justify-center transition-all duration-300 ${
+                            favorites.some((fav) => fav._id === product._id)
+                              ? "bg-red-100 text-red-500"
+                              : "bg-white/80 hover:bg-white text-gray-600"
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleProductLike(product);
+                          }}
+                          title={
+                            favorites.some((fav) => fav._id === product._id)
+                              ? "Bỏ yêu thích"
+                              : "Thêm vào yêu thích"
+                          }
+                        >
+                          {favorites.some((fav) => fav._id === product._id) ? (
+                            <svg
+                              className="w-4 h-4"
+                              fill="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                            </svg>
+                          ) : (
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                              />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Product Info */}
+                      <div className="p-4 flex flex-col flex-1">
+                        {/* Product Name */}
+                        <h3 className="font-medium text-gray-900 mb-2 group-hover:text-gray-700 transition-colors line-clamp-2 text-sm leading-tight h-10 flex items-center">
+                          {product.name}
+                        </h3>
+
+                        {/* Rating Stars - Chỉ hiển thị khi có đánh giá */}
+                        <div className="mb-2 h-5 flex items-center">
+                          {product.ratings && product.ratings > 0 ? (
+                            <div className="flex items-center gap-1">
+                              <div className="flex items-center">
+                                {Array.from({ length: 5 }).map(
+                                  (_, starIndex) => (
+                                    <MdStar
+                                      key={starIndex}
+                                      className={`w-3 h-3 ${
+                                        starIndex < Math.floor(product.ratings)
+                                          ? "text-yellow-400"
+                                          : "text-gray-200"
+                                      }`}
+                                    />
+                                  )
+                                )}
+                              </div>
+                              <span className="text-xs text-gray-500 ml-1">
+                                ({product.ratings.toFixed(1)})
+                              </span>
+                            </div>
+                          ) : null}
+                        </div>
+
+                        {/* Price Section */}
+                        <div className="mb-3">
+                          <div className="flex items-end justify-between">
+                            <div className="flex flex-col gap-1">
+                              {product.discountedPercentage > 0 && (
+                                <span className="text-sm text-gray-400 line-through">
+                                  <PriceFormat
+                                    amount={
+                                      product.price /
+                                      (1 - product.discountedPercentage / 100)
+                                    }
+                                  />
+                                </span>
+                              )}
+                              <span className="text-lg font-bold text-black">
+                                <PriceFormat amount={product.price} />
+                              </span>
+                            </div>
+
+                            {/* Add to Cart Button - aligned with price */}
+                            <button
+                              className="w-8 h-8 bg-black hover:bg-gray-800 text-white rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                dispatch(
+                                  addToCart({ ...product, quantity: 1 })
+                                );
+                                toast.success(
+                                  `Đã thêm ${product.name} vào giỏ hàng`
+                                );
+                              }}
+                              title="Thêm vào giỏ hàng"
+                            >
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M12 4v16m8-8H4"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Spacer to push category to bottom */}
+                        <div className="flex-1"></div>
+
+                        {/* Category Tag */}
+                        <div className="mt-auto">
+                          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full capitalize">
+                            {product.category}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
           ) : (
             <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">
-                Không tìm thấy sản phẩm liên quan.
+              <div className="w-16 h-16 mx-auto mb-4 text-gray-300">
+                <svg fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M7 4H3c-.55 0-1 .45-1 1s.45 1 1 1h4c.55 0 1-.45 1-1s-.45-1-1-1zM7 8H3c-.55 0-1 .45-1 1s.45 1 1 1h4c.55 0 1-.45 1-1s-.45-1-1-1zM3 14h4c.55 0 1-.45 1-1s-.45-1-1-1H3c-.55 0-1 .45-1 1s.45 1 1 1zM11 4h10c.55 0 1-.45 1-1s-.45-1-1-1H11c-.55 0-1 .45-1 1s.45 1 1 1zM11 8h10c.55 0 1-.45 1-1s-.45-1-1-1H11c-.55 0-1 .45-1 1s.45 1 1 1zM11 12h10c.55 0 1-.45 1-1s-.45-1-1-1H11c-.55 0-1 .45-1 1s.45 1 1 1z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Không tìm thấy sản phẩm liên quan
+              </h3>
+              <p className="text-gray-500">
+                Hiện tại chưa có sản phẩm nào cùng danh mục với sản phẩm này.
               </p>
+              <button
+                onClick={() => navigate("/shop")}
+                className="mt-4 px-6 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors"
+              >
+                Xem tất cả sản phẩm
+              </button>
             </div>
           )}
         </motion.div>

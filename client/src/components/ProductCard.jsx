@@ -54,10 +54,10 @@ const ProductCard = ({ item, className = "", viewContext = "default" }) => {
       // Fallback to local-only updates if API fails
       if (isLiked) {
         dispatch(removeFromFavorites(item._id));
-        toast("Đã xoá khỏi yêu thích (chỉ cục bộ)", { icon: "💔" });
+        toast("Đã xoá khỏi yêu thích ", { icon: "💔" });
       } else {
         dispatch(addToFavorites(item));
-        toast.success("Đã thêm vào yêu thích (chỉ cục bộ)");
+        toast.success("Đã thêm vào yêu thích ");
       }
     }
   };
