@@ -6,9 +6,14 @@ import {
   singleProducts,
   updateStock,
   updateProduct,
+  addProductReview,
+  updateProductReview,
+  getProductReviews,
+  getUserReviewCount,
 } from "../controllers/productController.mjs";
 import upload from "../middleware/multer.mjs";
 import adminAuth from "../middleware/adminAuth.js";
+import userAuth from "../middleware/userAuth.js";
 
 const router = Router();
 
@@ -49,5 +54,21 @@ router.get("/api/products/:type", (req, res, next) => {
   req.query._type = req.params.type;
   listProducts(req, res, next);
 });
+
+// Review routes
+router.post(
+  "/api/product/review",
+  upload.array("reviewImages", 5),
+  userAuth,
+  addProductReview
+);
+router.put(
+  "/api/product/review/:reviewId",
+  upload.array("reviewImages", 5),
+  userAuth,
+  updateProductReview
+);
+router.get("/api/product/:productId/reviews", getProductReviews);
+router.get("/api/user/review-count", userAuth, getUserReviewCount);
 
 export default router;

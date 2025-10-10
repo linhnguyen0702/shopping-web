@@ -12,6 +12,8 @@ import { serverUrl } from "../../config";
 import { formatVND, formatCompactVND } from "../helpers/currencyHelper";
 import toast from "react-hot-toast";
 import { useSelector } from "react-redux";
+import RevenueChart from "../components/RevenueChart";
+import OrderTrendChart from "../components/OrderTrendChart";
 
 const Analytics = () => {
   const { token } = useSelector((state) => state.auth);
@@ -28,6 +30,8 @@ const Analytics = () => {
     revenueChangePct: 0,
     ordersChangePct: 0,
     usersChangePct: 0,
+    // chart data
+    monthlyOrders: [],
   });
 
   const calcChangePct = (current, previous) => {
@@ -135,6 +139,7 @@ const Analytics = () => {
         revenueChangePct,
         ordersChangePct,
         usersChangePct,
+        monthlyOrders,
         loading: false,
         error: null,
       });
@@ -370,48 +375,15 @@ const Analytics = () => {
         </div>
       </div>
 
-      {/* Data Source Info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
-        <div className="flex items-center gap-3 mb-3">
-          <FaChartLine className="text-blue-600 text-xl" />
-          <h3 className="text-lg font-semibold text-blue-900">Nguồn dữ liệu</h3>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-800">
-          <div>
-            <p>
-              <strong>Đơn hàng:</strong> Lấy từ API `/api/order/list` và
-              `/api/order/stats`
-            </p>
-            <p>
-              <strong>Người dùng:</strong> Lấy từ API `/api/user/users`
-            </p>
-          </div>
-          <div>
-            <p>
-              <strong>Doanh thu:</strong> Tính từ tổng `amount` của đơn hàng
-            </p>
-            <p>
-              <strong>Cập nhật:</strong> Theo thời gian thực khi có đơn hàng mới
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Biểu đồ doanh thu thực tế
           </h3>
-          <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-            <div className="text-center">
-              <FaChartLine className="mx-auto text-4xl text-gray-400 mb-3" />
-              <p className="text-gray-500">Biểu đồ sẽ được tích hợp ở đây</p>
-              <p className="text-sm text-gray-400 mt-1">
-                Hiển thị doanh thu thực tế:{" "}
-                {formatVND(analyticsData.totalRevenue)}
-              </p>
-            </div>
+          <RevenueChart monthlyData={analyticsData.monthlyOrders} type="line" />
+          <div className="mt-3 text-sm text-gray-600 text-center">
+            Tổng doanh thu: {formatVND(analyticsData.totalRevenue)}
           </div>
         </div>
 
@@ -419,14 +391,12 @@ const Analytics = () => {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Xu hướng đơn hàng thực tế
           </h3>
-          <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-            <div className="text-center">
-              <FaShoppingCart className="mx-auto text-4xl text-gray-400 mb-3" />
-              <p className="text-gray-500">Biểu đồ sẽ được tích hợp ở đây</p>
-              <p className="text-sm text-gray-400 mt-1">
-                Tổng đơn hàng: {analyticsData.totalOrders.toLocaleString()}
-              </p>
-            </div>
+          <OrderTrendChart
+            monthlyData={analyticsData.monthlyOrders}
+            type="bar"
+          />
+          <div className="mt-3 text-sm text-gray-600 text-center">
+            Tổng đơn hàng: {analyticsData.totalOrders.toLocaleString()}
           </div>
         </div>
       </div>

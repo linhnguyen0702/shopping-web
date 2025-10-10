@@ -16,7 +16,7 @@ export const headerNavigation = [
     link: "/contact",
   },
   {
-    title: "Đơn hàng",
-    link: "/orders",
+    title: "Sản phẩm yêu thích",
+    link: "/wishlist",
   },
 ];

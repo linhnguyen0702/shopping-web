@@ -1,34 +1,59 @@
-import { useState, useEffect } from "react";
-import { FaBoxes, FaExclamationTriangle, FaCheckCircle, FaSync } from "react-icons/fa";
+import { useState, useEffect, useCallback } from "react";
+import {
+  FaBoxes,
+  FaExclamationTriangle,
+  FaCheckCircle,
+  FaSync,
+} from "react-icons/fa";
 import { MdOutlineInventory, MdLowPriority } from "react-icons/md";
 import axios from "axios";
 import { serverUrl } from "../../config";
 import toast from "react-hot-toast";
 import { formatVND } from "../helpers/currencyHelper";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 
 const Inventory = () => {
+  const { token } = useSelector((state) => state.auth);
+  const navigate = useNavigate();
   const [inventoryStats, setInventoryStats] = useState({
     totalProducts: 0,
     lowStockProducts: 0,
     outOfStockProducts: 0,
-    inStockProducts: 0
+    inStockProducts: 0,
   });
   const [lowStockItems, setLowStockItems] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
   // Hàm lấy dữ liệu tồn kho từ API
-  const fetchInventoryData = async () => {
+  const fetchInventoryData = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get(`${serverUrl}/api/product/list?isAvailable=false`);
-      
+
+      if (!token) {
+        toast.error("Vui lòng đăng nhập để xem dữ liệu tồn kho");
+        setIsLoading(false);
+        return;
+      }
+
+      // Lấy TẤT CẢ sản phẩm (bao gồm cả available và unavailable) với _perPage lớn
+      // Sử dụng isAvailable=all để lấy tất cả sản phẩm
+      const response = await axios.get(
+        `${serverUrl}/api/product/list?isAvailable=all&_perPage=1000`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
       if (response.data?.success) {
         const products = response.data.products;
-        
+
         // Tính toán thống kê tồn kho
         const totalProducts = products.length;
-        const outOfStockProducts = products.filter(product => (product.stock || 0) === 0).length;
-        const lowStockProducts = products.filter(product => {
+        const outOfStockProducts = products.filter(
+          (product) => (product.stock || 0) === 0
+        ).length;
+        const lowStockProducts = products.filter((product) => {
           const stock = product.stock || 0;
           // Sản phẩm sắp hết hàng: tồn kho dưới 10 hoặc dưới 20% giá trị ban đầu
           return stock > 0 && stock < 10;
@@ -40,21 +65,22 @@ const Inventory = () => {
           totalProducts,
           lowStockProducts,
           outOfStockProducts,
-          inStockProducts
+          inStockProducts,
         });
 
         // Lấy danh sách sản phẩm sắp hết hàng
         const lowStockList = products
-          .filter(product => {
+          .filter((product) => {
             const stock = product.stock || 0;
             return stock > 0 && stock < 10;
           })
-          .map(product => ({
+          .map((product) => ({
+            id: product._id,
             name: product.name,
             stock: product.stock || 0,
             threshold: 10,
             category: product.category,
-            price: product.price
+            price: product.price,
           }))
           .sort((a, b) => a.stock - b.stock) // Sắp xếp theo số lượng tồn kho tăng dần
           .slice(0, 10); // Chỉ hiển thị 10 sản phẩm đầu tiên
@@ -67,17 +93,36 @@ const Inventory = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [token]);
 
-  // Tải dữ liệu khi component mount
+  // Tải dữ liệu khi component mount hoặc khi token thay đổi
   useEffect(() => {
-    fetchInventoryData();
-  }, []);
+    if (token) {
+      fetchInventoryData();
+    }
+  }, [token, fetchInventoryData]);
 
   // Hàm làm mới dữ liệu
   const handleRefresh = () => {
     fetchInventoryData();
     toast.success("Đã làm mới dữ liệu tồn kho");
+  };
+
+  // Hàm điều hướng đến sản phẩm cụ thể với tìm kiếm
+  const handleProductClick = (productName) => {
+    // Encode tên sản phẩm để có thể truyền qua URL
+    const encodedName = encodeURIComponent(productName);
+    navigate(`/list?search=${encodedName}`);
+  };
+
+  // Hàm điều hướng đến trang thêm sản phẩm
+  const handleAddProduct = () => {
+    navigate("/add");
+  };
+
+  // Hàm điều hướng đến danh sách sản phẩm (kiểm kê kho)
+  const handleInventoryCheck = () => {
+    navigate("/list");
   };
 
   const stats = [
@@ -86,28 +131,28 @@ const Inventory = () => {
       value: inventoryStats.totalProducts.toLocaleString(),
       icon: <FaBoxes />,
       color: "blue",
-      description: "Tổng số sản phẩm trong hệ thống"
+      description: "Tổng số sản phẩm trong hệ thống",
     },
     {
       title: "Sản phẩm sắp hết hàng",
       value: inventoryStats.lowStockProducts.toLocaleString(),
       icon: <FaExclamationTriangle />,
       color: "yellow",
-      description: "Sản phẩm có tồn kho dưới 10"
+      description: "Sản phẩm có tồn kho dưới 10",
     },
     {
       title: "Hết hàng",
       value: inventoryStats.outOfStockProducts.toLocaleString(),
       icon: <MdLowPriority />,
       color: "red",
-      description: "Sản phẩm không còn tồn kho"
+      description: "Sản phẩm không còn tồn kho",
     },
     {
       title: "Còn hàng",
       value: inventoryStats.inStockProducts.toLocaleString(),
       icon: <FaCheckCircle />,
       color: "green",
-      description: "Sản phẩm còn tồn kho"
+      description: "Sản phẩm còn tồn kho",
     },
   ];
 
@@ -128,8 +173,8 @@ const Inventory = () => {
             disabled={isLoading}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
           >
-            <FaSync className={`text-sm ${isLoading ? 'animate-spin' : ''}`} />
-            {isLoading ? 'Đang tải...' : 'Làm mới'}
+            <FaSync className={`text-sm ${isLoading ? "animate-spin" : ""}`} />
+            {isLoading ? "Đang tải..." : "Làm mới"}
           </button>
         </div>
       </div>
@@ -151,7 +196,9 @@ const Inventory = () => {
                 <h3 className="text-2xl font-bold text-gray-900">
                   {stat.value}
                 </h3>
-                <p className="text-gray-600 text-sm font-medium">{stat.title}</p>
+                <p className="text-gray-600 text-sm font-medium">
+                  {stat.title}
+                </p>
                 <p className="text-gray-500 text-xs mt-1">{stat.description}</p>
               </div>
             </div>
@@ -173,7 +220,7 @@ const Inventory = () => {
               </span>
             </div>
             <p className="text-sm text-gray-500">
-              Cập nhật lần cuối: {new Date().toLocaleString('vi-VN')}
+              Cập nhật lần cuối: {new Date().toLocaleString("vi-VN")}
             </p>
           </div>
         </div>
@@ -183,20 +230,30 @@ const Inventory = () => {
               {lowStockItems.map((item, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg border border-yellow-200"
+                  className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg border border-yellow-200 hover:bg-yellow-100 cursor-pointer transition-colors"
+                  onClick={() => handleProductClick(item.name)}
                 >
                   <div className="flex-1">
-                    <h4 className="font-medium text-gray-900">{item.name}</h4>
+                    <h4 className="font-medium text-gray-900 hover:text-blue-600">
+                      {item.name}
+                    </h4>
                     <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
                       <span>Danh mục: {item.category}</span>
                       <span>Giá: {formatVND(item.price)}</span>
-                      <span>Ngưỡng cảnh báo: {item.threshold} sản phẩm</span>
+                      <span>
+                        Ngưỡng cảnh báo dưới: {item.threshold} sản phẩm
+                      </span>
                     </div>
+                    <p className="text-xs text-blue-600 mt-2 opacity-75">
+                      👆 Click để tìm kiếm sản phẩm này
+                    </p>
                   </div>
                   <div className="text-right">
-                    <span className={`text-lg font-bold ${
-                      item.stock <= 3 ? 'text-red-600' : 'text-yellow-600'
-                    }`}>
+                    <span
+                      className={`text-lg font-bold ${
+                        item.stock <= 3 ? "text-red-600" : "text-yellow-600"
+                      }`}
+                    >
                       {item.stock}
                     </span>
                     <p className="text-sm text-gray-600">sản phẩm còn lại</p>
@@ -212,8 +269,12 @@ const Inventory = () => {
           ) : (
             <div className="text-center py-8">
               <FaCheckCircle className="mx-auto text-4xl text-green-500 mb-3" />
-              <p className="text-gray-600">Không có sản phẩm nào sắp hết hàng</p>
-              <p className="text-sm text-gray-500 mt-1">Tất cả sản phẩm đều có đủ tồn kho</p>
+              <p className="text-gray-600">
+                Không có sản phẩm nào sắp hết hàng
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                Tất cả sản phẩm đều có đủ tồn kho
+              </p>
             </div>
           )}
         </div>
@@ -222,14 +283,16 @@ const Inventory = () => {
       {/* Quick Actions */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
         <div className="p-6 border-b border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-900">Hành động nhanh</h3>
+          <h3 className="text-lg font-semibold text-gray-900">
+            Hành động nhanh
+          </h3>
           <p className="text-sm text-gray-600 mt-1">
             Quản lý tồn kho và bổ sung hàng hóa
           </p>
         </div>
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button 
+            <button
               onClick={handleRefresh}
               className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors group"
             >
@@ -239,14 +302,20 @@ const Inventory = () => {
               </p>
               <p className="text-xs text-gray-500 mt-1">Làm mới dữ liệu</p>
             </button>
-            <button className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors group">
+            <button
+              onClick={handleAddProduct}
+              className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors group"
+            >
               <FaBoxes className="text-2xl text-gray-400 mb-2 mx-auto group-hover:text-green-500" />
               <p className="text-sm font-medium text-gray-600 group-hover:text-green-700">
                 Nhập hàng loạt
               </p>
               <p className="text-xs text-gray-500 mt-1">Bổ sung tồn kho</p>
             </button>
-            <button className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors group">
+            <button
+              onClick={handleInventoryCheck}
+              className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors group"
+            >
               <FaCheckCircle className="text-2xl text-gray-400 mb-2 mx-auto group-hover:text-purple-500" />
               <p className="text-sm font-medium text-gray-600 group-hover:text-purple-700">
                 Kiểm kê kho

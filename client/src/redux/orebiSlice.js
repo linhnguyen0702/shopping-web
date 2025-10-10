@@ -47,6 +47,13 @@ export const orebiSlice = createSlice({
         (item) => item._id !== action.payload
       );
     },
+    removeSelectedItems: (state, action) => {
+      // action.payload là array các id của sản phẩm cần xóa
+      const selectedIds = action.payload;
+      state.products = state.products.filter(
+        (item) => !selectedIds.includes(item._id)
+      );
+    },
     resetCart: (state) => {
       state.products = [];
     },
@@ -72,6 +79,7 @@ export const {
   increaseQuantity,
   decreaseQuantity,
   deleteItem,
+  removeSelectedItems,
   resetCart,
   addUser,
   removeUser,

@@ -39,6 +39,18 @@ const Profile = () => {
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
 
+  // State for order statistics
+  const [orderStats, setOrderStats] = useState({
+    pending: 0,
+    confirmed: 0,
+    shipped: 0,
+    delivered: 0,
+    cancelled: 0,
+    total: 0,
+  });
+  const [reviewCount, setReviewCount] = useState(0);
+  const [statsLoading, setStatsLoading] = useState(true);
+
   useEffect(() => {
     if (!userInfo) {
       navigate("/signin");
@@ -68,7 +80,59 @@ const Profile = () => {
       }
     };
 
+    const fetchOrderStats = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get(`${serverUrl}/api/order/my-orders`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.data.success && isActive) {
+          const orders = response.data.orders;
+          const stats = {
+            pending: orders.filter((order) => order.status === "pending")
+              .length,
+            confirmed: orders.filter((order) => order.status === "confirmed")
+              .length,
+            shipped: orders.filter((order) => order.status === "shipped")
+              .length,
+            delivered: orders.filter((order) => order.status === "delivered")
+              .length,
+            cancelled: orders.filter((order) => order.status === "cancelled")
+              .length,
+            total: orders.length,
+          };
+          setOrderStats(stats);
+        }
+      } catch (error) {
+        console.error("Lỗi khi lấy thống kê đơn hàng:", error);
+      }
+    };
+
+    const fetchReviewCount = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get(`${serverUrl}/api/user/reviews`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.data.success && isActive) {
+          setReviewCount(response.data.reviews?.length || 0);
+        }
+      } catch (error) {
+        console.error("Lỗi khi lấy số lượng đánh giá:", error);
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
     fetchUserProfile();
+    fetchOrderStats();
+    fetchReviewCount();
     return () => {
       isActive = false;
     };
@@ -257,6 +321,84 @@ const Profile = () => {
             </div>
           </motion.div>
 
+          {/* Tổng quan nhanh */}
+          {/* <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
+          >
+            <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">
+                    Tổng đơn hàng
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {statsLoading ? "..." : orderStats.total}
+                  </p>
+                </div>
+                <div className="p-3 bg-blue-100 rounded-full">
+                  <svg
+                    className="w-6 h-6 text-blue-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                    />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-green-500">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">
+                    Sản phẩm yêu thích
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {favorites.length}
+                  </p>
+                </div>
+                <div className="p-3 bg-green-100 rounded-full">
+                  <FaHeart className="text-green-600" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-purple-500">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Giỏ hàng</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {products.length}
+                  </p>
+                </div>
+                <div className="p-3 bg-purple-100 rounded-full">
+                  <svg
+                    className="w-6 h-6 text-purple-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"
+                    />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </motion.div> */}
+
           {/* Profile Information */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -353,17 +495,148 @@ const Profile = () => {
             </div>
           </motion.div>
 
-          {/* Hành động nhanh  */}
+          {/* Đơn hàng của tôi */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
             className="bg-white rounded-2xl shadow-sm p-8 mb-8"
           >
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Đơn hàng của tôi
+              </h2>
+              <Link
+                to="/orders"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Xem lịch sử mua hàng
+              </Link>
+            </div>
+
+            {/* Trạng thái đơn hàng cơ bản */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <Link
+                to="/orders?tab=pending"
+                className="flex flex-col items-center p-4 bg-yellow-50 rounded-xl hover:bg-yellow-100 transition-colors cursor-pointer"
+              >
+                <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mb-3">
+                  <svg
+                    className="w-6 h-6 text-yellow-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <span className="text-2xl font-bold text-yellow-600 mb-1">
+                  {statsLoading ? "..." : orderStats.pending}
+                </span>
+                <span className="text-sm font-medium text-gray-700">
+                  Chờ xử lý
+                </span>
+              </Link>
+
+              <Link
+                to="/orders?tab=confirmed"
+                className="flex flex-col items-center p-4 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors cursor-pointer"
+              >
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-3">
+                  <svg
+                    className="w-6 h-6 text-blue-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <span className="text-2xl font-bold text-blue-600 mb-1">
+                  {statsLoading ? "..." : orderStats.confirmed}
+                </span>
+                <span className="text-sm font-medium text-gray-700">
+                  Đã xác nhận
+                </span>
+              </Link>
+
+              <Link
+                to="/orders?tab=shipped"
+                className="flex flex-col items-center p-4 bg-purple-50 rounded-xl hover:bg-purple-100 transition-colors cursor-pointer"
+              >
+                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mb-3">
+                  <svg
+                    className="w-6 h-6 text-purple-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <span className="text-2xl font-bold text-purple-600 mb-1">
+                  {statsLoading ? "..." : orderStats.shipped}
+                </span>
+                <span className="text-sm font-medium text-gray-700">
+                  Đang giao
+                </span>
+              </Link>
+
+              <Link
+                to="/orders?tab=reviewed"
+                className="flex flex-col items-center p-4 bg-green-50 rounded-xl hover:bg-green-100 transition-colors cursor-pointer"
+              >
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-3">
+                  <svg
+                    className="w-6 h-6 text-green-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                </div>
+                <span className="text-2xl font-bold text-green-600 mb-1">
+                  {statsLoading ? "..." : reviewCount}
+                </span>
+                <span className="text-sm font-medium text-gray-700">
+                  Đánh giá
+                </span>
+              </Link>
+            </div>
+          </motion.div>
+
+          {/* Hành động nhanh  */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="bg-white rounded-2xl shadow-sm p-8 mb-8"
+          >
             <h2 className="text-2xl font-bold text-gray-900 mb-6">
               Chức năng nhanh
             </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Link
                 to="/cart"
                 className="flex flex-col items-center p-6 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
@@ -385,29 +658,6 @@ const Profile = () => {
                 </div>
                 <span className="text-sm font-medium text-gray-700">
                   Giỏ hàng
-                </span>
-              </Link>
-              <Link
-                to="/orders"
-                className="flex flex-col items-center p-6 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
-              >
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-3">
-                  <svg
-                    className="w-6 h-6 text-green-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                </div>
-                <span className="text-sm font-medium text-gray-700">
-                  Đơn hàng
                 </span>
               </Link>
               <Link
@@ -451,7 +701,7 @@ const Profile = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.5 }}
             className="bg-white rounded-2xl shadow-sm p-8"
           >
             <h2 className="text-2xl font-bold text-gray-900 mb-6">

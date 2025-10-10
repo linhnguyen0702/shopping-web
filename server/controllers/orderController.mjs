@@ -124,7 +124,52 @@ const createOrder = async (req, res) => {
       });
     }
 
-    // Create new order with properly mapped fields
+    // Validate stock availability for all items before creating order
+    const stockCheckErrors = [];
+    const stockUpdates = [];
+
+    for (const item of items) {
+      const productId = item._id || item.productId;
+      const quantity = item.quantity;
+
+      if (!productId || !quantity || quantity <= 0) {
+        stockCheckErrors.push(
+          `Invalid product or quantity for item: ${item.name}`
+        );
+        continue;
+      }
+
+      const product = await productModel.findById(productId);
+      if (!product) {
+        stockCheckErrors.push(`Product not found: ${item.name}`);
+        continue;
+      }
+
+      if (product.stock < quantity) {
+        stockCheckErrors.push(
+          `Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${quantity}`
+        );
+        continue;
+      }
+
+      // Prepare stock update for this product
+      stockUpdates.push({
+        productId: productId,
+        quantity: quantity,
+        product: product,
+      });
+    }
+
+    // If there are stock validation errors, return immediately
+    if (stockCheckErrors.length > 0) {
+      return res.json({
+        success: false,
+        message: "Stock validation failed",
+        errors: stockCheckErrors,
+      });
+    }
+
+    // Create new order with properly mapped fields first
     const newOrder = new orderModel({
       userId,
       items: items.map((item) => ({
@@ -151,12 +196,36 @@ const createOrder = async (req, res) => {
       paymentStatus: "pending",
     });
 
+    // Save order first
     await newOrder.save();
 
     // Add order to user's orders array
     await userModel.findByIdAndUpdate(userId, {
       $push: { orders: newOrder._id },
     });
+
+    // Update stock for all items AFTER order is successfully created
+    for (const update of stockUpdates) {
+      const { productId, quantity } = update;
+
+      const updatedProduct = await productModel.findByIdAndUpdate(
+        productId,
+        {
+          $inc: {
+            stock: -quantity,
+            soldQuantity: quantity,
+          },
+        },
+        { new: true }
+      );
+
+      // If stock becomes 0, mark as unavailable
+      if (updatedProduct && updatedProduct.stock === 0) {
+        await productModel.findByIdAndUpdate(productId, {
+          isAvailable: false,
+        });
+      }
+    }
 
     // 🔔 Tạo thông báo đơn hàng mới (async, không chờ)
     notifyNewOrder(newOrder).catch((error) => {

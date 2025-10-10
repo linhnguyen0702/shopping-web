@@ -6,3 +6,88 @@
   background-color: black;
   color: white;
 }
+
+/* Custom scrollbar styles */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(209 213 219) rgb(243 244 246);
+  scroll-behavior: smooth;
+  overflow-y: auto !important;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+  display: block;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: rgb(243 244 246);
+  border-radius: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgb(209 213 219);
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  min-height: 20px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgb(156 163 175);
+}
+
+/* Force show scrollbar when content overflows */
+.scrollbar-thin:hover::-webkit-scrollbar-thumb {
+  background: rgb(156 163 175);
+}
+
+/* Ensure scroll container works properly */
+.sidebar-nav {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Test styles for debugging scroll */
+.test-scroll-content {
+  min-height: 100vh;
+  background: linear-gradient(45deg, #f0f0f0, #ffffff);
+}
+
+/* Sticky footer for sidebar */
+.sidebar-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  background: rgba(249, 250, 251, 0.95);
+  backdrop-filter: blur(8px);
+}
+
+/* Improved scroll area for sidebar */
+.sidebar-scroll-area {
+  height: calc(100vh - 200px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Smooth scroll for better UX */
+.scrollbar-thin {
+  scroll-padding-top: 1rem;
+  scroll-padding-bottom: 1rem;
+}
+
+/* Auto-scroll animation for expanded menus */
+@keyframes scrollIntoView {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.menu-expand-animation {
+  animation: scrollIntoView 0.3s ease-out;
+}

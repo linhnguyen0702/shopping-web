@@ -1,13 +1,21 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import PriceFormat from "../components/PriceFormat";
 import Container from "../components/Container";
-import { MdStar, MdFavoriteBorder, MdShare, MdFavorite } from "react-icons/md";
+import {
+  MdStar,
+  MdFavoriteBorder,
+  MdShare,
+  MdFavorite,
+  MdEdit,
+  MdAdd,
+} from "react-icons/md";
 import { motion, AnimatePresence } from "framer-motion";
 import { getData } from "../helpers/index";
 import { serverUrl } from "../../config";
 import { addToCart } from "../redux/orebiSlice";
+import ReviewForm from "../components/ReviewForm";
 import { addToFavorites, removeFromFavorites } from "../redux/favoriteSlice";
 import {
   addToWishlistAsync,
@@ -20,8 +28,17 @@ const SingleProduct = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const scrollContainerRef = useRef(null);
 
-  const [productInfo, setProductInfo] = useState([]);
+  // Redux state - consolidated at top
+  const favorites = useSelector(
+    (state) => state.favoriteReducer?.favorites || []
+  );
+  const products = useSelector((state) => state.orebiReducer.products);
+  const user = useSelector((state) => state.orebiReducer.userInfo);
+
+  // Component state
+  const [productInfo, setProductInfo] = useState({});
   const [selectedImage, setSelectedImage] = useState(0);
   const [activeTab, setActiveTab] = useState("description");
   const [quantity, setQuantity] = useState(1);
@@ -32,37 +49,243 @@ const SingleProduct = () => {
   const [loading, setLoading] = useState(false);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
-  const scrollContainerRef = useRef(null);
+  const [productReviews, setProductReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [averageRating, setAverageRating] = useState(0);
 
-  // Redux state
-  const favorites = useSelector(
-    (state) => state.favoriteReducer?.favorites || []
-  );
-  const products = useSelector((state) => state.orebiReducer.products);
+  // Review form states
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [editingReview, setEditingReview] = useState(null);
+  const [userCanReview, setUserCanReview] = useState(false);
+  const [userReviewData, setUserReviewData] = useState(null);
+
+  // Computed values - moved after state declarations
   const isLiked = favorites.some((fav) => fav._id === productInfo._id);
+
+  // Fetch product reviews
+  const fetchProductReviews = useCallback(async (productId) => {
+    if (!productId) {
+      console.log("❌ fetchProductReviews: No productId provided");
+      return;
+    }
+
+    try {
+      console.log("=== 🔍 FETCHING REVIEWS START ===");
+      console.log("Product ID:", productId);
+      console.log("Product ID type:", typeof productId);
+      console.log("Product ID length:", productId.length);
+
+      setReviewsLoading(true);
+      const url = `${serverUrl}/api/product/${productId}/reviews`;
+      console.log("Fetching from URL:", url);
+      console.log("Server URL:", serverUrl);
+
+      const response = await fetch(url);
+      console.log("Response status:", response.status);
+      console.log("Response ok:", response.ok);
+
+      const data = await response.json();
+      console.log("Response data structure:", {
+        success: data.success,
+        reviewsCount: data.reviews?.length || 0,
+        message: data.message,
+        error: data.error,
+      });
+      console.log("Full response data:", data);
+
+      if (data.success && data.reviews) {
+        console.log("✅ Reviews found:", data.reviews.length);
+        console.log("Sample reviews:", data.reviews.slice(0, 2));
+
+        // Debug review images specifically
+        data.reviews.forEach((review, index) => {
+          console.log(`Review ${index + 1} images:`, {
+            hasImages: !!review.images,
+            imageCount: review.images?.length || 0,
+            images: review.images,
+          });
+        });
+
+        setProductReviews(data.reviews);
+
+        // Calculate average rating
+        if (data.reviews.length > 0) {
+          const totalRating = data.reviews.reduce(
+            (sum, review) => sum + review.rating,
+            0
+          );
+          const avgRating = totalRating / data.reviews.length;
+          console.log("✅ Average rating calculated:", avgRating);
+          setAverageRating(avgRating);
+        } else {
+          console.log("ℹ️ No reviews to calculate average");
+          setAverageRating(0);
+        }
+      } else {
+        console.log("❌ No reviews found or API error:", {
+          success: data.success,
+          hasReviews: !!data.reviews,
+          message: data.message,
+        });
+        setProductReviews([]);
+        setAverageRating(0);
+      }
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+      setProductReviews([]);
+      setAverageRating(0);
+    } finally {
+      setReviewsLoading(false);
+      console.log("=== END FETCHING REVIEWS ===");
+    }
+  }, []);
+
+  // Check if user can review this product
+  const checkUserCanReview = useCallback(
+    async (productId) => {
+      if (!user?._id || !productId) {
+        setUserCanReview(false);
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          setUserCanReview(false);
+          return;
+        }
+
+        // Check user's orders to see if they can review this product
+        const response = await fetch(`${serverUrl}/api/user/orders`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const deliveredOrders = data.orders?.filter(
+            (order) =>
+              order.status === "delivered" &&
+              order.items.some((item) => item.productId === productId)
+          );
+
+          if (deliveredOrders?.length > 0) {
+            // Check if user already reviewed this product
+            const userReview = productReviews.find(
+              (review) => review.userId?._id === user._id
+            );
+
+            if (userReview) {
+              setUserReviewData({
+                orderId: deliveredOrders[0]._id,
+                existingReview: userReview,
+              });
+              setUserCanReview(false); // Already reviewed
+            } else {
+              setUserReviewData({
+                orderId: deliveredOrders[0]._id,
+                existingReview: null,
+              });
+              setUserCanReview(true); // Can review
+            }
+          } else {
+            setUserCanReview(false);
+          }
+        }
+      } catch (error) {
+        console.error("Error checking review status:", error);
+        setUserCanReview(false);
+      }
+    },
+    [user, productReviews]
+  );
+
+  // Handle review submission
+  const handleReviewSubmitted = useCallback(
+    (newReview) => {
+      // Add new review to list or update existing
+      if (editingReview) {
+        setProductReviews((prev) =>
+          prev.map((review) =>
+            review._id === editingReview._id ? newReview : review
+          )
+        );
+        setEditingReview(null);
+      } else {
+        setProductReviews((prev) => [newReview, ...prev]);
+        setUserCanReview(false);
+        setUserReviewData((prev) => ({
+          ...prev,
+          existingReview: newReview,
+        }));
+      }
+
+      setShowReviewForm(false);
+
+      // Recalculate average rating
+      const allReviews = editingReview
+        ? productReviews.map((r) =>
+            r._id === editingReview._id ? newReview : r
+          )
+        : [newReview, ...productReviews];
+
+      if (allReviews.length > 0) {
+        const totalRating = allReviews.reduce(
+          (sum, review) => sum + review.rating,
+          0
+        );
+        const avgRating = totalRating / allReviews.length;
+        setAverageRating(avgRating);
+      }
+    },
+    [editingReview, productReviews]
+  );
+
+  // Check scroll buttons
+  const checkScrollButtons = useCallback(() => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } =
+        scrollContainerRef.current;
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchProductData = async () => {
+      console.log("=== 🚀 FETCHING PRODUCT DATA ===");
       // Lấy product ID từ URL
       const pathParts = location.pathname.split("/");
       const productId = pathParts[pathParts.length - 1];
+      console.log("URL pathname:", location.pathname);
+      console.log("Extracted productId from URL:", productId);
+      console.log("Location state:", location.state);
 
       // Nếu có state được truyền từ trang khác (như ProductCard)
       if (location.state?.item) {
+        console.log("✅ Using product from location.state");
+        console.log("Product from state:", location.state.item);
         setProductInfo(location.state.item);
         return;
       }
 
       // Nếu không có state, fetch từ API (như từ Cart hoặc direct URL)
       if (productId) {
+        console.log("🌐 Fetching product from API with ID:", productId);
         setLoading(true);
         try {
-          const response = await getData(
-            `${serverUrl}/api/product/${productId}`
-          );
+          const apiUrl = `${serverUrl}/api/product/${productId}`;
+          console.log("API URL:", apiUrl);
+
+          const response = await getData(apiUrl);
+          console.log("API response:", response);
+
           if (response?.success && response?.product) {
+            console.log("✅ Product loaded from API:", response.product);
             setProductInfo(response.product);
           } else {
+            console.log("❌ API response unsuccessful:", response);
             // Fallback: Tìm trong danh sách sản phẩm có sẵn
             console.log(
               "Không tìm thấy sản phẩm từ API, tìm trong danh sách local..."
@@ -71,7 +294,7 @@ const SingleProduct = () => {
             navigate("/shop");
           }
         } catch (error) {
-          console.error("Lỗi khi lấy thông tin sản phẩm:", error);
+          console.error("❌ Lỗi khi lấy thông tin sản phẩm:", error);
           toast.error("Có lỗi xảy ra khi tải sản phẩm");
           navigate("/shop");
         } finally {
@@ -112,13 +335,131 @@ const SingleProduct = () => {
     fetchRelatedProducts();
   }, [productInfo]);
 
+  // Fetch product reviews when productInfo changes
+  useEffect(() => {
+    console.log("=== 📦 PRODUCT INFO CHANGED ===");
+    console.log("Product Info exists:", !!productInfo);
+    console.log("Product Info keys:", Object.keys(productInfo || {}));
+    console.log("Product ID:", productInfo?._id);
+    console.log("Product name:", productInfo?.name);
+    console.log("Product status:", productInfo?.status);
+
+    if (productInfo?._id) {
+      console.log("✅ Calling fetchProductReviews with ID:", productInfo._id);
+
+      // Also test the API endpoint directly
+      console.log("🧪 Testing API endpoint directly...");
+
+      // Test both approved and all reviews
+      Promise.all([
+        fetch(`${serverUrl}/api/product/${productInfo._id}/reviews`).then(
+          (res) => res.json()
+        ),
+        // You can also test without isApproved filter by creating a custom endpoint
+      ])
+        .then(([approvedData]) => {
+          console.log("🧪 Approved reviews result:", approvedData);
+
+          if (!approvedData.success) {
+            console.log(
+              "🧪 API returned success=false, message:",
+              approvedData.message
+            );
+          } else if (approvedData.reviews) {
+            console.log(
+              "🧪 Approved reviews found:",
+              approvedData.reviews.length
+            );
+            if (approvedData.reviews.length === 0) {
+              console.log(
+                "🧪 No approved reviews in database for this product"
+              );
+              console.log(
+                "💡 Suggestion: Check if reviews exist but are not approved"
+              );
+            } else {
+              console.log(
+                "🧪 Sample approved review:",
+                approvedData.reviews[0]
+              );
+            }
+          }
+        })
+        .catch((err) => {
+          console.log("🧪 Direct API test error:", err);
+        });
+      fetchProductReviews(productInfo._id);
+    } else {
+      console.log("❌ No product ID, skipping review fetch");
+      console.log("ProductInfo structure:", productInfo);
+    }
+  }, [productInfo, fetchProductReviews]);
+
+  // Check user review status when reviews are loaded
+  useEffect(() => {
+    if (productInfo?._id && productReviews.length >= 0) {
+      checkUserCanReview(productInfo._id);
+    }
+  }, [productReviews, checkUserCanReview, productInfo?._id]);
+
   // Check scroll buttons when related products change
   useEffect(() => {
     if (relatedProducts.length > 0) {
       // Small delay to ensure DOM is updated
-      setTimeout(checkScrollButtons, 100);
+      const timeoutId = setTimeout(checkScrollButtons, 100);
+      return () => clearTimeout(timeoutId);
     }
-  }, [relatedProducts]);
+  }, [relatedProducts, checkScrollButtons]);
+
+  // Listen for review updates from Order page
+  useEffect(() => {
+    let lastProcessedTimestamp = 0;
+
+    const handleReviewUpdate = () => {
+      const signalData = localStorage.getItem("reviewUpdateSignal");
+      if (signalData) {
+        try {
+          const signal = JSON.parse(signalData);
+
+          // Skip if we've already processed this signal or it's too old (>30 seconds)
+          const now = Date.now();
+          if (
+            signal.timestamp <= lastProcessedTimestamp ||
+            now - signal.timestamp > 30000
+          ) {
+            return;
+          }
+
+          console.log("📡 Received review update signal:", signal);
+
+          // Check if this product is affected
+          if (signal.productId === productInfo?._id) {
+            console.log("🔄 Refreshing reviews for current product");
+            lastProcessedTimestamp = signal.timestamp;
+            fetchProductReviews(productInfo._id);
+            // Clear the signal after processing
+            localStorage.removeItem("reviewUpdateSignal");
+          }
+        } catch (error) {
+          console.error("❌ Error processing review update signal:", error);
+        }
+      }
+    };
+
+    // Check for existing signal when component mounts
+    handleReviewUpdate();
+
+    // Listen for storage events (when localStorage changes)
+    window.addEventListener("storage", handleReviewUpdate);
+
+    // Also check periodically for same-tab updates (less frequent)
+    const interval = setInterval(handleReviewUpdate, 2000);
+
+    return () => {
+      window.removeEventListener("storage", handleReviewUpdate);
+      clearInterval(interval);
+    };
+  }, [productInfo?._id, fetchProductReviews]);
 
   // Use product images from database if available, otherwise use mock images
   const productImages =
@@ -215,16 +556,6 @@ const SingleProduct = () => {
         dispatch(addToFavorites(product));
         toast.success("Đã thêm vào yêu thích ");
       }
-    }
-  };
-
-  // Handle scroll navigation for related products
-  const checkScrollButtons = () => {
-    if (scrollContainerRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } =
-        scrollContainerRef.current;
-      setCanScrollLeft(scrollLeft > 0);
-      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
     }
   };
 
@@ -502,21 +833,33 @@ const SingleProduct = () => {
             {/* Rating */}
             <div className="flex items-center gap-3">
               <div className="flex items-center">
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <MdStar
-                    key={index}
-                    className={`w-5 h-5 ${
-                      index < Math.floor(productInfo?.ratings || 0)
-                        ? "text-yellow-400"
-                        : "text-gray-300"
-                    }`}
-                  />
-                ))}
+                {Array.from({ length: 5 }).map((_, index) => {
+                  console.log(
+                    `Star ${index}: ${
+                      index < Math.floor(averageRating) ? "yellow" : "gray"
+                    }, averageRating: ${averageRating}`
+                  );
+                  return (
+                    <MdStar
+                      key={index}
+                      className={`w-5 h-5 ${
+                        index < Math.floor(averageRating)
+                          ? "text-yellow-400"
+                          : "text-gray-300"
+                      }`}
+                    />
+                  );
+                })}
               </div>
               <span className="text-sm text-gray-600">
-                Được đánh giá {productInfo?.ratings?.toFixed(1) || "0.0"} trên 5
-                dựa trên {productInfo?.reviews?.length || 0} đánh giá của khách
-                hàng
+                {reviewsLoading ? (
+                  "Đang tải..."
+                ) : (
+                  <>
+                    Được đánh giá {averageRating.toFixed(1)} trên 5 dựa trên{" "}
+                    {productReviews.length} đánh giá của khách hàng
+                  </>
+                )}
               </span>
             </div>
 
@@ -634,7 +977,9 @@ const SingleProduct = () => {
                 }`}
               >
                 {tab === "reviews"
-                  ? `Reviews (${productInfo?.reviews?.length || 0})`
+                  ? `Reviews (${
+                      reviewsLoading ? "..." : productReviews.length
+                    })`
                   : tab}
               </button>
             ))}
@@ -667,54 +1012,156 @@ const SingleProduct = () => {
 
             {activeTab === "reviews" && (
               <div className="space-y-6">
-                <h3 className="text-2xl font-light mb-6">
-                  Đánh giá khách hàng
-                </h3>
-                {productInfo?.reviews?.length > 0 ? (
+                <div className="flex items-center justify-between">
+                  <h3 className="text-2xl font-light">Đánh giá khách hàng</h3>
+                  {userCanReview && !showReviewForm && (
+                    <button
+                      onClick={() => setShowReviewForm(true)}
+                      className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+                    >
+                      <MdAdd size={20} />
+                      Viết đánh giá
+                    </button>
+                  )}
+                </div>
+
+                {/* Review Form */}
+                <AnimatePresence>
+                  {(showReviewForm || editingReview) && userReviewData && (
+                    <ReviewForm
+                      productId={productInfo._id}
+                      orderId={userReviewData.orderId}
+                      existingReview={editingReview}
+                      onReviewSubmitted={handleReviewSubmitted}
+                      onCancel={() => {
+                        setShowReviewForm(false);
+                        setEditingReview(null);
+                      }}
+                      isEditing={!!editingReview}
+                    />
+                  )}
+                </AnimatePresence>
+
+                {/* Reviews List */}
+                {reviewsLoading ? (
                   <div className="space-y-6">
-                    {productInfo.reviews.map((review, index) => (
+                    {[1, 2, 3].map((item) => (
+                      <div key={item} className="animate-pulse">
+                        <div className="flex items-start gap-4">
+                          <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+                          <div className="flex-1 space-y-2">
+                            <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                            <div className="h-3 bg-gray-200 rounded w-full"></div>
+                            <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : productReviews.length > 0 ? (
+                  <div className="space-y-6">
+                    {productReviews.map((review) => (
                       <div
-                        key={index}
-                        className="border-b border-gray-200 pb-6 last:border-b-0"
+                        key={review._id}
+                        className={`border border-gray-200 rounded-lg p-4 ${
+                          review.userId?._id === user?._id
+                            ? "bg-blue-50 border-blue-200"
+                            : "bg-white"
+                        }`}
                       >
                         <div className="flex items-start gap-4">
                           <img
-                            src={review.image}
-                            alt={review.reviewerName}
-                            className="w-12 h-12 rounded-full object-cover"
+                            src={
+                              review.userId?.avatar || "/api/placeholder/48/48"
+                            }
+                            alt={review.userId?.name || "Anonymous"}
+                            className="w-12 h-12 rounded-full object-cover bg-gray-200"
                           />
                           <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <h4 className="font-medium text-gray-900">
-                                {review.reviewerName}
-                              </h4>
-                              <div className="flex items-center">
-                                {Array.from({ length: 5 }).map(
-                                  (_, starIndex) => (
-                                    <MdStar
-                                      key={starIndex}
-                                      className={`w-4 h-4 ${
-                                        starIndex < review.rating
-                                          ? "text-yellow-400"
-                                          : "text-gray-300"
-                                      }`}
-                                    />
-                                  )
-                                )}
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-3">
+                                <h4 className="font-medium text-gray-900">
+                                  {review.userId?.name || "Khách hàng ẩn danh"}
+                                  {review.userId?._id === user?._id && (
+                                    <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                                      Đánh giá của bạn
+                                    </span>
+                                  )}
+                                </h4>
+                                <div className="flex items-center">
+                                  {Array.from({ length: 5 }).map(
+                                    (_, starIndex) => (
+                                      <MdStar
+                                        key={starIndex}
+                                        className={`w-4 h-4 ${
+                                          starIndex < review.rating
+                                            ? "text-yellow-400"
+                                            : "text-gray-300"
+                                        }`}
+                                      />
+                                    )
+                                  )}
+                                </div>
+                                <span className="text-sm text-gray-500">
+                                  {new Date(
+                                    review.createdAt
+                                  ).toLocaleDateString("vi-VN")}
+                                </span>
                               </div>
+
+                              {/* Edit button for user's own review */}
+                              {review.userId?._id === user?._id &&
+                                !editingReview && (
+                                  <button
+                                    onClick={() => setEditingReview(review)}
+                                    className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm"
+                                  >
+                                    <MdEdit size={16} />
+                                    Chỉnh sửa
+                                  </button>
+                                )}
                             </div>
-                            <p className="text-gray-600 leading-relaxed">
+
+                            <p className="text-gray-600 leading-relaxed mb-3">
                               {review.comment}
                             </p>
+
+                            {/* Review Images */}
+                            {review.images && review.images.length > 0 && (
+                              <div className="grid grid-cols-4 gap-2 mt-3">
+                                {review.images.map((imageUrl, index) => (
+                                  <img
+                                    key={index}
+                                    src={imageUrl}
+                                    alt={`Review ${index + 1}`}
+                                    className="w-full h-20 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-75 transition-opacity"
+                                    onClick={() => {
+                                      // TODO: Open image modal
+                                      window.open(imageUrl, "_blank");
+                                    }}
+                                  />
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500">
-                    Chưa có đánh giá. Hãy là người đầu tiên để đánh giá!
-                  </p>
+                  <div className="text-center py-12">
+                    <p className="text-gray-500 mb-4">
+                      Chưa có đánh giá. Hãy là người đầu tiên để đánh giá!
+                    </p>
+                    {userCanReview && !showReviewForm && (
+                      <button
+                        onClick={() => setShowReviewForm(true)}
+                        className="bg-black text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+                      >
+                        Viết đánh giá đầu tiên
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             )}

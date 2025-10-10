@@ -4,6 +4,7 @@ import Container from "../components/Container";
 import PriceFormat from "../components/PriceFormat";
 import StripePayment from "../components/StripePayment";
 import toast from "react-hot-toast";
+import { serverUrl } from "../../config";
 import {
   FaCheckCircle,
   FaCreditCard,
@@ -26,14 +27,11 @@ const Checkout = () => {
   const fetchOrderDetails = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(
-        `http://localhost:8000/api/order/user/${orderId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(`${serverUrl}/api/order/user/${orderId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       const data = await response.json();
       if (data.success) {
         setOrder(data.order);
@@ -77,6 +75,36 @@ const Checkout = () => {
 
   const handlePayOnline = () => {
     setPaymentStep("stripe");
+  };
+
+  const translateStatus = (status) => {
+    switch (status) {
+      case "pending":
+        return "Chờ xử lý";
+      case "confirmed":
+        return "Đã xác nhận";
+      case "shipped":
+        return "Đang giao hàng";
+      case "delivered":
+        return "Đã giao hàng";
+      case "cancelled":
+        return "Đã hủy";
+      default:
+        return status;
+    }
+  };
+
+  const translatePaymentStatus = (status) => {
+    switch (status) {
+      case "pending":
+        return "Chờ thanh toán";
+      case "paid":
+        return "Đã thanh toán";
+      case "failed":
+        return "Thanh toán thất bại";
+      default:
+        return status;
+    }
   };
 
   const getStatusColor = (status) => {
@@ -146,14 +174,25 @@ const Checkout = () => {
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <Container className="py-8">
-          <div className="flex items-center gap-3 mb-4">
-            <FaCheckCircle className="w-8 h-8 text-green-600" />
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Xác nhận đơn hàng
-              </h1>
-              <p className="text-gray-600">Order ID: #{order._id}</p>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <FaCheckCircle className="w-8 h-8 text-green-600" />
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  Chi tiết đơn hàng
+                </h1>
+                <p className="text-gray-600">
+                  Mã đơn hàng: #{order._id.slice(-8).toUpperCase()}
+                </p>
+              </div>
             </div>
+            <button
+              onClick={() => navigate("/orders")}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              <FaArrowLeft className="w-4 h-4" />
+              Quay lại danh sách
+            </button>
           </div>
         </Container>
       </div>
@@ -177,8 +216,7 @@ const Checkout = () => {
                       order.status
                     )}`}
                   >
-                    {order.status.charAt(0).toUpperCase() +
-                      order.status.slice(1)}
+                    {translateStatus(order.status)}
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -190,8 +228,7 @@ const Checkout = () => {
                       order.paymentStatus
                     )}`}
                   >
-                    {order.paymentStatus.charAt(0).toUpperCase() +
-                      order.paymentStatus.slice(1)}
+                    {translatePaymentStatus(order.paymentStatus)}
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -212,7 +249,30 @@ const Checkout = () => {
               </div>
               <div className="divide-y divide-gray-200">
                 {order.items.map((item, index) => (
-                  <div key={index} className="p-6 flex items-center space-x-4">
+                  <div
+                    key={index}
+                    className="p-6 flex items-center space-x-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => {
+                      // Xử lý trường hợp productId được populate hoặc chưa populate
+                      const productId =
+                        item.productId?._id || item.productId || item._id;
+
+                      console.log("Debug click sản phẩm:", {
+                        item,
+                        productId,
+                        "item.productId": item.productId,
+                        "item.productId._id": item.productId?._id,
+                        "item._id": item._id,
+                      });
+
+                      if (productId) {
+                        navigate(`/product/${productId}`);
+                      } else {
+                        toast.error("Không thể tìm thấy thông tin sản phẩm");
+                        console.error("Không tìm thấy product ID:", item);
+                      }
+                    }}
+                  >
                     <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                       {item.image && (
                         <img
@@ -223,11 +283,14 @@ const Checkout = () => {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-medium text-gray-900 truncate">
+                      <h3 className="text-lg font-medium text-gray-900 truncate hover:text-blue-600 transition-colors">
                         {item.name}
                       </h3>
                       <p className="text-sm text-gray-600">
                         Số lượng: {item.quantity}
+                      </p>
+                      <p className="text-xs text-blue-600 hover:text-blue-800">
+                        Nhấn để xem chi tiết sản phẩm
                       </p>
                     </div>
                     <div className="text-right">

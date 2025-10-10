@@ -4,6 +4,10 @@ import {
   confirmPayment,
   handleStripeWebhook,
   createOrder,
+  createStripeSession,
+  createPayPalOrder,
+  handleStripeSuccess,
+  handlePayPalSuccess,
 } from "../controllers/paymentController.js";
 import userAuth from "../middleware/userAuth.js";
 
@@ -28,5 +32,15 @@ router.post(
   express.raw({ type: "application/json" }),
   handleStripeWebhook
 );
+
+// New payment flow routes
+router.post(
+  `${routeValue}create-stripe-session`,
+  userAuth,
+  createStripeSession
+);
+router.post(`${routeValue}create-paypal-order`, userAuth, createPayPalOrder);
+router.get(`${routeValue}stripe/success`, handleStripeSuccess);
+router.post(`${routeValue}paypal/success`, handlePayPalSuccess);
 
 export default router;

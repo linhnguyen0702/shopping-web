@@ -1,6 +1,9 @@
 import { v2 as cloudinary } from "cloudinary";
 import { deleteCloudinaryImage } from "../config/cloudinary.js";
 import productModel from "../models/productModel.js";
+import reviewModel from "../models/reviewModel.js";
+import orderModel from "../models/orderModel.js";
+import { notifyNewReview } from "../services/notificationService.js";
 import fs from "fs";
 
 // Helper function to clean up temporary files
@@ -157,7 +160,13 @@ const listProducts = async (req, res) => {
     let filter = {};
 
     // Filter by availability (only show available products by default)
-    if (isAvailable !== "false") {
+    if (isAvailable === "false") {
+      filter.isAvailable = false;
+    } else if (isAvailable === "all") {
+      // Admin có thể xem tất cả sản phẩm bằng cách truyền "all"
+      // Không thêm filter isAvailable
+    } else {
+      // Mặc định chỉ hiển thị sản phẩm available cho client
       filter.isAvailable = true;
     }
 
@@ -499,6 +508,410 @@ const updateProduct = async (req, res) => {
   }
 };
 
+// Add product review
+const addProductReview = async (req, res) => {
+  try {
+    const { productId, orderId, rating, comment } = req.body;
+    const userId = req.user.id;
+
+    // Handle image uploads if any
+    console.log("🔍 DEBUG Review Creation:");
+    console.log("req.files:", req.files);
+    console.log("req.body:", req.body);
+
+    let reviewImages = [];
+    if (req.files && req.files.reviewImages) {
+      console.log(
+        "✅ Found review images:",
+        req.files.reviewImages.length || 1
+      );
+      const imageFiles = Array.isArray(req.files.reviewImages)
+        ? req.files.reviewImages
+        : [req.files.reviewImages];
+
+      try {
+        const uploadPromises = imageFiles.map(async (file) => {
+          const result = await cloudinary.uploader.upload(file.path, {
+            folder: "orebi/reviews",
+            resource_type: "image",
+            transformation: [
+              { width: 800, height: 600, crop: "fill" },
+              { quality: "auto", fetch_format: "auto" },
+            ],
+          });
+          // Clean up temp file
+          cleanupTempFile(file.path);
+          return result.secure_url;
+        });
+
+        reviewImages = await Promise.all(uploadPromises);
+        console.log("✅ Review images uploaded:", reviewImages);
+      } catch (uploadError) {
+        console.error("Error uploading review images:", uploadError);
+        // Clean up temp files on error
+        imageFiles.forEach((file) => cleanupTempFile(file.path));
+        return res.json({
+          success: false,
+          message: "Lỗi khi upload ảnh đánh giá",
+        });
+      }
+    } else {
+      console.log("❌ No review images found in request");
+    }
+
+    // Validate input
+    if (!productId || !orderId || !rating || !comment) {
+      return res.json({
+        success: false,
+        message: "Vui lòng điền đầy đủ thông tin đánh giá",
+      });
+    }
+
+    if (rating < 1 || rating > 5) {
+      return res.json({
+        success: false,
+        message: "Đánh giá phải từ 1 đến 5 sao",
+      });
+    }
+
+    // Verify that the user has purchased this product in this order
+    const order = await orderModel
+      .findOne({
+        _id: orderId,
+        userId: userId,
+        // Temporarily allow all statuses for debugging
+        // status: "delivered", // Only delivered orders can be reviewed
+      })
+      .populate("items.productId", "_id name");
+
+    // Also try without populate to debug
+    const orderNonPopulated = await orderModel.findOne({
+      _id: orderId,
+      userId: userId,
+    });
+
+    console.log("DEBUG: Order status:", order?.status);
+
+    if (!order) {
+      return res.json({
+        success: false,
+        message:
+          "Đơn hàng không tồn tại. Bạn chỉ có thể đánh giá sản phẩm từ đơn hàng của mình",
+      });
+    }
+
+    // Check if order is delivered (for production use)
+    if (order.status !== "delivered") {
+      console.log("DEBUG: Order not delivered, status:", order.status);
+      // For now, we'll allow review for testing, but warn
+      console.log(
+        "WARNING: Allowing review for non-delivered order for testing"
+      );
+    }
+
+    // Debug: Log order structure and productId
+    console.log("=== DEBUG REVIEW ===");
+    console.log("Looking for productId:", productId);
+    console.log("Order found:", !!order);
+    console.log("Order without populate:", {
+      items: orderNonPopulated?.items?.map((item) => ({
+        productId: item.productId?.toString(),
+        name: item.name,
+      })),
+    });
+    console.log(
+      "Order items (populated):",
+      JSON.stringify(
+        order.items.map((item) => ({
+          productId: item.productId,
+          productIdType: typeof item.productId,
+          productIdString: item.productId?.toString(),
+          name: item.name,
+          _id: item._id,
+        })),
+        null,
+        2
+      )
+    );
+
+    // Check if the product exists in the order
+    const productInOrder = order.items.find((item) => {
+      console.log("=== Checking item ===");
+      console.log("- item:", item);
+      console.log("- item.productId:", item.productId);
+      console.log("- Looking for productId:", productId);
+
+      // Handle both populated and non-populated cases
+      let itemProductId;
+
+      if (
+        item.productId &&
+        typeof item.productId === "object" &&
+        item.productId._id
+      ) {
+        // Populated case: productId is an object with _id
+        itemProductId = item.productId._id.toString();
+      } else if (item.productId) {
+        // Non-populated case: productId is ObjectId
+        itemProductId = item.productId.toString();
+      } else {
+        console.log("- No productId found in item");
+        return false;
+      }
+
+      const targetId = productId.toString();
+
+      console.log("- Comparing:", itemProductId, "===", targetId);
+      console.log("- Match:", itemProductId === targetId);
+
+      return itemProductId === targetId;
+    });
+
+    console.log("Product found in order:", !!productInOrder);
+    console.log("=== END DEBUG ===");
+
+    if (!productInOrder) {
+      return res.json({
+        success: false,
+        message:
+          "Bạn chỉ có thể đánh giá sản phẩm từ đơn hàng đã được giao thành công",
+      });
+    }
+
+    // Check if user has already reviewed this product for this order
+    const existingReview = await reviewModel.findOne({
+      productId,
+      userId,
+      orderId,
+    });
+
+    if (existingReview) {
+      return res.json({
+        success: false,
+        message: "Bạn đã đánh giá sản phẩm này rồi",
+      });
+    }
+
+    // Create new review
+    console.log("💾 Creating review with images:", reviewImages);
+    const newReview = new reviewModel({
+      productId,
+      userId,
+      orderId,
+      rating: parseInt(rating),
+      comment: comment.trim(),
+      images: reviewImages,
+    });
+
+    await newReview.save();
+
+    // Notify admin about new review
+    try {
+      const productName =
+        productInOrder.name || productInOrder.productId?.name || "Sản phẩm";
+
+      // Get user info for notification
+      const userModel = (await import("../models/userModel.js")).default;
+      const user = await userModel.findById(userId).select("name email");
+
+      console.log("=== REVIEW NOTIFICATION ===");
+      console.log("Product:", productName);
+      console.log("Rating:", newReview.rating);
+      console.log("User:", user?.name);
+      console.log("=== END NOTIFICATION ===");
+
+      await notifyNewReview(newReview, productName, user);
+    } catch (notifyError) {
+      console.error("Error sending review notification:", notifyError);
+      // Don't fail the review creation if notification fails
+    }
+
+    res.json({
+      success: true,
+      message: "Đánh giá sản phẩm thành công! Cảm ơn bạn đã góp ý.",
+      review: newReview,
+    });
+  } catch (error) {
+    console.error("Add review error:", error);
+    res.json({
+      success: false,
+      message: "Có lỗi xảy ra khi gửi đánh giá",
+    });
+  }
+};
+
+// Get product reviews
+const getProductReviews = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    console.log("=== DEBUG: Getting reviews for product:", productId);
+
+    const reviews = await reviewModel
+      .find({ productId }) // Removed isApproved: true to show all reviews
+      .populate("userId", "name avatar")
+      .sort({ createdAt: -1 });
+
+    console.log("=== DEBUG: Found reviews:", reviews.length);
+    if (reviews.length > 0) {
+      console.log("=== DEBUG: Sample review:", reviews[0]);
+    }
+
+    res.json({
+      success: true,
+      reviews,
+    });
+  } catch (error) {
+    console.error("Get reviews error:", error);
+    res.json({
+      success: false,
+      message: "Không thể tải đánh giá",
+    });
+  }
+};
+
+// Update product review
+const updateProductReview = async (req, res) => {
+  try {
+    const { reviewId } = req.params;
+    const { rating, comment } = req.body;
+    const userId = req.user.id;
+
+    // Find existing review
+    const existingReview = await reviewModel.findOne({
+      _id: reviewId,
+      userId: userId, // Only allow user to update their own review
+    });
+
+    if (!existingReview) {
+      return res.json({
+        success: false,
+        message: "Không tìm thấy đánh giá hoặc bạn không có quyền chỉnh sửa",
+      });
+    }
+
+    // Handle new image uploads if any
+    console.log("🔍 UPDATE REVIEW - IMAGES DEBUG:");
+    console.log("- Existing review images:", existingReview.images);
+    console.log("- req.files:", req.files);
+    console.log("- req.body.removeImages:", req.body.removeImages);
+
+    let newImages = [...existingReview.images]; // Keep existing images by default
+    console.log("- newImages after copy:", newImages);
+
+    if (req.files && req.files.reviewImages) {
+      console.log("✅ Found new files to upload");
+      const imageFiles = Array.isArray(req.files.reviewImages)
+        ? req.files.reviewImages
+        : [req.files.reviewImages];
+
+      try {
+        const uploadPromises = imageFiles.map(async (file) => {
+          const result = await cloudinary.uploader.upload(file.path, {
+            folder: "orebi/reviews",
+            resource_type: "image",
+            transformation: [
+              { width: 800, height: 600, crop: "fill" },
+              { quality: "auto", fetch_format: "auto" },
+            ],
+          });
+          // Clean up temp file
+          cleanupTempFile(file.path);
+          return result.secure_url;
+        });
+
+        const uploadedImages = await Promise.all(uploadPromises);
+        console.log("✅ New images uploaded:", uploadedImages);
+        newImages = [...newImages, ...uploadedImages];
+        console.log("✅ Combined images:", newImages);
+
+        // Limit to maximum 5 images
+        if (newImages.length > 5) {
+          newImages = newImages.slice(0, 5);
+          console.log("⚠️ Limited to 5 images:", newImages);
+        }
+      } catch (uploadError) {
+        console.error("Error uploading review images:", uploadError);
+        // Clean up temp files on error
+        imageFiles.forEach((file) => cleanupTempFile(file.path));
+        return res.json({
+          success: false,
+          message: "Lỗi khi upload ảnh đánh giá",
+        });
+      }
+    } else {
+      console.log("❌ No new files to upload");
+    }
+
+    // Handle image removal if specified
+    if (req.body.removeImages) {
+      const removeImages = JSON.parse(req.body.removeImages);
+      console.log("🗑️ Removing images:", removeImages);
+      // Remove specified images from cloudinary and array
+      for (const imageUrl of removeImages) {
+        try {
+          await deleteCloudinaryImage(imageUrl);
+          newImages = newImages.filter((img) => img !== imageUrl);
+        } catch (error) {
+          console.error("Error deleting image:", error);
+        }
+      }
+      console.log("🗑️ Images after removal:", newImages);
+    }
+
+    console.log("💾 Final images before save:", newImages);
+
+    // Update review
+    const updatedReview = await reviewModel
+      .findByIdAndUpdate(
+        reviewId,
+        {
+          rating: parseInt(rating) || existingReview.rating,
+          comment: comment?.trim() || existingReview.comment,
+          images: newImages,
+          isApproved: false, // Reset approval status after edit
+        },
+        { new: true }
+      )
+      .populate("userId", "name avatar");
+
+    res.json({
+      success: true,
+      message: "Cập nhật đánh giá thành công!",
+      review: updatedReview,
+    });
+  } catch (error) {
+    console.error("Update review error:", error);
+    res.json({
+      success: false,
+      message: "Có lỗi xảy ra khi cập nhật đánh giá",
+    });
+  }
+};
+
+// Get user's review count
+const getUserReviewCount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const reviewCount = await reviewModel.countDocuments({
+      userId,
+      isApproved: true,
+    });
+
+    res.json({
+      success: true,
+      reviewCount,
+    });
+  } catch (error) {
+    console.error("Get user review count error:", error);
+    res.json({
+      success: false,
+      message: "Không thể lấy số lượng đánh giá",
+      reviewCount: 0,
+    });
+  }
+};
+
 export {
   addProduct,
   listProducts,
@@ -506,4 +919,8 @@ export {
   singleProducts,
   updateStock,
   updateProduct,
+  addProductReview,
+  updateProductReview,
+  getProductReviews,
+  getUserReviewCount,
 };

@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useEffect } from "react";
 import Container from "../components/Container";
-import { FaHeart, FaShoppingBag, FaArrowLeft } from "react-icons/fa";
+import { FaHeart, FaShoppingBag } from "react-icons/fa";
 import { useSelector, useDispatch } from "react-redux";
 import ProductCard from "../components/ProductCard";
 import { fetchWishlist } from "../redux/wishlistThunks";
@@ -44,13 +44,13 @@ const Wishlist = () => {
                   </p>
                 </div>
               </div>
-              <Link
+              {/* <Link
                 to="/profile"
                 className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
               >
                 <FaArrowLeft />
                 Quay lại trang Profile
-              </Link>
+              </Link> */}
             </div>
           </motion.div>
 

@@ -9,7 +9,6 @@ import Cart from "./pages/Cart.jsx";
 import Contact from "./pages/Contact.jsx";
 import Offers from "./pages/Offers.jsx";
 import Order from "./pages/Order.jsx";
-import OrderDetail from "./pages/Order_New.jsx";
 import Product from "./pages/Product.jsx";
 import Shop from "./pages/Shop.jsx";
 import SingleProduct from "./pages/SingleProduct.jsx";
@@ -17,7 +16,10 @@ import RootLayout from "./components/RootLayout.jsx";
 import Profile from "./pages/Profile.jsx";
 import NotFound from "./pages/NotFound.jsx";
 import Wishlist from "./pages/Wishlist.jsx";
+
 import Checkout from "./pages/Checkout.jsx";
+import OrderPage from "./pages/OrderPage.jsx";
+import OrderSuccess from "./pages/OrderSuccess.jsx";
 import PaymentSuccess from "./pages/PaymentSuccess.jsx";
 import FAQ from "./pages/FAQ.jsx";
 import Blog from "./pages/Blog.jsx";
@@ -67,10 +69,6 @@ const router = createBrowserRouter(
           element: <Order />,
         },
         {
-          path: "/order/:orderId",
-          element: <OrderDetail />,
-        },
-        {
           path: "/Product",
           element: <Product />,
         },
@@ -94,9 +92,18 @@ const router = createBrowserRouter(
           path: "/wishlist",
           element: <Wishlist />,
         },
+
+        {
+          path: "/order",
+          element: <OrderPage />,
+        },
         {
           path: "/checkout/:orderId",
           element: <Checkout />,
+        },
+        {
+          path: "/order-success/:orderId",
+          element: <OrderSuccess />,
         },
         {
           path: "/payment-success",

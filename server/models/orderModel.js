@@ -88,6 +88,12 @@ const orderSchema = new mongoose.Schema({
     enum: ["pending", "paid", "failed", "refunded"],
     default: "pending",
   },
+  stripeSessionId: {
+    type: String,
+  },
+  paypalOrderId: {
+    type: String,
+  },
   date: {
     type: Date,
     default: Date.now,

@@ -154,8 +154,10 @@ const Sidebar = () => {
             </span>
           </button>
           <div
-            className={`ml-3 sm:ml-4 space-y-1 transition-all duration-300 overflow-hidden ${
-              isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+            className={`ml-3 sm:ml-4 space-y-1 transition-all duration-300 ease-in-out overflow-hidden ${
+              isExpanded
+                ? "max-h-96 opacity-100 pb-2 mt-1 menu-expand-animation"
+                : "max-h-0 opacity-0 mt-0"
             }`}
           >
             {item.children?.map((child) => renderNavItem(child, true))}
@@ -208,7 +210,7 @@ const Sidebar = () => {
   };
 
   return (
-    <div className="w-full bg-white border-r border-gray-200 flex flex-col overflow-x-hidden">
+    <div className="w-full h-screen bg-white border-r border-gray-200 flex flex-col">
       {/* Logo/Header */}
       <div className="p-3 sm:p-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white flex-shrink-0">
         <div className="flex items-center gap-2 sm:gap-3">
@@ -227,33 +229,32 @@ const Sidebar = () => {
         </div>
       </div>
 
-      {/* Navigation */}
-      <div className="flex-1 py-2 sm:py-4 overflow-y-auto overflow-x-hidden">
-        <div className="space-y-1 px-1 sm:px-0">
-          {sidebarItems.map((item) => renderNavItem(item))}
+      {/* Navigation - Scrollable area */}
+      <div className="flex-1 sidebar-scroll-area scrollbar-thin min-h-0">
+        <div className="py-2 sm:py-4 px-1 sm:px-0 pb-4">
+          <div className="space-y-1">
+            {sidebarItems.map((item) => renderNavItem(item))}
+          </div>
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="p-3 sm:p-4 border-t border-gray-100 bg-gray-50 flex-shrink-0 space-y-2">
-        <div className="mb-1">
-          <button
-            onClick={openClientSite}
-            className="w-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 px-2 sm:px-3 py-2 sm:py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 group"
-          >
-            <FaExternalLinkAlt className="text-sm sm:text-base group-hover:scale-110 transition-transform duration-200" />
-            <span className="hidden sm:inline font-medium">Xem website</span>
-          </button>
-        </div>
-        <div className="mb-1">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 px-2 sm:px-3 py-2 sm:py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-200 group"
-          >
-            <FaSignOutAlt className="text-sm sm:text-base group-hover:scale-110 transition-transform duration-200" />
-            <span className="hidden sm:inline font-medium">Đăng xuất</span>
-          </button>
-        </div>
+      {/* Footer - Always visible at bottom */}
+      <div className="sidebar-footer p-3 sm:p-4 border-t border-gray-100 flex-shrink-0 space-y-2">
+        <button
+          onClick={openClientSite}
+          className="w-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 px-2 sm:px-3 py-2 sm:py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 group"
+        >
+          <FaExternalLinkAlt className="text-sm sm:text-base group-hover:scale-110 transition-transform duration-200" />
+          <span className="hidden sm:inline font-medium">Xem website</span>
+        </button>
+
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 px-2 sm:px-3 py-2 sm:py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-200 group"
+        >
+          <FaSignOutAlt className="text-sm sm:text-base group-hover:scale-110 transition-transform duration-200" />
+          <span className="hidden sm:inline font-medium">Đăng xuất</span>
+        </button>
       </div>
     </div>
   );

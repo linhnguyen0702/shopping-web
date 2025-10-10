@@ -1456,6 +1456,81 @@ const clearWishlist = async (req, res) => {
   }
 };
 
+// Get user reviews
+const getUserReviews = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Import reviewModel here to avoid circular dependency
+    const reviewModel = (await import("../models/reviewModel.js")).default;
+
+    const reviews = await reviewModel
+      .find({ userId })
+      .populate("productId", "name image")
+      .populate("orderId", "_id date")
+      .sort({ createdAt: -1 });
+
+    console.log("=== USER REVIEWS API DEBUG ===");
+    console.log("Found reviews:", reviews.length);
+    console.log(
+      "Sample review structure:",
+      reviews[0]
+        ? {
+            _id: reviews[0]._id,
+            productId: reviews[0].productId,
+            orderId: reviews[0].orderId,
+            rating: reviews[0].rating,
+            comment: reviews[0].comment,
+            images: reviews[0].images,
+            imageCount: reviews[0].images?.length || 0,
+          }
+        : "No reviews"
+    );
+
+    // Transform reviews to ensure consistent structure for frontend
+    const transformedReviews = reviews.map((review) => ({
+      _id: review._id,
+      productId: review.productId?._id || review.productId, // Extract _id from populated object
+      orderId: review.orderId?._id || review.orderId, // Extract _id from populated object
+      rating: review.rating,
+      comment: review.comment,
+      images: review.images || [], // Include images array
+      createdAt: review.createdAt,
+      isApproved: review.isApproved,
+      // Keep populated data for additional info
+      product: review.productId
+        ? {
+            name: review.productId.name,
+            image: review.productId.image,
+          }
+        : null,
+      order: review.orderId
+        ? {
+            date: review.orderId.date,
+          }
+        : null,
+    }));
+
+    console.log("Transformed reviews:", transformedReviews.length);
+    console.log(
+      "Sample transformed review:",
+      transformedReviews[0] || "No reviews"
+    );
+    console.log("=== END DEBUG ===");
+
+    res.json({
+      success: true,
+      reviews: transformedReviews,
+    });
+  } catch (error) {
+    console.error("Get user reviews error:", error);
+    res.json({
+      success: false,
+      message: "Không thể tải danh sách đánh giá",
+    });
+  }
+};
+
 export {
   userLogin,
   userRegister,
@@ -1493,6 +1568,7 @@ export {
   addToWishlist,
   removeFromWishlist,
   clearWishlist,
+  getUserReviews,
 };
 
 // Get user profile

@@ -1,9 +1,24 @@
 import Stripe from "stripe";
+import { Client, Environment } from "@paypal/paypal-server-sdk";
 import orderModel from "../models/orderModel.js";
 import userModel from "../models/userModel.js";
 
 // Initialize Stripe with your secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+// Initialize PayPal SDK
+const environment =
+  process.env.NODE_ENV === "production"
+    ? Environment.Live
+    : Environment.Sandbox;
+
+const paypalClient = new Client({
+  clientCredentialsAuthCredentials: {
+    oAuthClientId: process.env.PAYPAL_CLIENT_ID,
+    oAuthClientSecret: process.env.PAYPAL_CLIENT_SECRET,
+  },
+  environment: environment,
+});
 
 // Create payment intent for Stripe
 export const createPaymentIntent = async (req, res) => {
@@ -245,6 +260,200 @@ export const createOrder = async (req, res) => {
     });
   } catch (error) {
     console.error("Create Order Error:", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Create Stripe Checkout Session
+export const createStripeSession = async (req, res) => {
+  try {
+    const { orderId, amount } = req.body;
+    const userId = req.user.id;
+
+    // Find the order
+    const order = await orderModel.findById(orderId);
+    if (!order) {
+      return res.json({ success: false, message: "Order not found" });
+    }
+
+    // Verify order belongs to user
+    if (order.userId.toString() !== userId) {
+      return res.json({
+        success: false,
+        message: "Unauthorized access to order",
+      });
+    }
+
+    // Create Stripe checkout session
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: `Order #${orderId}`,
+              description: `Payment for order containing ${order.items.length} items`,
+            },
+            unit_amount: Math.round(amount * 100), // Convert to cents
+          },
+          quantity: 1,
+        },
+      ],
+      mode: "payment",
+      success_url: `${process.env.CLIENT_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`,
+      cancel_url: `${process.env.CLIENT_URL}/checkout/${orderId}`,
+      metadata: {
+        orderId: orderId,
+        userId: userId,
+      },
+    });
+
+    res.json({
+      success: true,
+      url: session.url,
+      sessionId: session.id,
+    });
+  } catch (error) {
+    console.error("Create Stripe Session Error:", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Create PayPal Order
+export const createPayPalOrder = async (req, res) => {
+  try {
+    const { orderId, amount } = req.body;
+    const userId = req.user.id;
+
+    // Find the order
+    const order = await orderModel.findById(orderId);
+    if (!order) {
+      return res.json({ success: false, message: "Order not found" });
+    }
+
+    // Verify order belongs to user
+    if (order.userId.toString() !== userId) {
+      return res.json({
+        success: false,
+        message: "Unauthorized access to order",
+      });
+    }
+
+    // Create PayPal order using new SDK
+    const request = {
+      body: {
+        intent: "CAPTURE",
+        purchase_units: [
+          {
+            reference_id: orderId,
+            amount: {
+              currency_code: "USD",
+              value: amount.toString(),
+            },
+            description: `Payment for order #${orderId}`,
+          },
+        ],
+        application_context: {
+          return_url: `${process.env.CLIENT_URL}/payment-success?order_id=${orderId}&payment_method=paypal`,
+          cancel_url: `${process.env.CLIENT_URL}/checkout/${orderId}`,
+          brand_name: "Orebi Shopping",
+          landing_page: "BILLING",
+          shipping_preference: "NO_SHIPPING",
+          user_action: "PAY_NOW",
+        },
+      },
+    };
+
+    const { body: paypalOrder } = await paypalClient.orders.ordersCreate(
+      request
+    );
+    const approvalUrl = paypalOrder.links.find(
+      (link) => link.rel === "approve"
+    ).href;
+
+    res.json({
+      success: true,
+      approvalUrl: approvalUrl,
+      paypalOrderId: paypalOrder.id,
+    });
+  } catch (error) {
+    console.error("Create PayPal Order Error:", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Handle Stripe Success
+export const handleStripeSuccess = async (req, res) => {
+  try {
+    const { session_id, order_id } = req.query;
+
+    // Retrieve the session from Stripe
+    const session = await stripe.checkout.sessions.retrieve(session_id);
+
+    if (session.payment_status === "paid") {
+      // Update order
+      const order = await orderModel.findById(order_id);
+      if (order) {
+        order.paymentStatus = "paid";
+        order.paymentMethod = "stripe";
+        order.status = "confirmed";
+        order.stripeSessionId = session_id;
+        await order.save();
+
+        res.json({
+          success: true,
+          message: "Payment successful",
+          order: order,
+        });
+      } else {
+        res.json({ success: false, message: "Order not found" });
+      }
+    } else {
+      res.json({ success: false, message: "Payment not completed" });
+    }
+  } catch (error) {
+    console.error("Handle Stripe Success Error:", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Handle PayPal Success
+export const handlePayPalSuccess = async (req, res) => {
+  try {
+    const { paypal_order_id, order_id } = req.body;
+
+    // Capture PayPal payment using new SDK
+    const request = {
+      id: paypal_order_id,
+      body: {},
+    };
+
+    const { body: capture } = await paypalClient.orders.ordersCapture(request);
+
+    if (capture.status === "COMPLETED") {
+      // Update order
+      const order = await orderModel.findById(order_id);
+      if (order) {
+        order.paymentStatus = "paid";
+        order.paymentMethod = "paypal";
+        order.status = "confirmed";
+        order.paypalOrderId = paypal_order_id;
+        await order.save();
+
+        res.json({
+          success: true,
+          message: "Payment successful",
+          order: order,
+        });
+      } else {
+        res.json({ success: false, message: "Order not found" });
+      }
+    } else {
+      res.json({ success: false, message: "Payment not completed" });
+    }
+  } catch (error) {
+    console.error("Handle PayPal Success Error:", error);
     res.json({ success: false, message: error.message });
   }
 };

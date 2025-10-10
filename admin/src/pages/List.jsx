@@ -12,7 +12,7 @@ import {
   FaSync,
 } from "react-icons/fa";
 import { IoMdClose, IoMdCloudUpload } from "react-icons/io";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import PriceFormat from "../components/PriceFormat";
 import Container from "../components/Container";
 import PropTypes from "prop-types";
@@ -20,6 +20,7 @@ import Input, { Label } from "../components/ui/input";
 import SmallLoader from "../components/SmallLoader";
 
 const List = ({ token }) => {
+  const location = useLocation();
   const [list, setList] = useState([]);
   const [isLoading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -65,7 +66,7 @@ const List = ({ token }) => {
     try {
       setLoading(true);
       const response = await axios.get(
-        `${serverUrl}/api/product/list?isAvailable=false&_perPage=1000`
+        `${serverUrl}/api/product/list?isAvailable=all&_perPage=1000`
       );
       const data = response?.data;
 
@@ -109,6 +110,15 @@ const List = ({ token }) => {
     fetchList();
     fetchCategoriesAndBrands();
   }, []);
+
+  // Check for search query parameter on component mount
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const searchQuery = searchParams.get("search");
+    if (searchQuery) {
+      setSearchTerm(decodeURIComponent(searchQuery));
+    }
+  }, [location.search]);
 
   // Handle form input changes
   const handleInputChange = (e) => {

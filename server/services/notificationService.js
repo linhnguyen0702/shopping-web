@@ -229,3 +229,36 @@ export const notifyNewsletter = async (email) => {
     console.error("Lỗi tạo thông báo newsletter:", error);
   }
 };
+
+// Notification cho đánh giá sản phẩm mới
+export const notifyNewReview = async (review, productName, user = null) => {
+  try {
+    const userName = user?.name || "Khách hàng";
+    const userEmail = user?.email || "N/A";
+
+    const notificationData = {
+      type: "review",
+      title: "Đánh giá sản phẩm mới",
+      message: `${userName} đã đánh giá ${review.rating} sao cho sản phẩm "${productName}"`,
+      data: {
+        "Khách hàng": userName,
+        Email: userEmail,
+        "Sản phẩm": productName,
+        "Đánh giá": `${review.rating}/5 sao`,
+        "Nhận xét": review.comment,
+        "Mã đánh giá": review._id,
+        "Thời gian": new Date(review.createdAt).toLocaleString("vi-VN"),
+      },
+      priority: "medium",
+      isGlobal: true,
+    };
+
+    console.log(
+      "📧 Sending review notification to admin:",
+      notificationData.title
+    );
+    return await createAndSendNotification(notificationData);
+  } catch (error) {
+    console.error("Lỗi tạo thông báo đánh giá:", error);
+  }
+};
