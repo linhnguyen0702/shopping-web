@@ -1107,7 +1107,8 @@ const Order = () => {
 
             {/* Table View - Desktop */}
             <div className="hidden md:block bg-white rounded-lg border border-gray-200 overflow-hidden">
-              <div className="overflow-x-auto">
+              {/* Enable horizontal scroll if columns overflow, so long labels like "Đã hủy" remain visible */}
+              <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
@@ -1245,7 +1246,7 @@ const Order = () => {
                               <div className="text-xs font-medium text-gray-900">
                                 {order.items.length} sản phẩm
                               </div>
-                              <div className="text-xs text-gray-500 truncate max-w-[120px]">
+                              <div className="text-xs text-gray-500 truncate max-w-[160px]">
                                 {order.items[0]?.name}
                               </div>
                             </div>
@@ -1256,6 +1257,7 @@ const Order = () => {
                             <PriceFormat amount={order.amount} />
                           </div>
                         </td>
+                        {/* Allow status text to be fully visible; avoid unexpected wrapping */}
                         <td className="px-3 py-3 whitespace-nowrap">
                           <span
                             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(

@@ -520,15 +520,23 @@ const addProductReview = async (req, res) => {
     console.log("req.body:", req.body);
 
     let reviewImages = [];
-    if (req.files && req.files.reviewImages) {
+    // Support both upload.array("reviewImages") => req.files (array)
+    // and upload.fields({ name: "reviewImages" }) => req.files.reviewImages
+    let imageFiles = [];
+    if (Array.isArray(req.files) && req.files.length > 0) {
+      console.log("✅ Found review images (array mode):", req.files.length);
+      imageFiles = req.files;
+    } else if (req.files && req.files.reviewImages) {
       console.log(
-        "✅ Found review images:",
+        "✅ Found review images (fields mode):",
         req.files.reviewImages.length || 1
       );
-      const imageFiles = Array.isArray(req.files.reviewImages)
+      imageFiles = Array.isArray(req.files.reviewImages)
         ? req.files.reviewImages
         : [req.files.reviewImages];
+    }
 
+    if (imageFiles.length > 0) {
       try {
         const uploadPromises = imageFiles.map(async (file) => {
           const result = await cloudinary.uploader.upload(file.path, {
@@ -798,9 +806,12 @@ const updateProductReview = async (req, res) => {
     let newImages = [...existingReview.images]; // Keep existing images by default
     console.log("- newImages after copy:", newImages);
 
-    if (req.files && req.files.reviewImages) {
+    // Support both array mode and fields mode for uploads
+    if ((Array.isArray(req.files) && req.files.length > 0) || (req.files && req.files.reviewImages)) {
       console.log("✅ Found new files to upload");
-      const imageFiles = Array.isArray(req.files.reviewImages)
+      const imageFiles = Array.isArray(req.files)
+        ? req.files
+        : Array.isArray(req.files.reviewImages)
         ? req.files.reviewImages
         : [req.files.reviewImages];
 
