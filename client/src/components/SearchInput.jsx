@@ -5,6 +5,7 @@ import { IoCloseOutline } from "react-icons/io5";
 import { CiSearch } from "react-icons/ci";
 import { useNavigate } from "react-router-dom";
 import { getData } from "../helpers";
+import PriceFormat from "./PriceFormat";
 
 const SearchInput = () => {
   const [search, setSearch] = useState("");
@@ -122,7 +123,7 @@ const SearchInput = () => {
                           {item?.name}
                         </h4>
                         {item?.price && (
-                          <p className="text-sm text-gray-600">${item.price}</p>
+                          <p className="text-sm text-gray-600"><PriceFormat amount={item.price} /></p>
                         )}
                       </div>
                       <CiSearch className="text-gray-400 flex-shrink-0" />

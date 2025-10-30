@@ -589,12 +589,13 @@ const OrderPage = () => {
                 ) : !selectedPaymentMethod ? (
                   "Chọn phương thức thanh toán"
                 ) : selectedPaymentMethod === "cod" ? (
-                  "Xác nhận đặt hàng"
+                  "Xác nhận đặt hàng (Thanh toán khi nhận hàng)"
+                ) : selectedPaymentMethod === "stripe" ? (
+                  "Tiếp tục thanh toán bằng thẻ (Stripe)"
+                ) : selectedPaymentMethod === "paypal" ? (
+                  "Tiếp tục thanh toán qua PayPal"
                 ) : (
-                  `Thanh toán qua ${
-                    paymentMethods.find((m) => m.id === selectedPaymentMethod)
-                      ?.name
-                  }`
+                  "Xác nhận đặt hàng"
                 )}
               </button>
 

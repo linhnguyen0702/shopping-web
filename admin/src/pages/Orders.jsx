@@ -507,7 +507,20 @@ const Orders = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredOrders.map((order) => (
-                <tr key={order._id} className="hover:bg-gray-50">
+                <tr
+                  key={order._id}
+                  className="hover:bg-gray-50 cursor-pointer"
+                  onClick={(e) => {
+                    // Tránh khi click vào nút Sửa/Xóa cũng mở modal
+                    if (
+                      e.target.closest('button') === null &&
+                      e.target.tagName !== 'BUTTON'
+                    ) {
+                      setEditingOrder(order);
+                      setShowEditModal(true);
+                    }
+                  }}
+                >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
                       #{order._id.slice(-8).toUpperCase()}
@@ -629,7 +642,17 @@ const Orders = () => {
           filteredOrders.map((order) => (
             <div
               key={order._id}
-              className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm"
+              className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm cursor-pointer"
+              onClick={(e) => {
+                // Tránh khi click vào nút Sửa/Xóa cũng mở modal
+                if (
+                  e.target.closest('button') === null &&
+                  e.target.tagName !== 'BUTTON'
+                ) {
+                  setEditingOrder(order);
+                  setShowEditModal(true);
+                }
+              }}
             >
               {/* Header */}
               <div className="flex items-center justify-between mb-3">
