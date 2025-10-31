@@ -839,11 +839,27 @@ const Notifications = () => {
                             <div className="flex items-center gap-2">
                               <FaShoppingCart className="text-green-500" />
                               <span className="font-medium">Mã đơn hàng:</span>
-                              <span>
-                                #{selectedNotification.metadata.orderId}
+                              <span>#{selectedNotification.metadata.orderId}</span>
+                              <a
+                                href={`/orders`}
+                                className="ml-2 underline text-blue-700 hover:text-blue-900 text-xs"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                Xem trong quản lý đơn hàng
+                              </a>
+                            </div>
+                          )}
+                          {/* Trạng thái đơn hàng nếu có */}
+                          {selectedNotification.metadata.status && (
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">Trạng thái:</span>
+                              <span className="capitalize font-semibold text-gray-800">
+                                {selectedNotification.metadata.status}
                               </span>
                             </div>
                           )}
+                          {/* Email/tên khách */}
                           {selectedNotification.metadata.email && (
                             <div className="flex items-center gap-2">
                               <MdEmail className="text-blue-500" />
@@ -851,6 +867,7 @@ const Notifications = () => {
                               <span>{selectedNotification.metadata.email}</span>
                             </div>
                           )}
+                          {/* Tổng tiền */}
                           {selectedNotification.metadata.amount && (
                             <div className="flex items-center gap-2">
                               <span className="text-green-500">💰</span>
@@ -863,13 +880,12 @@ const Notifications = () => {
                               </span>
                             </div>
                           )}
+                          {/* Địa chỉ */}
                           {selectedNotification.metadata.address && (
                             <div className="flex items-start gap-2">
                               <MdLocationOn className="text-red-500 mt-1" />
                               <span className="font-medium">Địa chỉ:</span>
-                              <span>
-                                {selectedNotification.metadata.address}
-                              </span>
+                              <span>{selectedNotification.metadata.address}</span>
                             </div>
                           )}
                         </div>

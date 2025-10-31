@@ -173,7 +173,7 @@ const CheckoutForm = ({ orderId, amount, onSuccess, onCancel }) => {
             Amount to pay
           </span>
           <span className="text-lg font-bold text-gray-900">
-            ${amount.toFixed(2)}
+            <PriceFormat amount={amount} />
           </span>
         </div>
         <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -196,7 +196,7 @@ const CheckoutForm = ({ orderId, amount, onSuccess, onCancel }) => {
           ) : (
             <>
               <FaCreditCard className="w-4 h-4" />
-              Pay ${amount.toFixed(2)}
+              Thanh toán <PriceFormat amount={amount} />
             </>
           )}
         </button>
