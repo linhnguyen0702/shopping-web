@@ -32,6 +32,15 @@ export const createAndSendNotification = async (notificationData) => {
 // Notification cho đơn hàng mới
 export const notifyNewOrder = async (order) => {
   try {
+    // Chuẩn bị mảng sản phẩm chi tiết
+    const productsArray =
+      order.items?.map((item) => ({
+        name: item.name || "Sản phẩm không rõ",
+        quantity: item.quantity || 1,
+        price: item.price || 0,
+        image: item.image || item.images?.[0] || "",
+      })) || [];
+
     const notificationData = {
       type: "order",
       title: "Đơn hàng mới nhận",
@@ -48,6 +57,7 @@ export const notifyNewOrder = async (order) => {
         "Tổng tiền": `${order.amount?.toLocaleString() || 0} VNĐ`,
         "Phương thức thanh toán": order.paymentMethod || "N/A",
         "Số sản phẩm": order.items?.length || 0,
+        "Sản phẩm": JSON.stringify(productsArray),
       },
       priority: "high",
       isGlobal: true,

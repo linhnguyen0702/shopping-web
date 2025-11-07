@@ -398,7 +398,8 @@ const Home = () => {
               stats.recentOrders.map((order, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+                  className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer"
+                  onClick={() => navigate(`/orders?search=${encodeURIComponent(order._id)}`)}
                 >
                   <div>
                     <p className="font-semibold text-gray-800">
@@ -460,7 +461,8 @@ const Home = () => {
               stats.topProducts.map((product, index) => (
                 <div
                   key={index}
-                  className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+                  className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer"
+                  onClick={() => navigate(`/list?search=${encodeURIComponent(product.name)}`)}
                 >
                   <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-xl flex items-center justify-center text-white font-bold">
                     {index + 1}

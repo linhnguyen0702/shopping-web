@@ -36,6 +36,10 @@ const List = ({ token }) => {
   const [deletingProduct, setDeletingProduct] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Details Modal states
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+
   // Categories and brands for edit modal
   const [categories, setCategories] = useState([]);
   const [brands, setBrands] = useState([]);
@@ -234,6 +238,17 @@ const List = ({ token }) => {
   const closeDeleteModal = () => {
     setShowDeleteModal(false);
     setDeletingProduct(null);
+  };
+
+  // Open/Close details modal
+  const openDetailsModal = (product) => {
+    setSelectedProduct(product);
+    setShowDetailsModal(true);
+  };
+
+  const closeDetailsModal = () => {
+    setShowDetailsModal(false);
+    setSelectedProduct(null);
   };
 
   // Handle product update
@@ -535,7 +550,15 @@ const List = ({ token }) => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {currentProducts.map((product) => (
-                      <tr key={product._id} className="hover:bg-gray-50">
+                      <tr
+                        key={product._id}
+                        className="hover:bg-gray-50 cursor-pointer"
+                        onClick={(e) => {
+                          if (e.target.closest("button") === null) {
+                            openDetailsModal(product);
+                          }
+                        }}
+                      >
                         <td className="px-6 py-4">
                           <img
                             src={product.images[0]}
@@ -612,7 +635,12 @@ const List = ({ token }) => {
               {currentProducts.map((product) => (
                 <div
                   key={product._id}
-                  className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow"
+                  className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={(e) => {
+                    if (e.target.closest("button") === null) {
+                      openDetailsModal(product);
+                    }
+                  }}
                 >
                   <div className="flex items-start gap-4">
                     <img
@@ -1146,6 +1174,108 @@ const List = ({ token }) => {
                         Xóa
                       </>
                     )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Details Modal */}
+        {showDetailsModal && selectedProduct && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                closeDetailsModal();
+              }
+            }}
+          >
+            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center p-6 border-b">
+                <h2 className="text-xl font-semibold">Chi tiết sản phẩm</h2>
+                <button
+                  onClick={closeDetailsModal}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <IoMdClose size={24} />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {/* Product Header */}
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900">{selectedProduct.name}</h3>
+                  <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                    <span><strong>Thương hiệu:</strong> {selectedProduct.brand || 'N/A'}</span>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">{selectedProduct.category}</span>
+                  </div>
+                </div>
+
+                {/* Image Gallery */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  {selectedProduct.images.map((img, index) => (
+                    <div key={index} className="border rounded-lg overflow-hidden">
+                      <img src={img} alt={`${selectedProduct.name} - image ${index + 1}`} className="w-full h-40 object-cover" />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Description */}
+                <div>
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">Mô tả</h4>
+                  <p className="text-gray-600 whitespace-pre-wrap">{selectedProduct.description}</p>
+                </div>
+
+                {/* Pricing & Stock */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <Label>Giá</Label>
+                    <p className="text-lg font-semibold text-gray-900"><PriceFormat amount={selectedProduct.price} /></p>
+                  </div>
+                  <div>
+                    <Label>Giảm giá</Label>
+                    <p className={`text-lg font-semibold ${selectedProduct.discountedPercentage > 0 ? 'text-green-600' : 'text-gray-900'}`}>
+                      {selectedProduct.discountedPercentage}%</p>
+                  </div>
+                  <div>
+                    <Label>Tồn kho</Label>
+                    <p className={`text-lg font-semibold ${selectedProduct.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {selectedProduct.stock} ({selectedProduct.stock > 0 ? 'Còn hàng' : 'Hết hàng'})
+                    </p>
+                  </div>
+                </div>
+
+                {/* Other Details */}
+                <div>
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">Thông tin khác</h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                    <p><strong>Loại:</strong> {selectedProduct._type || 'N/A'}</p>
+                    <p><strong>Ưu đãi:</strong> {selectedProduct.offer ? 'Có' : 'Không'}</p>
+                    <p><strong>Nhãn:</strong> {selectedProduct.badge ? 'Có' : 'Không'}</p>
+                    <p><strong>Tình trạng:</strong> {selectedProduct.isAvailable ? 'Hiển thị' : 'Ẩn'}</p>
+                  </div>
+                </div>
+
+                {/* Tags */}
+                {selectedProduct.tags && selectedProduct.tags.length > 0 && (
+                  <div>
+                    <h4 className="text-lg font-medium text-gray-900 mb-2">Tags</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedProduct.tags.map(tag => (
+                        <span key={tag} className="px-3 py-1 bg-gray-200 text-gray-800 text-sm rounded-full">{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-end pt-4 border-t">
+                  <button
+                    type="button"
+                    onClick={closeDetailsModal}
+                    className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+                  >
+                    Đóng
                   </button>
                 </div>
               </div>

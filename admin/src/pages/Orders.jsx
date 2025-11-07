@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import Title from "../components/ui/title";
 import SkeletonLoader from "../components/SkeletonLoader";
@@ -31,9 +32,12 @@ const Orders = () => {
   const [sortOrder, setSortOrder] = useState("desc");
   const [editingOrder, setEditingOrder] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [newStatus, setNewStatus] = useState("");
   const [newPaymentStatus, setNewPaymentStatus] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
+  const location = useLocation();
 
   const statusOptions = [
     "pending",
@@ -321,6 +325,14 @@ const Orders = () => {
     fetchOrders(); // Gọi hàm fetchOrders để lấy danh sách đơn hàng
   }, []); // Chỉ chạy khi component mount
 
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const orderId = searchParams.get('search');
+    if (orderId) {
+      setSearchTerm(orderId);
+    }
+  }, [location.search]);
+
   if (loading) {
     // Nếu đang loading
     return (
@@ -516,8 +528,8 @@ const Orders = () => {
                       e.target.closest('button') === null &&
                       e.target.tagName !== 'BUTTON'
                     ) {
-                      setEditingOrder(order);
-                      setShowEditModal(true);
+                      setSelectedOrder(order);
+                      setShowDetailsModal(true);
                     }
                   }}
                 >
@@ -649,8 +661,8 @@ const Orders = () => {
                   e.target.closest('button') === null &&
                   e.target.tagName !== 'BUTTON'
                 ) {
-                  setEditingOrder(order);
-                  setShowEditModal(true);
+                  setSelectedOrder(order);
+                  setShowDetailsModal(true);
                 }
               }}
             >
@@ -839,6 +851,103 @@ const Orders = () => {
                   className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors font-medium"
                 >
                   Hủy
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Details Modal */}
+      {showDetailsModal && selectedOrder && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 p-4">
+          <div className="relative top-10 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Chi tiết đơn hàng
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowDetailsModal(false);
+                    setSelectedOrder(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 p-1"
+                >
+                  <FaTimes className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="mb-4">
+                <div className="text-sm text-gray-600 mb-2">
+                  Order #{selectedOrder._id.slice(-8).toUpperCase()}
+                </div>
+              </div>
+
+              {/* Order Details Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                {/* Customer Info */}
+                <div>
+                  <h4 className="font-medium text-gray-800 mb-2">Thông tin khách hàng</h4>
+                  <p className="text-sm text-gray-600"><strong>Tên:</strong> {selectedOrder.userId?.name || 'N/A'}</p>
+                  <p className="text-sm text-gray-600"><strong>Email:</strong> {selectedOrder.userId?.email || 'N/A'}</p>
+                  <p className="text-sm text-gray-600"><strong>Địa chỉ:</strong> {selectedOrder.address.street}, {selectedOrder.address.city}, {selectedOrder.address.country}</p>
+                  <p className="text-sm text-gray-600"><strong>SĐT:</strong> {selectedOrder.address.phone}</p>
+                </div>
+
+                {/* Order Status */}
+                <div>
+                  <h4 className="font-medium text-gray-800 mb-2">Trạng thái đơn hàng</h4>
+                  <p className="text-sm text-gray-600"><strong>Ngày đặt:</strong> {new Date(selectedOrder.date).toLocaleDateString()}</p>
+                  <p className="text-sm text-gray-600"><strong>Trạng thái:</strong> {translateStatus(selectedOrder.status)}</p>
+                  <p className="text-sm text-gray-600"><strong>Thanh toán:</strong> {translatePaymentStatus(selectedOrder.paymentStatus)}</p>
+                  <p className="text-sm text-gray-600"><strong>Phương thức:</strong> {selectedOrder.paymentMethod?.toUpperCase()}</p>
+                </div>
+              </div>
+
+              {/* Items List */}
+              <div>
+                <h4 className="font-medium text-gray-800 mb-2">Sản phẩm</h4>
+                <div className="border rounded-lg overflow-hidden">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Ảnh</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Sản phẩm</th>
+                        <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Số lượng</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Giá</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {selectedOrder.items.map(item => (
+                        <tr key={item._id}>
+                          <td className="px-4 py-2">
+                            <img src={item.image} alt={item.name} className="h-12 w-12 object-cover rounded" />
+                          </td>
+                          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{item.name}</td>
+                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 text-center">{item.quantity}</td>
+                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 text-right">{formatVND(item.price)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Total Amount */}
+              <div className="text-right mt-4">
+                <p className="text-sm text-gray-600">Tổng cộng: <span className="font-bold text-lg text-gray-900">{formatVND(selectedOrder.amount)}</span></p>
+              </div>
+
+              <div className="flex justify-end mt-6">
+                <button
+                  onClick={() => {
+                    setShowDetailsModal(false);
+                    setSelectedOrder(null);
+                  }}
+                  className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors font-medium"
+                >
+                  Đóng
                 </button>
               </div>
             </div>

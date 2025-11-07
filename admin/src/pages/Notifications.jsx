@@ -9,7 +9,6 @@ import {
   MdSearch,
   MdClose,
   MdPerson,
-  MdLocationOn,
   MdEmail,
   MdSchedule,
   MdPhone,
@@ -641,42 +640,120 @@ const Notifications = () => {
                       </p>
 
                       {/* Metadata preview */}
-                      {notification.metadata && (
-                        <div className="flex flex-wrap gap-4 text-sm text-gray-500">
-                          {notification.metadata.email && (
-                            <span className="flex items-center gap-1">
-                              <MdEmail />
-                              {notification.metadata.email}
-                            </span>
-                          )}
-                          {notification.metadata.phone &&
-                            notification.type === "contact" && (
+                      {(notification.metadata || notification.data) && (
+                        <div className="space-y-3">
+                          <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+                            {(notification.metadata?.email ||
+                              notification.data?.Email) && (
                               <span className="flex items-center gap-1">
-                                <MdPhone />
-                                {notification.metadata.phone}
+                                <MdEmail />
+                                {notification.metadata?.email ||
+                                  notification.data?.Email}
                               </span>
                             )}
-                          {notification.metadata.subject &&
-                            notification.type === "contact" && (
+                            {(notification.metadata?.phone ||
+                              notification.data?.["Số điện thoại"]) &&
+                              notification.type === "contact" && (
+                                <span className="flex items-center gap-1">
+                                  <MdPhone />
+                                  {notification.metadata?.phone ||
+                                    notification.data?.["Số điện thoại"]}
+                                </span>
+                              )}
+                            {notification.metadata?.subject &&
+                              notification.type === "contact" && (
+                                <span className="flex items-center gap-1">
+                                  <MdSubject />
+                                  {notification.metadata.subject}
+                                </span>
+                              )}
+                            {(notification.metadata?.orderId ||
+                              notification.data?.["Mã đơn hàng"]) && (
                               <span className="flex items-center gap-1">
-                                <MdSubject />
-                                {notification.metadata.subject}
+                                <FaShoppingCart />
+                                Đơn hàng #
+                                {notification.metadata?.orderId ||
+                                  notification.data?.["Mã đơn hàng"]}
                               </span>
                             )}
-                          {notification.metadata.orderId && (
-                            <span className="flex items-center gap-1">
-                              <FaShoppingCart />
-                              Đơn hàng #{notification.metadata.orderId}
-                            </span>
-                          )}
-                          {notification.metadata.amount && (
-                            <span className="font-medium text-green-600">
-                              {new Intl.NumberFormat("vi-VN", {
-                                style: "currency",
-                                currency: "VND",
-                              }).format(notification.metadata.amount)}
-                            </span>
-                          )}
+                            {notification.metadata?.amount && (
+                              <span className="font-medium text-green-600">
+                                {new Intl.NumberFormat("vi-VN", {
+                                  style: "currency",
+                                  currency: "VND",
+                                }).format(notification.metadata.amount)}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Product Preview for Orders */}
+                          {notification.type === "order" &&
+                            (() => {
+                              const rawData =
+                                notification.metadata || notification.data;
+                              const metadataObject =
+                                typeof rawData === "string"
+                                  ? JSON.parse(rawData)
+                                  : rawData;
+
+                              const productsData =
+                                metadataObject["Sản phẩm"] &&
+                                typeof metadataObject["Sản phẩm"] === "string"
+                                  ? JSON.parse(metadataObject["Sản phẩm"])
+                                  : metadataObject["Sản phẩm"];
+
+                              if (productsData && productsData.length > 0) {
+                                return (
+                                  <div className="mt-3 pt-3 border-t border-gray-200">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <FaBox className="text-purple-500" />
+                                      <span className="text-sm font-medium text-gray-700">
+                                        Sản phẩm ({productsData.length}):
+                                      </span>
+                                    </div>
+                                    <div className="flex gap-2 overflow-x-auto pb-2">
+                                      {productsData
+                                        .slice(0, 3)
+                                        .map((product, idx) => (
+                                          <div
+                                            key={idx}
+                                            className="flex-shrink-0 bg-white border border-gray-200 rounded-lg p-2 w-40"
+                                          >
+                                            {product.image ? (
+                                              <img
+                                                src={product.image}
+                                                alt={product.name}
+                                                className="w-full h-20 object-cover rounded mb-2"
+                                              />
+                                            ) : (
+                                              <div className="w-full h-20 bg-gray-100 rounded mb-2 flex items-center justify-center">
+                                                <FaBox className="text-gray-400" />
+                                              </div>
+                                            )}
+                                            <p
+                                              className="text-xs font-medium text-gray-800 line-clamp-1"
+                                              title={product.name}
+                                            >
+                                              {product.name}
+                                            </p>
+                                            <p className="text-xs text-gray-600">
+                                              SL: {product.quantity}
+                                            </p>
+                                          </div>
+                                        ))}
+                                      {productsData.length > 3 && (
+                                        <div className="flex-shrink-0 w-20 bg-gray-100 border border-gray-200 rounded-lg flex items-center justify-center">
+                                          <span className="text-sm font-medium text-gray-600">
+                                            +{productsData.length - 3}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })()}
                         </div>
                       )}
 
@@ -827,178 +904,307 @@ const Notifications = () => {
                   </div>
 
                   {/* Detailed Information based on type */}
-                  {selectedNotification.metadata && (
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <h4 className="font-medium text-gray-900 mb-3">
-                        Thông tin chi tiết
-                      </h4>
+                  {(selectedNotification.metadata ||
+                    selectedNotification.data) &&
+                    (() => {
+                      // Try metadata first, then fall back to data
+                      const rawMetadata =
+                        selectedNotification.metadata ||
+                        selectedNotification.data;
+                      const metadataObject =
+                        typeof rawMetadata === "string"
+                          ? JSON.parse(rawMetadata)
+                          : rawMetadata;
 
-                      {selectedNotification.type === "order" && (
-                        <div className="space-y-3">
-                          {selectedNotification.metadata.orderId && (
-                            <div className="flex items-center gap-2">
-                              <FaShoppingCart className="text-green-500" />
-                              <span className="font-medium">Mã đơn hàng:</span>
-                              <span>#{selectedNotification.metadata.orderId}</span>
-                              <a
-                                href={`/orders`}
-                                className="ml-2 underline text-blue-700 hover:text-blue-900 text-xs"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                Xem trong quản lý đơn hàng
-                              </a>
-                            </div>
-                          )}
-                          {/* Trạng thái đơn hàng nếu có */}
-                          {selectedNotification.metadata.status && (
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">Trạng thái:</span>
-                              <span className="capitalize font-semibold text-gray-800">
-                                {selectedNotification.metadata.status}
-                              </span>
-                            </div>
-                          )}
-                          {/* Email/tên khách */}
-                          {selectedNotification.metadata.email && (
-                            <div className="flex items-center gap-2">
-                              <MdEmail className="text-blue-500" />
-                              <span className="font-medium">Khách hàng:</span>
-                              <span>{selectedNotification.metadata.email}</span>
-                            </div>
-                          )}
-                          {/* Tổng tiền */}
-                          {selectedNotification.metadata.amount && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-green-500">💰</span>
-                              <span className="font-medium">Tổng tiền:</span>
-                              <span className="font-bold text-green-600">
-                                {new Intl.NumberFormat("vi-VN", {
-                                  style: "currency",
-                                  currency: "VND",
-                                }).format(selectedNotification.metadata.amount)}
-                              </span>
-                            </div>
-                          )}
-                          {/* Địa chỉ */}
-                          {selectedNotification.metadata.address && (
-                            <div className="flex items-start gap-2">
-                              <MdLocationOn className="text-red-500 mt-1" />
-                              <span className="font-medium">Địa chỉ:</span>
-                              <span>{selectedNotification.metadata.address}</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
+                      // DEBUG: Log để xem dữ liệu
+                      console.log(
+                        "🔍 Full notification:",
+                        selectedNotification
+                      );
+                      console.log("📦 Metadata Object:", metadataObject);
+                      console.log(
+                        "📦 Sản phẩm field:",
+                        metadataObject["Sản phẩm"]
+                      );
 
-                      {(selectedNotification.type === "user" ||
-                        selectedNotification.type === "contact" ||
-                        selectedNotification.type === "login") && (
-                        <div className="space-y-3">
-                          {selectedNotification.metadata.email && (
-                            <div className="flex items-center gap-2">
-                              <MdEmail className="text-blue-500" />
-                              <span className="font-medium">Email:</span>
-                              <span>{selectedNotification.metadata.email}</span>
-                            </div>
-                          )}
-                          {selectedNotification.metadata.name && (
-                            <div className="flex items-center gap-2">
-                              <MdPerson className="text-purple-500" />
-                              <span className="font-medium">Tên:</span>
-                              <span>{selectedNotification.metadata.name}</span>
-                            </div>
-                          )}
-                          {selectedNotification.metadata.phone &&
-                            selectedNotification.type === "contact" && (
-                              <div className="flex items-center gap-2">
-                                <MdPhone className="text-green-500" />
-                                <span className="font-medium">
-                                  Số điện thoại:
-                                </span>
-                                <span>
-                                  {selectedNotification.metadata.phone}
-                                </span>
-                              </div>
-                            )}
-                          {selectedNotification.metadata.subject &&
-                            selectedNotification.type === "contact" && (
-                              <div className="flex items-center gap-2">
-                                <MdSubject className="text-blue-500" />
-                                <span className="font-medium">Chủ đề:</span>
-                                <span>
-                                  {selectedNotification.metadata.subject}
-                                </span>
-                              </div>
-                            )}
-                          {selectedNotification.metadata.message &&
-                            selectedNotification.type === "contact" && (
-                              <div className="flex items-start gap-2">
-                                <MdMessage className="text-orange-500 mt-1" />
-                                <span className="font-medium">Nội dung:</span>
-                                <div className="flex-1">
-                                  <p className="text-sm bg-gray-100 p-2 rounded">
-                                    {selectedNotification.metadata.message}
-                                  </p>
+                      return (
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <h4 className="font-medium text-gray-900 mb-3">
+                            Thông tin chi tiết
+                          </h4>
+
+                          {selectedNotification.type === "order" &&
+                            metadataObject && (
+                              <div className="space-y-4">
+                                {/* Customer and Order Info */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                  <div className="bg-white rounded-lg p-4 border border-gray-200">
+                                    <h5 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                                      <MdPerson className="text-blue-500" />
+                                      Thông tin khách hàng
+                                    </h5>
+                                    <div className="space-y-2">
+                                      <p className="text-sm text-gray-600">
+                                        <span className="font-medium">
+                                          Tên:
+                                        </span>{" "}
+                                        {metadataObject["Khách hàng"] || "N/A"}
+                                      </p>
+                                      <p className="text-sm text-gray-600">
+                                        <span className="font-medium">
+                                          Email:
+                                        </span>{" "}
+                                        {metadataObject["Email"] || "N/A"}
+                                      </p>
+                                      <p className="text-sm text-gray-600">
+                                        <span className="font-medium">
+                                          SĐT:
+                                        </span>{" "}
+                                        {metadataObject["Số điện thoại"] ||
+                                          "N/A"}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="bg-white rounded-lg p-4 border border-gray-200">
+                                    <h5 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                                      <FaShoppingCart className="text-green-500" />
+                                      Thông tin đơn hàng
+                                    </h5>
+                                    <div className="space-y-2">
+                                      <p className="text-sm text-gray-600">
+                                        <span className="font-medium">Mã:</span>{" "}
+                                        #{metadataObject["Mã đơn hàng"] || ""}
+                                      </p>
+                                      <p className="text-sm text-gray-600">
+                                        <span className="font-medium">
+                                          Thanh toán:
+                                        </span>{" "}
+                                        <span className="uppercase font-medium text-purple-600">
+                                          {
+                                            metadataObject[
+                                              "Phương thức thanh toán"
+                                            ]
+                                          }
+                                        </span>
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Products List - Sản phẩm */}
+                                {(() => {
+                                  const products =
+                                    metadataObject["Sản phẩm"] &&
+                                    typeof metadataObject["Sản phẩm"] ===
+                                      "string"
+                                      ? JSON.parse(metadataObject["Sản phẩm"])
+                                      : metadataObject["Sản phẩm"];
+
+                                  if (products && products.length > 0) {
+                                    return (
+                                      <div className="bg-white rounded-lg p-5 border border-gray-200 shadow-sm">
+                                        <h5 className="font-bold text-gray-900 mb-4 flex items-center gap-2 text-base">
+                                          <FaBox className="text-purple-500 text-lg" />
+                                          Sản phẩm
+                                        </h5>
+                                        <div className="overflow-x-auto">
+                                          <table className="w-full text-sm border-collapse">
+                                            <thead>
+                                              <tr className="border-b-2 border-gray-200">
+                                                <th className="text-left py-3 px-3 font-semibold text-gray-700 bg-gray-50">
+                                                  ẢNH
+                                                </th>
+                                                <th className="text-left py-3 px-3 font-semibold text-gray-700 bg-gray-50">
+                                                  SẢN PHẨM
+                                                </th>
+                                                <th className="text-center py-3 px-3 font-semibold text-gray-700 bg-gray-50">
+                                                  SỐ LƯỢNG
+                                                </th>
+                                                <th className="text-right py-3 px-3 font-semibold text-gray-700 bg-gray-50">
+                                                  GIÁ
+                                                </th>
+                                              </tr>
+                                            </thead>
+                                            <tbody>
+                                              {products.map(
+                                                (product, index) => (
+                                                  <tr
+                                                    key={index}
+                                                    className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                                                  >
+                                                    <td className="py-3 px-3">
+                                                      {product.image ? (
+                                                        <img
+                                                          src={product.image}
+                                                          alt={product.name}
+                                                          className="w-14 h-14 object-cover rounded border border-gray-200"
+                                                          onError={(e) => {
+                                                            e.target.style.display =
+                                                              "none";
+                                                            e.target.nextSibling.style.display =
+                                                              "flex";
+                                                          }}
+                                                        />
+                                                      ) : null}
+                                                      <div
+                                                        className={`w-14 h-14 bg-gray-100 rounded flex items-center justify-center ${
+                                                          product.image
+                                                            ? "hidden"
+                                                            : ""
+                                                        }`}
+                                                      >
+                                                        <FaBox className="text-gray-400 text-lg" />
+                                                      </div>
+                                                    </td>
+                                                    <td className="py-3 px-3">
+                                                      <p className="font-medium text-gray-800 text-sm leading-snug">
+                                                        {product.name}
+                                                      </p>
+                                                    </td>
+                                                    <td className="py-3 px-3 text-center">
+                                                      <span className="inline-block bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold border border-blue-200">
+                                                        {product.quantity}
+                                                      </span>
+                                                    </td>
+                                                    <td className="py-3 px-3 text-right">
+                                                      <span className="text-gray-800 font-semibold whitespace-nowrap">
+                                                        {new Intl.NumberFormat(
+                                                          "vi-VN"
+                                                        ).format(
+                                                          product.price
+                                                        )}{" "}
+                                                        ₫
+                                                      </span>
+                                                    </td>
+                                                  </tr>
+                                                )
+                                              )}
+                                            </tbody>
+                                          </table>
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                })()}
+
+                                {/* Total Amount */}
+                                <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4 border-2 border-green-200">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-lg font-semibold text-gray-700">
+                                      Tổng cộng:
+                                    </span>
+                                    <span className="text-2xl font-bold text-green-600">
+                                      {metadataObject["Tổng tiền"]}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
                             )}
-                          {selectedNotification.metadata.role && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-indigo-500">👤</span>
-                              <span className="font-medium">Vai trò:</span>
-                              <span className="capitalize font-medium">
-                                {selectedNotification.metadata.role === "admin"
-                                  ? "Quản trị viên"
-                                  : "Khách hàng"}
-                              </span>
-                            </div>
-                          )}
-                          {selectedNotification.metadata.userType && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-green-500">🏷️</span>
-                              <span className="font-medium">Loại:</span>
-                              <span className="capitalize">
-                                {selectedNotification.metadata.userType}
-                              </span>
-                            </div>
-                          )}
-                          {selectedNotification.metadata.ip && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-orange-500">🌐</span>
-                              <span className="font-medium">IP:</span>
-                              <span className="font-mono">
-                                {selectedNotification.metadata.ip}
-                              </span>
-                            </div>
-                          )}
-                          {selectedNotification.metadata.userAgent && (
-                            <div className="flex items-start gap-2">
-                              <span className="text-gray-500 mt-1">📱</span>
-                              <span className="font-medium">Thiết bị:</span>
-                              <span className="text-sm">
-                                {selectedNotification.metadata.userAgent}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      )}
 
-                      {/* Raw metadata for debugging */}
-                      <details className="mt-4">
-                        <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
-                          Dữ liệu thô (JSON)
-                        </summary>
-                        <pre className="mt-2 text-xs bg-gray-100 p-2 rounded overflow-x-auto">
-                          {JSON.stringify(
-                            selectedNotification.metadata,
-                            null,
-                            2
+                          {(selectedNotification.type === "user" ||
+                            selectedNotification.type === "contact" ||
+                            selectedNotification.type === "login") && (
+                            <div className="space-y-3">
+                              {metadataObject.email && (
+                                <div className="flex items-center gap-2">
+                                  <MdEmail className="text-blue-500" />
+                                  <span className="font-medium">Email:</span>
+                                  <span>{metadataObject.email}</span>
+                                </div>
+                              )}
+                              {metadataObject.name && (
+                                <div className="flex items-center gap-2">
+                                  <MdPerson className="text-purple-500" />
+                                  <span className="font-medium">Tên:</span>
+                                  <span>{metadataObject.name}</span>
+                                </div>
+                              )}
+                              {metadataObject.phone &&
+                                selectedNotification.type === "contact" && (
+                                  <div className="flex items-center gap-2">
+                                    <MdPhone className="text-green-500" />
+                                    <span className="font-medium">
+                                      Số điện thoại:
+                                    </span>
+                                    <span>{metadataObject.phone}</span>
+                                  </div>
+                                )}
+                              {metadataObject.subject &&
+                                selectedNotification.type === "contact" && (
+                                  <div className="flex items-center gap-2">
+                                    <MdSubject className="text-blue-500" />
+                                    <span className="font-medium">Chủ đề:</span>
+                                    <span>{metadataObject.subject}</span>
+                                  </div>
+                                )}
+                              {metadataObject.message &&
+                                selectedNotification.type === "contact" && (
+                                  <div className="flex items-start gap-2">
+                                    <MdMessage className="text-orange-500 mt-1" />
+                                    <span className="font-medium">
+                                      Nội dung:
+                                    </span>
+                                    <div className="flex-1">
+                                      <p className="text-sm bg-gray-100 p-2 rounded">
+                                        {metadataObject.message}
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+                              {metadataObject.role && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-indigo-500">👤</span>
+                                  <span className="font-medium">Vai trò:</span>
+                                  <span className="capitalize font-medium">
+                                    {metadataObject.role === "admin"
+                                      ? "Quản trị viên"
+                                      : "Khách hàng"}
+                                  </span>
+                                </div>
+                              )}
+                              {metadataObject.userType && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-green-500">🏷️</span>
+                                  <span className="font-medium">Loại:</span>
+                                  <span className="capitalize">
+                                    {metadataObject.userType}
+                                  </span>
+                                </div>
+                              )}
+                              {metadataObject.ip && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-orange-500">🌐</span>
+                                  <span className="font-medium">IP:</span>
+                                  <span className="font-mono">
+                                    {metadataObject.ip}
+                                  </span>
+                                </div>
+                              )}
+                              {metadataObject.userAgent && (
+                                <div className="flex items-start gap-2">
+                                  <span className="text-gray-500 mt-1">📱</span>
+                                  <span className="font-medium">Thiết bị:</span>
+                                  <span className="text-sm">
+                                    {metadataObject.userAgent}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           )}
-                        </pre>
-                      </details>
-                    </div>
-                  )}
+
+                          {/* Raw metadata for debugging */}
+                          <details className="mt-4">
+                            <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
+                              Dữ liệu thô (JSON)
+                            </summary>
+                            <pre className="mt-2 text-xs bg-gray-100 p-2 rounded overflow-x-auto">
+                              {JSON.stringify(metadataObject, null, 2)}
+                            </pre>
+                          </details>
+                        </div>
+                      );
+                    })()}
                 </div>
               </div>
 

@@ -27,6 +27,10 @@ const Categories = () => {
   const [imagePreview, setImagePreview] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Details Modal states
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -203,6 +207,17 @@ const Categories = () => {
       image: null,
     });
     setImagePreview("");
+  };
+
+  // Open/Close details modal
+  const openDetailsModal = (category) => {
+    setSelectedCategory(category);
+    setShowDetailsModal(true);
+  };
+
+  const closeDetailsModal = () => {
+    setShowDetailsModal(false);
+    setSelectedCategory(null);
   };
 
   // Filter categories based on search
@@ -386,7 +401,15 @@ const Categories = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {currentCategories.map((category) => (
-                      <tr key={category._id} className="hover:bg-gray-50">
+                      <tr
+                        key={category._id}
+                        className="hover:bg-gray-50 cursor-pointer"
+                        onClick={(e) => {
+                          if (e.target.closest('button') === null) {
+                            openDetailsModal(category);
+                          }
+                        }}
+                      >
                         <td className="px-6 py-4">
                           <img
                             src={category.image}
@@ -434,7 +457,12 @@ const Categories = () => {
               {currentCategories.map((category) => (
                 <div
                   key={category._id}
-                  className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow"
+                  className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={(e) => {
+                    if (e.target.closest('button') === null) {
+                      openDetailsModal(category);
+                    }
+                  }}
                 >
                   <div className="flex items-start gap-4">
                     <img
@@ -642,6 +670,56 @@ const Categories = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Details Modal */}
+        {showDetailsModal && selectedCategory && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                closeDetailsModal();
+              }
+            }}
+          >
+            <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center p-6 border-b">
+                <h2 className="text-xl font-semibold">Chi tiết danh mục</h2>
+                <button
+                  onClick={closeDetailsModal}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <IoMdClose size={24} />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div className="flex flex-col items-center">
+                  <img 
+                    src={selectedCategory.image}
+                    alt={selectedCategory.name}
+                    className="w-48 h-48 object-cover rounded-lg border mb-4"
+                  />
+                  <h3 className="text-2xl font-bold text-gray-900">{selectedCategory.name}</h3>
+                </div>
+                
+                <div>
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">Mô tả</h4>
+                  <p className="text-gray-600 whitespace-pre-wrap">{selectedCategory.description || 'Không có mô tả.'}</p>
+                </div>
+
+                <div className="flex justify-end pt-4 border-t">
+                  <button
+                    type="button"
+                    onClick={closeDetailsModal}
+                    className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+                  >
+                    Đóng
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
