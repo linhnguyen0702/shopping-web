@@ -1,167 +1,26 @@
-import Stripe from "stripe";
-import { Client, Environment } from "@paypal/paypal-server-sdk";
 import orderModel from "../models/orderModel.js";
 import userModel from "../models/userModel.js";
+import { sendPaymentConfirmationEmail } from "../services/emailService.js";
 
-// Initialize Stripe with your secret key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-// Initialize PayPal SDK
-const environment =
-  process.env.NODE_ENV === "production"
-    ? Environment.Live
-    : Environment.Sandbox;
-
-const paypalClient = new Client({
-  clientCredentialsAuthCredentials: {
-    oAuthClientId: process.env.PAYPAL_CLIENT_ID,
-    oAuthClientSecret: process.env.PAYPAL_CLIENT_SECRET,
-  },
-  environment: environment,
-});
-
-// Create payment intent for Stripe
-export const createPaymentIntent = async (req, res) => {
-  try {
-    const { orderId } = req.body;
-    const userId = req.user.id;
-
-    // Find the order
-    const order = await orderModel.findById(orderId);
-    if (!order) {
-      return res.json({ success: false, message: "Order not found" });
-    }
-
-    // Verify order belongs to user
-    if (order.userId.toString() !== userId) {
-      return res.json({
-        success: false,
-        message: "Unauthorized access to order",
-      });
-    }
-
-    // Check if order is already paid
-    if (order.paymentStatus === "paid") {
-      return res.json({ success: false, message: "Order is already paid" });
-    }
-
-    // Create payment intent
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(order.amount * 100), // Convert to cents
-      currency: "usd",
-      metadata: {
-        orderId: order._id.toString(),
-        userId: userId,
-      },
-    });
-
-    res.json({
-      success: true,
-      clientSecret: paymentIntent.client_secret,
-      amount: order.amount,
-    });
-  } catch (error) {
-    console.error("Create Payment Intent Error:", error);
-    res.json({ success: false, message: error.message });
-  }
-};
-
-// Confirm payment and update order status
-export const confirmPayment = async (req, res) => {
-  try {
-    const { paymentIntentId, orderId } = req.body;
-    const userId = req.user.id;
-
-    // Retrieve payment intent from Stripe
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-
-    if (paymentIntent.status === "succeeded") {
-      // Update order payment status
-      const order = await orderModel.findById(orderId);
-      if (!order) {
-        return res.json({ success: false, message: "Order not found" });
-      }
-
-      // Verify order belongs to user
-      if (order.userId.toString() !== userId) {
-        return res.json({
-          success: false,
-          message: "Unauthorized access to order",
-        });
-      }
-
-      order.paymentStatus = "paid";
-      order.paymentMethod = "stripe";
-      order.status = "confirmed";
-      await order.save();
-
-      res.json({
-        success: true,
-        message: "Payment confirmed successfully",
-        order: order,
-      });
-    } else {
-      res.json({
-        success: false,
-        message: "Payment not completed",
-      });
-    }
-  } catch (error) {
-    console.error("Confirm Payment Error:", error);
-    res.json({ success: false, message: error.message });
-  }
-};
-
-// Handle Stripe webhook for payment updates
-export const handleStripeWebhook = async (req, res) => {
-  const sig = req.headers["stripe-signature"];
-  let event;
-
-  try {
-    event = stripe.webhooks.constructEvent(
-      req.body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
-  } catch (err) {
-    console.error("Webhook signature verification failed:", err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
-
-  // Handle the event
-  switch (event.type) {
-    case "payment_intent.succeeded":
-      const paymentIntent = event.data.object;
-      const orderId = paymentIntent.metadata.orderId;
-
-      // Update order status
-      await orderModel.findByIdAndUpdate(orderId, {
-        paymentStatus: "paid",
-        status: "confirmed",
-      });
-      break;
-
-    case "payment_intent.payment_failed":
-      const failedPayment = event.data.object;
-      const failedOrderId = failedPayment.metadata.orderId;
-
-      // Update order status
-      await orderModel.findByIdAndUpdate(failedOrderId, {
-        paymentStatus: "failed",
-      });
-      break;
-
-    default:
-      console.log(`Unhandled event type ${event.type}`);
-  }
-
-  res.json({ received: true });
+// Thông tin ngân hàng để hiển thị cho khách hàng
+const BANK_INFO = {
+  bankName: "MB Bank",
+  bankCode: "MB",
+  accountNumber: "0368251814",
+  accountName: "NGUYEN THI THUY LINH",
+  branch: "MB Bank",
 };
 
 // Create order with payment method selection
 export const createOrder = async (req, res) => {
   try {
-    const { items, address, paymentMethod = "cod" } = req.body;
+    const {
+      items,
+      address,
+      paymentMethod = "cod",
+      shippingMethod,
+      shippingFee = 0,
+    } = req.body;
     const userId = req.user.id;
 
     // Validate required fields
@@ -176,23 +35,19 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    // Validate address required fields
-    const requiredAddressFields = [
-      "firstName",
-      "lastName",
-      "email",
-      "street",
-      "city",
-      "state",
-      "zipcode",
-      "country",
-      "phone",
-    ];
+    // Validate address required fields - flexible for name/firstName/lastName
+    const requiredAddressFields = ["email", "street", "city", "phone"];
+
     const missingFields = requiredAddressFields.filter((field) => {
-      const value =
-        address[field] || address[field === "zipcode" ? "zipCode" : field];
+      const value = address[field];
       return !value || value.trim() === "";
     });
+
+    // Check for name (either 'name' or 'firstName' + 'lastName')
+    const hasName = address.name || (address.firstName && address.lastName);
+    if (!hasName) {
+      missingFields.push("name or firstName/lastName");
+    }
 
     if (missingFields.length > 0) {
       return res.json({
@@ -212,10 +67,12 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    // Calculate total amount
-    const totalAmount = items.reduce((total, item) => {
+    // Calculate total amount (items + shipping)
+    const itemsTotal = items.reduce((total, item) => {
       return total + item.price * item.quantity;
     }, 0);
+
+    const totalAmount = itemsTotal + shippingFee;
 
     // Create order
     const order = new orderModel({
@@ -226,6 +83,7 @@ export const createOrder = async (req, res) => {
         price: item.price,
         quantity: item.quantity,
         image: item.images?.[0] || item.image,
+        shippingFee: 0, // Individual item shipping fee if needed
       })),
       amount: totalAmount,
       address: {
@@ -239,6 +97,12 @@ export const createOrder = async (req, res) => {
         zipcode: address.zipcode || address.zipCode || "",
         country: address.country || "",
         phone: address.phone || "",
+      },
+      shippingMethod: shippingMethod || {
+        provider: "ghtk",
+        serviceName: "Standard",
+        totalFee: shippingFee,
+        estimatedDelivery: "2-3 ngày",
       },
       paymentMethod,
       paymentStatus: paymentMethod === "cod" ? "pending" : "pending",
@@ -264,11 +128,10 @@ export const createOrder = async (req, res) => {
   }
 };
 
-// Create Stripe Checkout Session
-export const createStripeSession = async (req, res) => {
+// Get bank transfer information
+export const getBankInfo = async (req, res) => {
   try {
-    const { orderId, amount } = req.body;
-    const userId = req.user.id;
+    const { orderId } = req.params;
 
     // Find the order
     const order = await orderModel.findById(orderId);
@@ -276,54 +139,65 @@ export const createStripeSession = async (req, res) => {
       return res.json({ success: false, message: "Order not found" });
     }
 
-    // Verify order belongs to user
-    if (order.userId.toString() !== userId) {
-      return res.json({
-        success: false,
-        message: "Unauthorized access to order",
-      });
-    }
+    // Generate transfer content (order ID for reference)
+    const transferContent = `OREBI ${orderId.slice(-8).toUpperCase()}`;
 
-    // Create Stripe checkout session
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: `Order #${orderId}`,
-              description: `Payment for order containing ${order.items.length} items`,
-            },
-            unit_amount: Math.round(amount * 100), // Convert to cents
-          },
-          quantity: 1,
-        },
-      ],
-      mode: "payment",
-      success_url: `${process.env.CLIENT_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`,
-      cancel_url: `${process.env.CLIENT_URL}/checkout/${orderId}`,
-      metadata: {
+    res.json({
+      success: true,
+      bankInfo: {
+        ...BANK_INFO,
+        amount: order.amount,
+        transferContent: transferContent,
         orderId: orderId,
-        userId: userId,
       },
     });
-
-    res.json({
-      success: true,
-      url: session.url,
-      sessionId: session.id,
-    });
   } catch (error) {
-    console.error("Create Stripe Session Error:", error);
+    console.error("Get Bank Info Error:", error);
     res.json({ success: false, message: error.message });
   }
 };
 
-// Create PayPal Order
-export const createPayPalOrder = async (req, res) => {
+// Generate QR Code for payment (using VietQR standard)
+export const generatePaymentQR = async (req, res) => {
   try {
-    const { orderId, amount } = req.body;
+    const { orderId } = req.params;
+
+    // Find the order
+    const order = await orderModel.findById(orderId);
+    if (!order) {
+      return res.json({ success: false, message: "Order not found" });
+    }
+
+    // Generate transfer content
+    const transferContent = `OREBI ${orderId.slice(-8).toUpperCase()}`;
+
+    // VietQR format: https://img.vietqr.io/image/{BANK_ID}-{ACCOUNT_NUMBER}-{TEMPLATE}.jpg?amount={AMOUNT}&addInfo={CONTENT}
+    const qrUrl = `https://img.vietqr.io/image/${BANK_INFO.bankCode}-${
+      BANK_INFO.accountNumber
+    }-compact2.jpg?amount=${order.amount}&addInfo=${encodeURIComponent(
+      transferContent
+    )}&accountName=${encodeURIComponent(BANK_INFO.accountName)}`;
+
+    res.json({
+      success: true,
+      qrCode: qrUrl,
+      bankInfo: {
+        ...BANK_INFO,
+        amount: order.amount,
+        transferContent: transferContent,
+        orderId: orderId,
+      },
+    });
+  } catch (error) {
+    console.error("Generate QR Code Error:", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Confirm bank transfer payment (admin will manually verify)
+export const confirmBankTransfer = async (req, res) => {
+  try {
+    const { orderId, transactionCode } = req.body;
     const userId = req.user.id;
 
     // Find the order
@@ -340,120 +214,80 @@ export const createPayPalOrder = async (req, res) => {
       });
     }
 
-    // Create PayPal order using new SDK
-    const request = {
-      body: {
-        intent: "CAPTURE",
-        purchase_units: [
-          {
-            reference_id: orderId,
-            amount: {
-              currency_code: "USD",
-              value: amount.toString(),
-            },
-            description: `Payment for order #${orderId}`,
-          },
-        ],
-        application_context: {
-          return_url: `${process.env.CLIENT_URL}/payment-success?order_id=${orderId}&payment_method=paypal`,
-          cancel_url: `${process.env.CLIENT_URL}/checkout/${orderId}`,
-          brand_name: "Orebi Shopping",
-          landing_page: "BILLING",
-          shipping_preference: "NO_SHIPPING",
-          user_action: "PAY_NOW",
-        },
-      },
+    // Update order with transaction info (pending admin verification)
+    order.paymentStatus = "pending"; // Admin needs to verify
+    order.status = "pending";
+    order.bankTransferInfo = {
+      transactionCode: transactionCode,
+      submittedAt: new Date(),
+      verified: false,
     };
 
-    const { body: paypalOrder } = await paypalClient.orders.ordersCreate(
-      request
-    );
-    const approvalUrl = paypalOrder.links.find(
-      (link) => link.rel === "approve"
-    ).href;
+    await order.save();
+
+    // Gửi email xác nhận cho khách hàng
+    try {
+      const user = await userModel.findById(userId);
+      if (user && user.email) {
+        await sendPaymentConfirmationEmail(user.email, {
+          orderId: order._id.toString().slice(-8).toUpperCase(),
+          amount: order.amount,
+          bankInfo: BANK_INFO,
+          transactionCode: transactionCode,
+        });
+      }
+    } catch (emailError) {
+      console.error("Error sending confirmation email:", emailError);
+      // Don't fail the request if email fails
+    }
 
     res.json({
       success: true,
-      approvalUrl: approvalUrl,
-      paypalOrderId: paypalOrder.id,
+      message:
+        "Thông tin chuyển khoản đã được ghi nhận. Đơn hàng sẽ được xác nhận sau khi kiểm tra giao dịch.",
+      order: order,
     });
   } catch (error) {
-    console.error("Create PayPal Order Error:", error);
+    console.error("Confirm Bank Transfer Error:", error);
     res.json({ success: false, message: error.message });
   }
 };
 
-// Handle Stripe Success
-export const handleStripeSuccess = async (req, res) => {
+// Admin: Verify bank transfer and update order
+export const verifyBankTransfer = async (req, res) => {
   try {
-    const { session_id, order_id } = req.query;
+    const { orderId, verified } = req.body;
 
-    // Retrieve the session from Stripe
-    const session = await stripe.checkout.sessions.retrieve(session_id);
+    // Find the order
+    const order = await orderModel.findById(orderId);
+    if (!order) {
+      return res.json({ success: false, message: "Order not found" });
+    }
 
-    if (session.payment_status === "paid") {
-      // Update order
-      const order = await orderModel.findById(order_id);
-      if (order) {
-        order.paymentStatus = "paid";
-        order.paymentMethod = "stripe";
-        order.status = "confirmed";
-        order.stripeSessionId = session_id;
-        await order.save();
-
-        res.json({
-          success: true,
-          message: "Payment successful",
-          order: order,
-        });
-      } else {
-        res.json({ success: false, message: "Order not found" });
+    if (verified) {
+      order.paymentStatus = "paid";
+      order.status = "confirmed";
+      if (order.bankTransferInfo) {
+        order.bankTransferInfo.verified = true;
+        order.bankTransferInfo.verifiedAt = new Date();
       }
     } else {
-      res.json({ success: false, message: "Payment not completed" });
-    }
-  } catch (error) {
-    console.error("Handle Stripe Success Error:", error);
-    res.json({ success: false, message: error.message });
-  }
-};
-
-// Handle PayPal Success
-export const handlePayPalSuccess = async (req, res) => {
-  try {
-    const { paypal_order_id, order_id } = req.body;
-
-    // Capture PayPal payment using new SDK
-    const request = {
-      id: paypal_order_id,
-      body: {},
-    };
-
-    const { body: capture } = await paypalClient.orders.ordersCapture(request);
-
-    if (capture.status === "COMPLETED") {
-      // Update order
-      const order = await orderModel.findById(order_id);
-      if (order) {
-        order.paymentStatus = "paid";
-        order.paymentMethod = "paypal";
-        order.status = "confirmed";
-        order.paypalOrderId = paypal_order_id;
-        await order.save();
-
-        res.json({
-          success: true,
-          message: "Payment successful",
-          order: order,
-        });
-      } else {
-        res.json({ success: false, message: "Order not found" });
+      order.paymentStatus = "failed";
+      if (order.bankTransferInfo) {
+        order.bankTransferInfo.verified = false;
+        order.bankTransferInfo.rejectedAt = new Date();
       }
-    } else {
-      res.json({ success: false, message: "Payment not completed" });
     }
+
+    await order.save();
+
+    res.json({
+      success: true,
+      message: verified ? "Payment verified successfully" : "Payment rejected",
+      order: order,
+    });
   } catch (error) {
-    console.error("Handle PayPal Success Error:", error);
+    console.error("Verify Bank Transfer Error:", error);
     res.json({ success: false, message: error.message });
   }
 };

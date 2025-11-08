@@ -29,11 +29,34 @@ const orderSchema = new mongoose.Schema({
       image: {
         type: String,
       },
+      shippingFee: {
+        type: Number,
+        default: 0,
+      },
     },
   ],
   amount: {
     type: Number,
     required: true,
+  },
+  shippingMethod: {
+    provider: {
+      type: String,
+      enum: ["ghn", "ghtk", "viettel-post", "j&t", "grab-express"],
+      default: "ghn",
+    },
+    serviceName: {
+      type: String,
+      default: "Standard",
+    },
+    totalFee: {
+      type: Number,
+      default: 0,
+    },
+    estimatedDelivery: {
+      type: String,
+      default: "3-5 ngày",
+    },
   },
   address: {
     firstName: {
@@ -80,7 +103,7 @@ const orderSchema = new mongoose.Schema({
   },
   paymentMethod: {
     type: String,
-    enum: ["cod", "stripe", "paypal"],
+    enum: ["cod", "bank_transfer", "qr_code"],
     default: "cod",
   },
   paymentStatus: {
@@ -88,11 +111,12 @@ const orderSchema = new mongoose.Schema({
     enum: ["pending", "paid", "failed", "refunded"],
     default: "pending",
   },
-  stripeSessionId: {
-    type: String,
-  },
-  paypalOrderId: {
-    type: String,
+  bankTransferInfo: {
+    transactionCode: String,
+    submittedAt: Date,
+    verified: Boolean,
+    verifiedAt: Date,
+    rejectedAt: Date,
   },
   date: {
     type: Date,

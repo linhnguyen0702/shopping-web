@@ -1,17 +1,19 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import toast from "react-hot-toast";
 import {
   FaMapMarkerAlt,
   FaCreditCard,
-  FaPaypal,
+  FaQrcode,
   FaMoneyBillWave,
   FaShieldAlt,
   FaArrowLeft,
   FaCheckCircle,
   FaTimes,
   FaEdit,
+  FaTruck,
+  FaUser,
 } from "react-icons/fa";
 import Container from "../components/Container";
 import PriceFormat from "../components/PriceFormat";
@@ -25,8 +27,14 @@ const OrderPage = () => {
   const orderCount = useSelector((state) => state.orebiReducer.orderCount);
 
   // Get data from location state (passed from Cart.jsx)
-  const { selectedItems, selectedAddress, totalAmount, discountAmount } =
-    location.state || {};
+  const {
+    selectedItems,
+    selectedAddress,
+    totalAmount,
+    discountAmount,
+    shippingMethod,
+    shippingFee,
+  } = location.state || {};
 
   const [processing, setProcessing] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("");
@@ -34,6 +42,9 @@ const OrderPage = () => {
   const [currentAddress, setCurrentAddress] = useState(selectedAddress);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [isAddressesExpanded, setIsAddressesExpanded] = useState(false);
+  const [showShippingModal, setShowShippingModal] = useState(false);
+  const [currentShipping, setCurrentShipping] = useState(shippingMethod);
+  const [currentShippingFee, setCurrentShippingFee] = useState(shippingFee);
   const [addressForm, setAddressForm] = useState({
     label: "",
     street: "",
@@ -46,6 +57,96 @@ const OrderPage = () => {
   });
   const [isAddingAddress, setIsAddingAddress] = useState(false);
 
+  // Shipping providers data (memoized to prevent re-render issues)
+  const shippingProviders = useMemo(
+    () => [
+      {
+        id: "ghtk",
+        name: "Giao Hàng Tiết Kiệm (GHTK)",
+        logo: "🚚",
+        services: [
+          {
+            id: "standard",
+            name: "Tiêu chuẩn",
+            estimatedDelivery: "2-3 ngày",
+            fee: 0, // Free shipping
+          },
+          {
+            id: "express",
+            name: "Nhanh",
+            estimatedDelivery: "1-2 ngày",
+            fee: 25000,
+          },
+        ],
+      },
+      {
+        id: "viettel",
+        name: "Viettel Post",
+        logo: "📦",
+        services: [
+          {
+            id: "standard",
+            name: "Tiêu chuẩn",
+            estimatedDelivery: "3-4 ngày",
+            fee: 0, // Free shipping
+          },
+          {
+            id: "express",
+            name: "Hỏa tốc",
+            estimatedDelivery: "1 ngày",
+            fee: 35000,
+          },
+        ],
+      },
+      {
+        id: "ghn",
+        name: "Giao Hàng Nhanh (GHN)",
+        logo: "⚡",
+        services: [
+          {
+            id: "standard",
+            name: "Tiêu chuẩn",
+            estimatedDelivery: "2-3 ngày",
+            fee: 20000,
+          },
+          {
+            id: "express",
+            name: "Nhanh",
+            estimatedDelivery: "1 ngày",
+            fee: 30000,
+          },
+        ],
+      },
+      {
+        id: "jnt",
+        name: "J&T Express",
+        logo: "🎯",
+        services: [
+          {
+            id: "standard",
+            name: "Tiêu chuẩn",
+            estimatedDelivery: "3-5 ngày",
+            fee: 18000,
+          },
+        ],
+      },
+      {
+        id: "grab",
+        name: "Grab Express",
+        logo: "🛵",
+        services: [
+          {
+            id: "instant",
+            name: "Giao ngay",
+            estimatedDelivery: "1-2 giờ",
+            fee: 45000,
+          },
+        ],
+      },
+    ],
+    []
+  );
+
   // Redirect if no order data
   useEffect(() => {
     if (!selectedItems || selectedItems.length === 0) {
@@ -53,6 +154,26 @@ const OrderPage = () => {
       navigate("/cart");
     }
   }, [selectedItems, navigate]);
+
+  // Set default shipping if not provided
+  useEffect(() => {
+    if (!currentShipping && shippingProviders.length > 0) {
+      // Set GHTK Standard as default (free shipping)
+      const defaultProvider = shippingProviders[0]; // GHTK
+      const defaultService = defaultProvider.services[0]; // Standard
+
+      setCurrentShipping({
+        provider: defaultProvider.id,
+        providerName: defaultProvider.name,
+        providerLogo: defaultProvider.logo,
+        service: defaultService.id,
+        serviceName: defaultService.name,
+        estimatedDelivery: defaultService.estimatedDelivery,
+        fee: defaultService.fee,
+      });
+      setCurrentShippingFee(defaultService.fee);
+    }
+  }, [currentShipping, shippingProviders]);
 
   const fetchAddresses = useCallback(async () => {
     try {
@@ -165,6 +286,8 @@ const OrderPage = () => {
             name: userInfo.name,
           },
           paymentMethod: selectedPaymentMethod,
+          shippingMethod: currentShipping,
+          shippingFee: currentShippingFee || 0,
         }),
       });
 
@@ -177,58 +300,9 @@ const OrderPage = () => {
         // Update order count
         dispatch(setOrderCount(orderCount + 1));
 
-        // Handle different payment methods
-        if (selectedPaymentMethod === "stripe") {
-          // Create Stripe checkout session
-          const stripeResponse = await fetch(
-            "http://localhost:8000/api/payment/create-stripe-session",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                orderId: data.order._id,
-                amount: discountAmount || totalAmount,
-              }),
-            }
-          );
-
-          const stripeData = await stripeResponse.json();
-          if (stripeData.success) {
-            window.location.href = stripeData.url;
-          } else {
-            toast.error("Không thể tạo phiên thanh toán Stripe");
-          }
-        } else if (selectedPaymentMethod === "paypal") {
-          // Create PayPal order
-          const paypalResponse = await fetch(
-            "http://localhost:8000/api/payment/create-paypal-order",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                orderId: data.order._id,
-                amount: discountAmount || totalAmount,
-              }),
-            }
-          );
-
-          const paypalData = await paypalResponse.json();
-          if (paypalData.success) {
-            window.location.href = paypalData.approvalUrl;
-          } else {
-            toast.error("Không thể tạo đơn hàng PayPal");
-          }
-        } else {
-          // For COD, redirect to success page
-          toast.success("Đặt hàng thành công!");
-          navigate(`/checkout/${data.order._id}`);
-        }
+        // Redirect to checkout page for all payment methods
+        toast.success("Đặt hàng thành công!");
+        navigate(`/checkout/${data.order._id}`);
       } else {
         toast.error(data.message || "Đặt hàng thất bại");
       }
@@ -249,18 +323,18 @@ const OrderPage = () => {
       color: "green",
     },
     {
-      id: "stripe",
-      name: "Thẻ tín dụng/Thẻ ghi nợ",
-      description: "Thanh toán an toàn qua Stripe",
+      id: "bank_transfer",
+      name: "Chuyển khoản ngân hàng",
+      description: "Chuyển khoản qua tài khoản ngân hàng",
       icon: FaCreditCard,
       color: "blue",
     },
     {
-      id: "paypal",
-      name: "PayPal",
-      description: "Thanh toán qua tài khoản PayPal",
-      icon: FaPaypal,
-      color: "yellow",
+      id: "qr_code",
+      name: "Quét mã QR",
+      description: "Thanh toán bằng cách quét mã QR",
+      icon: FaQrcode,
+      color: "purple",
     },
   ];
 
@@ -331,7 +405,7 @@ const OrderPage = () => {
                 <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="flex items-center gap-2 mb-3">
                         <span className="font-medium text-gray-900">
                           {currentAddress.label}
                         </span>
@@ -344,17 +418,39 @@ const OrderPage = () => {
                           Đã chọn
                         </span>
                       </div>
+
+                      {/* Tên người nhận */}
+                      <div className="mb-2 flex items-center gap-2">
+                        <FaUser className="w-4 h-4 text-gray-500" />
+                        <span className="font-semibold text-gray-900">
+                          {userInfo?.name || currentAddress.name || ""}
+                        </span>
+                      </div>
+
+                      {/* Địa chỉ */}
                       <p className="text-gray-600 mb-1">
                         {currentAddress.street}, {currentAddress.city}
                       </p>
-                      <p className="text-gray-600 mb-1">
-                        {currentAddress.state} {currentAddress.zipCode}
-                      </p>
-                      <p className="text-gray-600 mb-1">
-                        {currentAddress.country}
-                      </p>
+                      {currentAddress.state &&
+                        currentAddress.state !== currentAddress.country && (
+                          <p className="text-gray-600 mb-1">
+                            {currentAddress.state}
+                          </p>
+                        )}
+                      {currentAddress.zipCode && (
+                        <p className="text-gray-600 mb-1">
+                          Mã bưu điện: {currentAddress.zipCode}
+                        </p>
+                      )}
+                      {currentAddress.country && (
+                        <p className="text-gray-600 mb-1">
+                          {currentAddress.country}
+                        </p>
+                      )}
+
+                      {/* Số điện thoại */}
                       {currentAddress.phone && (
-                        <p className="text-gray-600">
+                        <p className="text-gray-600 font-medium">
                           SĐT: {currentAddress.phone}
                         </p>
                       )}
@@ -414,6 +510,181 @@ const OrderPage = () => {
                         </div>
                       </div>
                     ))}
+                </div>
+              )}
+            </div>
+
+            {/* Shipping Method */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <FaTruck className="w-5 h-5 text-gray-700" />
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Phương thức vận chuyển
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setShowShippingModal(!showShippingModal)}
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center"
+                >
+                  <FaEdit className="w-3 h-3 mr-1" />
+                  Thay đổi
+                </button>
+              </div>
+
+              {currentShipping ? (
+                <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-semibold text-gray-900">
+                          {currentShipping.providerName ||
+                            currentShipping.provider}
+                        </span>
+                        <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded">
+                          Đã chọn
+                        </span>
+                      </div>
+                      <p className="text-gray-600 text-sm mb-1">
+                        {currentShipping.serviceName || currentShipping.service}
+                      </p>
+                      {currentShipping.estimatedDelivery && (
+                        <p className="text-gray-500 text-xs">
+                          Dự kiến giao hàng: {currentShipping.estimatedDelivery}
+                        </p>
+                      )}
+                      <p className="text-green-600 font-semibold mt-2">
+                        {currentShippingFee > 0
+                          ? `Phí vận chuyển: ${currentShippingFee.toLocaleString(
+                              "vi-VN"
+                            )} đ`
+                          : "Miễn phí vận chuyển"}
+                      </p>
+                    </div>
+                    <FaCheckCircle className="w-5 h-5 text-blue-600 mt-1" />
+                  </div>
+                </div>
+              ) : (
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                  <FaTruck className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-gray-500 text-sm mb-3">
+                    Chưa chọn phương thức vận chuyển
+                  </p>
+                  <button
+                    onClick={() => setShowShippingModal(true)}
+                    className="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                  >
+                    Chọn phương thức vận chuyển
+                  </button>
+                </div>
+              )}
+
+              {/* Shipping Modal/Selector */}
+              {showShippingModal && (
+                <div className="mt-4 border border-gray-200 rounded-lg bg-white">
+                  <div className="p-4 bg-blue-50 border-b border-blue-200">
+                    <p className="text-sm text-gray-700">
+                      <strong>Chọn đơn vị vận chuyển:</strong> Vui lòng chọn nhà
+                      vận chuyển và loại dịch vụ phù hợp
+                    </p>
+                  </div>
+
+                  <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
+                    {shippingProviders.map((provider) => (
+                      <div
+                        key={provider.id}
+                        className="border border-gray-200 rounded-lg p-3"
+                      >
+                        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200">
+                          <span className="text-2xl">{provider.logo}</span>
+                          <h4 className="font-semibold text-gray-900">
+                            {provider.name}
+                          </h4>
+                        </div>
+
+                        <div className="space-y-2">
+                          {provider.services.map((service) => {
+                            const isSelected =
+                              currentShipping?.provider === provider.id &&
+                              currentShipping?.service === service.id;
+
+                            return (
+                              <div
+                                key={service.id}
+                                onClick={() => {
+                                  setCurrentShipping({
+                                    provider: provider.id,
+                                    providerName: provider.name,
+                                    providerLogo: provider.logo,
+                                    service: service.id,
+                                    serviceName: service.name,
+                                    estimatedDelivery:
+                                      service.estimatedDelivery,
+                                    fee: service.fee,
+                                  });
+                                  setCurrentShippingFee(service.fee);
+                                  setShowShippingModal(false);
+                                  toast.success(
+                                    `Đã chọn ${provider.name} - ${service.name}`
+                                  );
+                                }}
+                                className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                                  isSelected
+                                    ? "border-blue-500 bg-blue-50"
+                                    : "border-gray-200 hover:border-blue-300 hover:bg-gray-50"
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium text-gray-900">
+                                        {service.name}
+                                      </span>
+                                      {isSelected && (
+                                        <FaCheckCircle className="w-4 h-4 text-blue-600" />
+                                      )}
+                                      {service.fee === 0 && (
+                                        <span className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded">
+                                          Miễn phí
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-gray-600 mt-1">
+                                      Thời gian: {service.estimatedDelivery}
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p
+                                      className={`font-semibold ${
+                                        service.fee === 0
+                                          ? "text-green-600"
+                                          : "text-gray-900"
+                                      }`}
+                                    >
+                                      {service.fee === 0
+                                        ? "Miễn phí"
+                                        : `${service.fee.toLocaleString(
+                                            "vi-VN"
+                                          )} đ`}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="p-4 bg-gray-50 border-t border-gray-200">
+                    <button
+                      onClick={() => setShowShippingModal(false)}
+                      className="w-full bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
+                    >
+                      Đóng
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -548,9 +819,45 @@ const OrderPage = () => {
                   </div>
                 )}
 
+                {/* Thông tin vận chuyển */}
+                {currentShipping && (
+                  <div className="border-t border-gray-200 pt-4">
+                    <div className="mb-2">
+                      <div className="flex items-center gap-2 mb-2">
+                        <FaTruck className="w-4 h-4 text-blue-600" />
+                        <span className="text-sm font-semibold text-gray-900">
+                          Phương thức vận chuyển
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm ml-6">
+                        <span className="text-gray-900 font-medium">
+                          {currentShipping.providerName ||
+                            currentShipping.provider}
+                        </span>
+                        <span className="text-gray-600">-</span>
+                        <span className="text-gray-600">
+                          {currentShipping.serviceName ||
+                            currentShipping.service}
+                        </span>
+                      </div>
+                      {currentShipping.estimatedDelivery && (
+                        <p className="text-xs text-gray-500 mt-1 ml-6">
+                          Dự kiến: {currentShipping.estimatedDelivery}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Vận chuyển</span>
-                  <span className="font-medium text-green-600">Miễn phí</span>
+                  <span className="text-gray-600">Phí vận chuyển</span>
+                  {currentShippingFee > 0 ? (
+                    <span className="font-medium">
+                      <PriceFormat amount={currentShippingFee} />
+                    </span>
+                  ) : (
+                    <span className="font-medium text-green-600">Miễn phí</span>
+                  )}
                 </div>
 
                 <div className="border-t border-gray-200 pt-4">
@@ -560,7 +867,10 @@ const OrderPage = () => {
                     </span>
                     <span className="text-xl font-bold text-gray-900">
                       <PriceFormat
-                        amount={discountAmount || totalAmount || 0}
+                        amount={
+                          (discountAmount || totalAmount || 0) +
+                          (currentShippingFee || 0)
+                        }
                       />
                     </span>
                   </div>
@@ -590,10 +900,10 @@ const OrderPage = () => {
                   "Chọn phương thức thanh toán"
                 ) : selectedPaymentMethod === "cod" ? (
                   "Xác nhận đặt hàng (Thanh toán khi nhận hàng)"
-                ) : selectedPaymentMethod === "stripe" ? (
-                  "Tiếp tục thanh toán bằng thẻ (Stripe)"
-                ) : selectedPaymentMethod === "paypal" ? (
-                  "Tiếp tục thanh toán qua PayPal"
+                ) : selectedPaymentMethod === "bank_transfer" ? (
+                  "Xác nhận đặt hàng (Chuyển khoản ngân hàng)"
+                ) : selectedPaymentMethod === "qr_code" ? (
+                  "Xác nhận đặt hàng (Quét mã QR)"
                 ) : (
                   "Xác nhận đặt hàng"
                 )}

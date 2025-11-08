@@ -67,14 +67,21 @@ const __dirname = path.dirname(__filename);
 // Import specific routes explicitly
 import cartRoute from "./routes/cartRoute.js";
 import notificationRoute from "./routes/notificationRoute.mjs";
+import shippingRoute from "./routes/shippingRoute.mjs";
 
 app.use("/cart", cartRoute);
 app.use("/api/notifications", notificationRoute);
+app.use("/api/shipping", shippingRoute);
 
 const routesPath = path.resolve(__dirname, "./routes");
 const routeFiles = readdirSync(routesPath);
 routeFiles.map(async (file) => {
-  if (file === "cartRoute.js" || file === "notificationRoute.mjs") return; // Skip already imported routes
+  if (
+    file === "cartRoute.js" ||
+    file === "notificationRoute.mjs" ||
+    file === "shippingRoute.mjs"
+  )
+    return; // Skip already imported routes
   const routeModule = await import(`./routes/${file}`);
   app.use("/", routeModule.default);
 });

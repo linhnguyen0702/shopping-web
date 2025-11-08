@@ -3,11 +3,21 @@ import PropTypes from "prop-types";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { serverUrl } from "../../config";
+import ForgotPassword from "./ForgotPassword";
 
 const Login = ({ setToken }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+
+  // Nếu đang hiển thị form quên mật khẩu
+  if (showForgotPassword) {
+    return (
+      <ForgotPassword onBackToLogin={() => setShowForgotPassword(false)} />
+    );
+  }
+
   const handleLogin = async (e) => {
     try {
       e.preventDefault();
@@ -134,6 +144,17 @@ const Login = ({ setToken }) => {
             >
               Đăng nhập
             </button>
+
+            {/* Forgot Password Link */}
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setShowForgotPassword(true)}
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline"
+              >
+                Quên mật khẩu?
+              </button>
+            </div>
           </form>
 
           {/* Additional Elements */}

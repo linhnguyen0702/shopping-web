@@ -56,7 +56,7 @@ const SearchInput = () => {
         <CiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
         <input
           type="text"
-          placeholder="Search products..."
+          placeholder="Tìm kiếm sản phẩm..."
           onChange={(e) => setSearch(e.target.value)}
           value={search}
           onFocus={() => setIsInputFocused(true)}
@@ -78,7 +78,7 @@ const SearchInput = () => {
             <div className="p-6 text-center">
               <div className="inline-flex items-center gap-2 text-gray-600">
                 <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
-                <span>Searching...</span>
+                <span>Đang tìm kiếm...</span>
               </div>
             </div>
           ) : (
@@ -87,8 +87,7 @@ const SearchInput = () => {
                 <div className="max-h-80 overflow-y-auto">
                   <div className="p-3 bg-gray-50 border-b border-gray-100">
                     <p className="text-sm text-gray-600 font-medium">
-                      {filteredProducts.length} product
-                      {filteredProducts.length !== 1 ? "s" : ""} found
+                      Tìm thấy {filteredProducts.length} sản phẩm
                     </p>
                   </div>
                   {filteredProducts?.map((item, index) => (
@@ -123,7 +122,9 @@ const SearchInput = () => {
                           {item?.name}
                         </h4>
                         {item?.price && (
-                          <p className="text-sm text-gray-600"><PriceFormat amount={item.price} /></p>
+                          <p className="text-sm text-gray-600">
+                            <PriceFormat amount={item.price} />
+                          </p>
                         )}
                       </div>
                       <CiSearch className="text-gray-400 flex-shrink-0" />
@@ -136,16 +137,16 @@ const SearchInput = () => {
                     <CiSearch className="text-2xl text-gray-400" />
                   </div>
                   <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    No results found
+                    Không tìm thấy kết quả
                   </h3>
                   <p className="text-gray-600">
-                    No products match{" "}
+                    Không có sản phẩm nào phù hợp với{" "}
                     <span className="font-semibold text-gray-900">
                       &ldquo;{search}&rdquo;
                     </span>
                   </p>
                   <p className="text-sm text-gray-500 mt-1">
-                    Try adjusting your search terms
+                    Thử điều chỉnh từ khóa tìm kiếm của bạn
                   </p>
                 </div>
               )}

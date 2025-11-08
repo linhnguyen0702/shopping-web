@@ -12,6 +12,7 @@ import crypto from "crypto";
 import nodemailer from "nodemailer";
 import { OAuth2Client } from "google-auth-library";
 import { promises as dns } from "dns";
+import { sendOTP } from "../services/emailService.js";
 
 // Helper function to clean up temporary files
 const cleanupTempFile = (filePath) => {
@@ -267,65 +268,27 @@ const sendPasswordResetOtp = async (req, res) => {
     user.resetOtpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 phút
     await user.save();
 
-    let smtpUser = process.env.SMTP_USER;
-    let smtpPass = process.env.SMTP_PASS;
-    let transporter;
-    if (!(smtpUser && smtpPass)) {
-      if (process.env.NODE_ENV === "development") {
-        // Tạo tài khoản Ethereal tự động để test gửi email trong DEV
-        try {
-          const testAccount = await nodemailer.createTestAccount();
-          smtpUser = testAccount.user;
-          smtpPass = testAccount.pass;
-          transporter = nodemailer.createTransport({
-            host: "smtp.ethereal.email",
-            port: 587,
-            secure: false,
-            auth: { user: smtpUser, pass: smtpPass },
-          });
-          console.log("Ethereal test SMTP created. Login:", smtpUser);
-        } catch (e) {
-          console.warn("Không tạo được Ethereal account:", e?.message);
-          return res.json({
-            success: true,
-            message: "Gửi OTP thành công (DEV)",
-            demoOtp: otp,
-          });
-        }
+    // Sử dụng emailService để gửi OTP với template đẹp
+    try {
+      const emailResult = await sendOTP(normalizedEmail, otp, "reset");
+
+      if (emailResult.success) {
+        return res.json({
+          success: true,
+          message: "Mã OTP đã được gửi đến email của bạn",
+        });
       } else {
         return res.json({
           success: false,
-          message: "Máy chủ email chưa được cấu hình",
+          message: "Không thể gửi email OTP",
         });
       }
-    } else {
-      transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: Number(process.env.SMTP_PORT || 587),
-        secure: Boolean(process.env.SMTP_SECURE === "true"),
-        auth: { user: smtpUser, pass: smtpPass },
-      });
-    }
-    const mailOptions = {
-      from: process.env.MAIL_FROM || `Orebi <no-reply@orebi.local>`,
-      to: normalizedEmail,
-      subject: "Mã OTP đặt lại mật khẩu",
-      text: `Mã OTP của bạn là ${otp}. Mã có hiệu lực trong 10 phút.`,
-      html: `<p>Mã OTP của bạn là <b>${otp}</b>.</p><p>Mã có hiệu lực trong 10 phút.</p>`,
-    };
-    try {
-      const info = await transporter.sendMail(mailOptions);
-      const previewUrl = nodemailer.getTestMessageUrl
-        ? nodemailer.getTestMessageUrl(info)
-        : undefined;
-      return res.json({
-        success: true,
-        message: "Gửi OTP thành công",
-        previewUrl,
-      });
     } catch (mailErr) {
       console.log("Email send error", mailErr);
-      return res.json({ success: false, message: "Gửi email OTP thất bại" });
+      return res.json({
+        success: false,
+        message: "Gửi email OTP thất bại",
+      });
     }
   } catch (error) {
     console.log("Send OTP Error", error);

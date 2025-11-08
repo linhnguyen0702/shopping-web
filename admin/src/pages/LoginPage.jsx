@@ -23,9 +23,14 @@ const LoginPage = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showForgotModal, setShowForgotModal] = useState(false);
+
+  // OTP Flow states
+  const [otpStep, setOtpStep] = useState(1); // 1: Email, 2: OTP, 3: New Password
   const [resetEmail, setResetEmail] = useState("");
+  const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [resetToken, setResetToken] = useState("");
   const [modalLoading, setModalLoading] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
@@ -142,40 +147,147 @@ const LoginPage = () => {
     }
   };
 
-  // OTP flow removed in favor of direct reset
-
-  const handleResetPassword = async (e) => {
+  // Step 1: Gửi OTP
+  const handleSendOTP = async (e) => {
     e.preventDefault();
-    if (newPassword.length < 8) {
-      toast.error("Mật khẩu tối thiểu 8 ký tự");
+    if (!resetEmail) {
+      toast.error("Vui lòng nhập email");
       return;
     }
+
+    setModalLoading(true);
+    try {
+      const response = await fetch(`${serverUrl}/api/user/password/otp/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: resetEmail }),
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success("Mã OTP đã được gửi đến email của bạn");
+        setOtpStep(2);
+      } else {
+        toast.error(data.message || "Không thể gửi OTP");
+      }
+    } catch {
+      toast.error("Có lỗi xảy ra");
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  // Step 2: Xác thực OTP
+  const handleVerifyOTP = async (e) => {
+    e.preventDefault();
+    if (!otp || otp.length !== 6) {
+      toast.error("Vui lòng nhập mã OTP 6 chữ số");
+      return;
+    }
+
+    setModalLoading(true);
+    try {
+      const response = await fetch(
+        `${serverUrl}/api/user/password/otp/verify`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: resetEmail, otp }),
+        }
+      );
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success("Xác thực OTP thành công");
+        setResetToken(data.resetToken);
+        setOtpStep(3);
+      } else {
+        toast.error(data.message || "OTP không hợp lệ");
+      }
+    } catch {
+      toast.error("OTP không chính xác");
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  // Step 3: Đổi mật khẩu
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+
+    if (!newPassword || newPassword.length < 8) {
+      toast.error("Mật khẩu phải có ít nhất 8 ký tự");
+      return;
+    }
+
     if (newPassword !== confirmNewPassword) {
       toast.error("Mật khẩu xác nhận không khớp");
       return;
     }
+
+    setModalLoading(true);
     try {
-      setModalLoading(true);
-      const res = await authService.resetPasswordDirect({
-        email: resetEmail,
-        newPassword,
+      const response = await fetch(`${serverUrl}/api/user/password/reset`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${resetToken}`,
+        },
+        body: JSON.stringify({ newPassword }),
       });
-      if (res.success) {
-        toast.success("Đặt lại mật khẩu thành công");
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success("Đổi mật khẩu thành công! Vui lòng đăng nhập lại");
         setShowForgotModal(false);
+        setOtpStep(1);
         setResetEmail("");
+        setOtp("");
         setNewPassword("");
         setConfirmNewPassword("");
+        setResetToken("");
       } else {
-        toast.error(res.message || "Đặt mật khẩu thất bại");
+        toast.error(data.message || "Không thể đổi mật khẩu");
       }
-    } catch (err) {
-      toast.error(
-        err.response?.data?.message || err.message || "Lỗi đặt lại mật khẩu"
-      );
+    } catch {
+      toast.error("Có lỗi xảy ra");
     } finally {
       setModalLoading(false);
     }
+  };
+
+  // Gửi lại OTP
+  const handleResendOTP = async () => {
+    setModalLoading(true);
+    try {
+      const response = await fetch(`${serverUrl}/api/user/password/otp/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: resetEmail }),
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success("Đã gửi lại mã OTP");
+      } else {
+        toast.error(data.message);
+      }
+    } catch {
+      toast.error("Không thể gửi lại OTP");
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  // Reset modal khi đóng
+  const handleCloseModal = () => {
+    setShowForgotModal(false);
+    setOtpStep(1);
+    setResetEmail("");
+    setOtp("");
+    setNewPassword("");
+    setConfirmNewPassword("");
+    setResetToken("");
   };
 
   return (
@@ -402,157 +514,246 @@ const LoginPage = () => {
       {showForgotModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
           <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">Quên mật khẩu</h3>
               <button
-                onClick={() => setShowForgotModal(false)}
+                onClick={handleCloseModal}
                 className="text-gray-500 hover:text-gray-700"
               >
                 ✕
               </button>
             </div>
-            <form onSubmit={handleResetPassword} className="space-y-4">
-              <p className="text-sm text-gray-600">
-                Nhập email và mật khẩu mới để đổi mật khẩu.
-              </p>
-              <input
-                type="email"
-                value={resetEmail}
-                onChange={(e) => setResetEmail(e.target.value)}
-                required
-                placeholder="Email của bạn"
-                className="w-full py-3 px-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <div className="relative">
+
+            {/* Step 1: Nhập Email */}
+            {otpStep === 1 && (
+              <form onSubmit={handleSendOTP} className="space-y-4">
+                <p className="text-sm text-gray-600">
+                  Nhập email để nhận mã OTP xác thực
+                </p>
                 <input
-                  type={showNewPassword ? "text" : "password"}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  minLength={8}
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
                   required
-                  placeholder="Mật khẩu mới"
-                  className="w-full py-3 px-4 pr-12 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Vui lòng nhập email"
+                  className="w-full py-3 px-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center hover:bg-gray-100 rounded-r-xl transition-colors duration-200"
-                  disabled={modalLoading}
-                >
-                  {showNewPassword ? (
-                    <svg
-                      className="h-5 w-5 text-gray-400 hover:text-gray-600"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
-                      />
-                    </svg>
-                  ) : (
-                    <svg
-                      className="h-5 w-5 text-gray-400 hover:text-gray-600"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                      />
-                    </svg>
-                  )}
-                </button>
-              </div>
-              <div className="relative">
-                <input
-                  type={showConfirmNewPassword ? "text" : "password"}
-                  value={confirmNewPassword}
-                  onChange={(e) => setConfirmNewPassword(e.target.value)}
-                  minLength={8}
-                  required
-                  placeholder="Xác nhận mật khẩu mới"
-                  className="w-full py-3 px-4 pr-12 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <button
-                  type="button"
-                  onClick={() =>
-                    setShowConfirmNewPassword(!showConfirmNewPassword)
-                  }
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center hover:bg-gray-100 rounded-r-xl transition-colors duration-200"
-                  disabled={modalLoading}
-                >
-                  {showConfirmNewPassword ? (
-                    <svg
-                      className="h-5 w-5 text-gray-400 hover:text-gray-600"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
-                      />
-                    </svg>
-                  ) : (
-                    <svg
-                      className="h-5 w-5 text-gray-400 hover:text-gray-600"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                      />
-                    </svg>
-                  )}
-                </button>
-              </div>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowForgotModal(false);
-                    setResetEmail("");
-                    setNewPassword("");
-                    setConfirmNewPassword("");
-                  }}
-                  className="w-1/3 border border-gray-300 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-50"
-                >
-                  Hủy
-                </button>
                 <button
                   type="submit"
                   disabled={modalLoading}
-                  className="w-2/3 bg-blue-600 text-white py-3 rounded-xl font-semibold disabled:opacity-50"
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 focus:ring-4 focus:ring-blue-300 transform hover:scale-[1.02] transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {modalLoading ? "Đang cập nhật..." : "Cập nhật mật khẩu"}
+                  {modalLoading ? "Đang gửi..." : "Gửi mã OTP"}
                 </button>
-              </div>
-            </form>
+              </form>
+            )}
+
+            {/* Step 2: Nhập OTP */}
+            {otpStep === 2 && (
+              <form onSubmit={handleVerifyOTP} className="space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-blue-800">
+                    📧 Mã OTP đã được gửi đến <strong>{resetEmail}</strong>
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700 block">
+                    Mã OTP (6 chữ số)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="000000"
+                    maxLength={6}
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                    className="w-full py-3 px-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center text-2xl font-mono tracking-widest"
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={modalLoading || otp.length !== 6}
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 focus:ring-4 focus:ring-blue-300 transform hover:scale-[1.02] transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {modalLoading ? "Đang xác thực..." : "Xác nhận OTP"}
+                </button>
+
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={handleResendOTP}
+                    disabled={modalLoading}
+                    className="text-sm text-blue-600 hover:text-blue-700 font-medium disabled:opacity-50"
+                  >
+                    Gửi lại mã OTP
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Step 3: Nhập mật khẩu mới */}
+            {otpStep === 3 && (
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700 block">
+                    Mật khẩu mới
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showNewPassword ? "text" : "password"}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      minLength={6}
+                      required
+                      placeholder="Nhập mật khẩu mới"
+                      className="w-full py-3 px-4 pr-12 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center hover:bg-gray-100 rounded-r-xl transition-colors duration-200"
+                    >
+                      {showNewPassword ? (
+                        <svg
+                          className="h-5 w-5 text-gray-400 hover:text-gray-600"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          className="h-5 w-5 text-gray-400 hover:text-gray-600"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700 block">
+                    Xác nhận mật khẩu mới
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmNewPassword ? "text" : "password"}
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      minLength={6}
+                      required
+                      placeholder="Nhập lại mật khẩu mới"
+                      className="w-full py-3 px-4 pr-12 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowConfirmNewPassword(!showConfirmNewPassword)
+                      }
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center hover:bg-gray-100 rounded-r-xl transition-colors duration-200"
+                    >
+                      {showConfirmNewPassword ? (
+                        <svg
+                          className="h-5 w-5 text-gray-400 hover:text-gray-600"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          className="h-5 w-5 text-gray-400 hover:text-gray-600"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {newPassword &&
+                  confirmNewPassword &&
+                  newPassword !== confirmNewPassword && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                      <p className="text-sm text-red-800">
+                        ⚠️ Mật khẩu xác nhận không khớp
+                      </p>
+                    </div>
+                  )}
+
+                <button
+                  type="submit"
+                  disabled={modalLoading || newPassword !== confirmNewPassword}
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 focus:ring-4 focus:ring-blue-300 transform hover:scale-[1.02] transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {modalLoading ? "Đang đổi mật khẩu..." : "Đổi mật khẩu"}
+                </button>
+              </form>
+            )}
+
+            {/* Progress Indicator */}
+            <div className="mt-6 flex justify-center items-center space-x-2">
+              <div
+                className={`w-3 h-3 rounded-full ${
+                  otpStep >= 1 ? "bg-blue-600" : "bg-gray-300"
+                }`}
+              />
+              <div className="w-8 h-0.5 bg-gray-300" />
+              <div
+                className={`w-3 h-3 rounded-full ${
+                  otpStep >= 2 ? "bg-blue-600" : "bg-gray-300"
+                }`}
+              />
+              <div className="w-8 h-0.5 bg-gray-300" />
+              <div
+                className={`w-3 h-3 rounded-full ${
+                  otpStep >= 3 ? "bg-blue-600" : "bg-gray-300"
+                }`}
+              />
+            </div>
           </div>
         </div>
       )}

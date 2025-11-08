@@ -8,7 +8,8 @@
     "start": "cross-env NODE_ENV=production node index.mjs",
     "dev": "cross-env NODE_ENV=development nodemon index.mjs",
     "server": "cross-env NODE_ENV=development nodemon index.mjs",
-    "prod": "cross-env NODE_ENV=production node index.mjs"
+    "prod": "cross-env NODE_ENV=production node index.mjs",
+    "migrate-shipping": "node migrateShipping.mjs"
   },
   "keywords": [],
   "author": "",

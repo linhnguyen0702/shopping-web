@@ -16,6 +16,21 @@ const productSchema = new mongoose.Schema(
     offer: { type: Boolean },
     description: { type: String, required: true },
     tags: { type: Array },
+    // Thông tin vận chuyển
+    shipping: {
+      weight: { type: Number, default: 0.5 }, // kg
+      dimensions: {
+        length: { type: Number, default: 20 }, // cm
+        width: { type: Number, default: 15 }, // cm
+        height: { type: Number, default: 10 }, // cm
+      },
+      freeShipping: { type: Boolean, default: false },
+      shippingClass: {
+        type: String,
+        enum: ["standard", "express", "fragile", "bulky"],
+        default: "standard",
+      },
+    },
   },
   {
     timestamps: true,

@@ -2,13 +2,13 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Container from "../components/Container";
 import PriceFormat from "../components/PriceFormat";
-import StripePayment from "../components/StripePayment";
+import PaymentMethodSelector from "../components/PaymentMethodSelector";
+import BankTransferInfo from "../components/BankTransferInfo";
+import QRCodePayment from "../components/QRCodePayment";
 import toast from "react-hot-toast";
 import { serverUrl } from "../../config";
 import {
   FaCheckCircle,
-  FaCreditCard,
-  FaMoneyBillWave,
   FaClock,
   FaMapMarkerAlt,
   FaUser,
@@ -22,7 +22,8 @@ const Checkout = () => {
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [paymentStep, setPaymentStep] = useState("selection"); // 'selection', 'stripe', 'processing'
+  const [paymentMethod, setPaymentMethod] = useState("cod");
+  const [paymentStep, setPaymentStep] = useState("selection"); // 'selection', 'bank_transfer', 'qr_code', 'processing'
 
   const fetchOrderDetails = useCallback(async () => {
     try {
@@ -54,27 +55,21 @@ const Checkout = () => {
     }
   }, [orderId, fetchOrderDetails]);
 
-  const handlePayment = async (paymentMethod) => {
-    if (paymentMethod === "stripe") {
-      setPaymentStep("stripe");
-    } else if (paymentMethod === "cod") {
+  const handlePayment = async (selectedMethod) => {
+    setPaymentMethod(selectedMethod);
+
+    if (selectedMethod === "bank_transfer") {
+      setPaymentStep("bank_transfer");
+    } else if (selectedMethod === "qr_code") {
+      setPaymentStep("qr_code");
+    } else if (selectedMethod === "cod") {
       toast.success("Đơn hàng đã được xác nhận với thanh toán khi giao hàng");
+      navigate(`/payment-success?order_id=${orderId}`);
     }
   };
 
-  const handleStripeSuccess = (paymentIntentId) => {
-    // Chuyển hướng đến trang thành công với chi tiết thanh toán
-    navigate(
-      `/payment-success?order_id=${orderId}&payment_intent=${paymentIntentId}`
-    );
-  };
-
-  const handleStripeCancel = () => {
+  const handlePaymentCancel = () => {
     setPaymentStep("selection");
-  };
-
-  const handlePayOnline = () => {
-    setPaymentStep("stripe");
   };
 
   const translateStatus = (status) => {
@@ -381,76 +376,55 @@ const Checkout = () => {
                 <div className="space-y-4">
                   {paymentStep === "selection" && (
                     <>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
                         Chọn phương thức thanh toán
                       </h3>
 
-                      {order.paymentMethod === "cod" ? (
-                        <div className="space-y-3">
-                          <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                            <div className="flex items-center gap-3">
-                              <FaMoneyBillWave className="w-6 h-6 text-green-600" />
-                              <div>
-                                <h4 className="font-semibold text-green-800">
-                                  Thanh toán khi giao hàng
-                                </h4>
-                                <p className="text-sm text-green-700">
-                                  Thanh toán trực tiếp khi đơn hàng được giao
-                                  đến bạn
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-
-                          <button
-                            onClick={handlePayOnline}
-                            className="w-full flex items-center justify-center gap-3 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                          >
-                            <FaCreditCard className="w-5 h-5" />
-                            Thanh toán online ngay
-                          </button>
-                        </div>
-                      ) : (
-                        <>
-                          <button
-                            onClick={() => handlePayment("stripe")}
-                            className="w-full flex items-center justify-center gap-3 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                          >
-                            <FaCreditCard className="w-5 h-5" />
-                            Thanh toán bằng thẻ
-                          </button>
-
-                          <button
-                            onClick={() => handlePayment("cod")}
-                            className="w-full flex items-center justify-center gap-3 bg-gray-100 text-gray-900 py-3 px-4 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-                          >
-                            <FaMoneyBillWave className="w-5 h-5" />
-                            Thanh toán khi giao hàng
-                          </button>
-                        </>
-                      )}
+                      <PaymentMethodSelector
+                        selectedMethod={paymentMethod}
+                        onSelectMethod={handlePayment}
+                      />
                     </>
                   )}
 
-                  {paymentStep === "stripe" && (
+                  {paymentStep === "bank_transfer" && (
                     <div className="space-y-4">
                       <div className="flex items-center gap-3 mb-4">
                         <button
-                          onClick={handleStripeCancel}
+                          onClick={handlePaymentCancel}
                           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                         >
                           <FaArrowLeft className="w-4 h-4 text-gray-600" />
                         </button>
                         <h3 className="text-lg font-semibold text-gray-900">
-                          Chi tiết thanh toán
+                          Chuyển khoản ngân hàng
                         </h3>
                       </div>
 
-                      <StripePayment
+                      <BankTransferInfo
                         orderId={orderId}
-                        amount={order.amount}
-                        onSuccess={handleStripeSuccess}
-                        onCancel={handleStripeCancel}
+                        totalAmount={order.amount}
+                      />
+                    </div>
+                  )}
+
+                  {paymentStep === "qr_code" && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3 mb-4">
+                        <button
+                          onClick={handlePaymentCancel}
+                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        >
+                          <FaArrowLeft className="w-4 h-4 text-gray-600" />
+                        </button>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          Thanh toán QR Code
+                        </h3>
+                      </div>
+
+                      <QRCodePayment
+                        orderId={orderId}
+                        totalAmount={order.amount}
                       />
                     </div>
                   )}

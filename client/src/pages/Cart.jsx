@@ -49,6 +49,12 @@ const Cart = () => {
   const [selectedItems, setSelectedItems] = useState(new Set());
   const [selectAll, setSelectAll] = useState(false);
   const prevProductsLength = useRef(0);
+  // Shipping states
+  const [shippingProviders, setShippingProviders] = useState([]);
+  const [selectedShipping, setSelectedShipping] = useState(null);
+  const [shippingFee, setShippingFee] = useState(0);
+  const [loadingShipping, setLoadingShipping] = useState(false);
+  const [showShippingModal, setShowShippingModal] = useState(false);
   // Lưu trạng thái đã thay đổi của từng sản phẩm
   const [itemSelectionHistory, setItemSelectionHistory] = useState(() => {
     try {
@@ -83,8 +89,61 @@ const Cart = () => {
   useEffect(() => {
     if (userInfo) {
       fetchAddresses();
+      fetchShippingProviders();
     }
   }, [userInfo]);
+
+  const calculateShippingFee = async () => {
+    if (!selectedShipping || selectedItems.size === 0) {
+      setShippingFee(0);
+      return;
+    }
+
+    setLoadingShipping(true);
+    try {
+      const selectedProducts = products.filter((item) =>
+        selectedItems.has(item._id)
+      );
+
+      const response = await fetch(
+        "http://localhost:8000/api/shipping/calculate",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            cartItems: selectedProducts,
+            provider: selectedShipping.provider,
+            serviceType: selectedShipping.service,
+          }),
+        }
+      );
+
+      const data = await response.json();
+      if (data.success) {
+        setShippingFee(data.shipping.totalShippingFee);
+      }
+    } catch (error) {
+      console.error("Error calculating shipping:", error);
+      toast.error("Không thể tính phí vận chuyển");
+    } finally {
+      setLoadingShipping(false);
+    }
+  };
+
+  // Calculate shipping fee when selected items or shipping method changes
+  useEffect(() => {
+    const calculateFee = async () => {
+      if (selectedItems.size > 0 && selectedShipping) {
+        await calculateShippingFee();
+      } else {
+        setShippingFee(0);
+      }
+    };
+    calculateFee();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedItems, selectedShipping, products]);
 
   // Lưu itemSelectionHistory vào localStorage mỗi khi có thay đổi
   useEffect(() => {
@@ -200,6 +259,35 @@ const Cart = () => {
     }
   };
 
+  const fetchShippingProviders = async () => {
+    try {
+      const response = await fetch(
+        "http://localhost:8000/api/shipping/providers"
+      );
+      const data = await response.json();
+      if (data.success) {
+        setShippingProviders(data.providers);
+        // Set default shipping method (GHTK - Standard - 2-3 ngày)
+        if (data.providers.length > 0) {
+          const defaultProvider = data.providers.find((p) => p.id === "ghtk");
+          if (defaultProvider && defaultProvider.services.length > 0) {
+            setSelectedShipping({
+              provider: defaultProvider.id,
+              providerName: defaultProvider.name,
+              providerLogo: defaultProvider.logo,
+              service: defaultProvider.services[0].id,
+              serviceName: defaultProvider.services[0].name,
+              estimatedDelivery: defaultProvider.services[0].estimatedDelivery,
+              freeShipping: defaultProvider.freeShipping || false,
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching shipping providers:", error);
+    }
+  };
+
   const handleAddAddress = async (e) => {
     e.preventDefault();
     setIsAddingAddress(true);
@@ -257,18 +345,25 @@ const Cart = () => {
       return;
     }
 
+    if (!selectedShipping) {
+      toast.error("Vui lòng chọn phương thức vận chuyển");
+      return;
+    }
+
     // Chỉ lấy các sản phẩm được chọn
     const selectedProducts = products.filter((item) =>
       selectedItems.has(item._id)
     );
 
-    // Navigate to order page with selected items and address
+    // Navigate to order page with selected items, address, and shipping info
     navigate("/order", {
       state: {
         selectedItems: selectedProducts,
         selectedAddress: selectedAddress,
         totalAmount: totalAmt,
         discountAmount: discount,
+        shippingMethod: selectedShipping,
+        shippingFee: shippingFee,
       },
     });
   };
@@ -957,10 +1052,64 @@ const Cart = () => {
                     </div>
                   )}
 
+                  {/* Shipping Method Display - Collapsed */}
+                  <div className="py-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">
+                        Phương thức vận chuyển
+                      </span>
+                      <button
+                        onClick={() => setShowShippingModal(true)}
+                        className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
+                      >
+                        {selectedShipping ? (
+                          <span className="flex items-center gap-2">
+                            <span>{selectedShipping.providerLogo}</span>
+                            <span>
+                              {selectedShipping.providerName} -{" "}
+                              {selectedShipping.serviceName}
+                            </span>
+                          </span>
+                        ) : (
+                          "Chọn"
+                        )}
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                    {selectedShipping && (
+                      <div className="mt-1">
+                        <p className="text-xs text-gray-500">
+                          Giao hàng dự kiến:{" "}
+                          {selectedShipping.estimatedDelivery}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="flex justify-between py-2">
-                    <span className="text-gray-600">Vận chuyển</span>
+                    <span className="text-gray-600">Phí vận chuyển</span>
                     <span className="font-medium text-gray-900">
-                      Miễn phí vận chuyển (đơn từ 150.000đ)
+                      {loadingShipping ? (
+                        <span className="text-sm">Đang tính...</span>
+                      ) : shippingFee > 0 ? (
+                        <PriceFormat amount={shippingFee} />
+                      ) : (
+                        <span className="text-green-600 font-semibold">
+                          Miễn phí
+                        </span>
+                      )}
                     </span>
                   </div>
 
@@ -970,7 +1119,7 @@ const Cart = () => {
                         Tổng tiền
                       </span>
                       <span className="text-lg font-semibold text-gray-900">
-                        <PriceFormat amount={discount} />
+                        <PriceFormat amount={discount + shippingFee} />
                       </span>
                     </div>
                   </div>
@@ -992,10 +1141,31 @@ const Cart = () => {
                     : "Tiến hành đặt hàng"}
                 </button>
 
-                <p className="text-sm text-gray-500 text-center mt-4">
-                  Vận chuyển và thuế được tính toán tại thanh toán. Miễn phí vận
-                  chuyển cho đơn từ 150.000đ.
-                </p>
+                {selectedShipping && (
+                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center gap-2 text-sm">
+                      <svg
+                        className="w-4 h-4 text-blue-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      <span className="text-blue-800">
+                        Giao hàng dự kiến:{" "}
+                        <span className="font-semibold">
+                          {selectedShipping.estimatedDelivery}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1220,6 +1390,98 @@ const Cart = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Shipping Method Selection Modal */}
+      {showShippingModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <span>🚚</span>
+                <span>Chọn phương thức vận chuyển</span>
+              </h3>
+              <button
+                onClick={() => setShowShippingModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <FaTimes className="w-5 h-5" />
+              </button>
+            </div>
+
+            {shippingProviders.length > 0 ? (
+              <div className="space-y-3">
+                {shippingProviders.map((provider) =>
+                  provider.services.map((service) => {
+                    const isSelected =
+                      selectedShipping?.provider === provider.id &&
+                      selectedShipping?.service === service.id;
+                    return (
+                      <div
+                        key={`${provider.id}-${service.id}`}
+                        onClick={() => {
+                          setSelectedShipping({
+                            provider: provider.id,
+                            providerName: provider.name,
+                            providerLogo: provider.logo,
+                            service: service.id,
+                            serviceName: service.name,
+                            estimatedDelivery: service.estimatedDelivery,
+                            freeShipping: provider.freeShipping || false,
+                          });
+                          setShowShippingModal(false);
+                        }}
+                        className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                          isSelected
+                            ? "border-blue-500 bg-blue-50 shadow-md"
+                            : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl">{provider.logo}</span>
+                            <div>
+                              <div className="font-semibold text-gray-900 flex items-center gap-2">
+                                {provider.name}
+                                {provider.freeShipping && (
+                                  <span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full font-medium">
+                                    Miễn phí
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-sm text-gray-600 mt-0.5">
+                                {service.name} - {service.estimatedDelivery}
+                              </div>
+                            </div>
+                          </div>
+                          {isSelected && (
+                            <FaCheck className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                <p className="text-gray-600">
+                  Đang tải phương thức vận chuyển...
+                </p>
+              </div>
+            )}
+
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <button
+                onClick={() => setShowShippingModal(false)}
+                className="w-full px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              >
+                Đóng
+              </button>
+            </div>
           </div>
         </div>
       )}

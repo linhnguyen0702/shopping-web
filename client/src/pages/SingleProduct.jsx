@@ -58,8 +58,12 @@ const SingleProduct = () => {
   const [editingReview, setEditingReview] = useState(null);
   const [userCanReview, setUserCanReview] = useState(false);
   const [userReviewData, setUserReviewData] = useState(null);
-  const [modalGallery, setModalGallery] = useState({ open: false, images: [], index: 0 });
-  
+  const [modalGallery, setModalGallery] = useState({
+    open: false,
+    images: [],
+    index: 0,
+  });
+
   // Computed values - moved after state declarations
   const isLiked = favorites.some((fav) => fav._id === productInfo._id);
 
@@ -978,9 +982,11 @@ const SingleProduct = () => {
                 }`}
               >
                 {tab === "reviews"
-                  ? `Reviews (${
+                  ? `Đánh giá (${
                       reviewsLoading ? "..." : productReviews.length
                     })`
+                  : tab === "description"
+                  ? "Mô tả"
                   : tab}
               </button>
             ))}
@@ -1625,9 +1631,19 @@ const SingleProduct = () => {
         {/* Modal gallery ảnh của review */}
         {modalGallery.open && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
-            <div onClick={() => setModalGallery({ ...modalGallery, open: false })} className="absolute inset-0"></div>
+            <div
+              onClick={() => setModalGallery({ ...modalGallery, open: false })}
+              className="absolute inset-0"
+            ></div>
             <div className="relative z-10 max-w-xl w-full">
-              <button onClick={() => setModalGallery({ ...modalGallery, open: false })} className="absolute top-0 right-0 m-4 text-white text-3xl">×</button>
+              <button
+                onClick={() =>
+                  setModalGallery({ ...modalGallery, open: false })
+                }
+                className="absolute top-0 right-0 m-4 text-white text-3xl"
+              >
+                ×
+              </button>
               <img
                 src={modalGallery.images[modalGallery.index]}
                 alt="Review Large"
@@ -1639,8 +1655,14 @@ const SingleProduct = () => {
                     key={idx}
                     src={img}
                     alt="Thumb"
-                    className={`w-16 h-16 object-cover rounded border-2 cursor-pointer ${idx === modalGallery.index ? "border-blue-500" : "border-gray-300"}`}
-                    onClick={() => setModalGallery({ ...modalGallery, index: idx })}
+                    className={`w-16 h-16 object-cover rounded border-2 cursor-pointer ${
+                      idx === modalGallery.index
+                        ? "border-blue-500"
+                        : "border-gray-300"
+                    }`}
+                    onClick={() =>
+                      setModalGallery({ ...modalGallery, index: idx })
+                    }
                   />
                 ))}
               </div>

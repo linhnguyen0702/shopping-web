@@ -1278,6 +1278,8 @@ const Order = () => {
                           >
                             {order.paymentMethod === "cod" ? (
                               <FaMoneyBillWave className="w-3 h-3" />
+                            ) : order.paymentMethod === "bank_transfer" ? (
+                              <FaCreditCard className="w-3 h-3" />
                             ) : (
                               <FaCreditCard className="w-3 h-3" />
                             )}
@@ -1441,6 +1443,8 @@ const Order = () => {
                     >
                       {order.paymentMethod === "cod" ? (
                         <FaMoneyBillWave className="w-3 h-3" />
+                      ) : order.paymentMethod === "bank_transfer" ? (
+                        <FaCreditCard className="w-3 h-3" />
                       ) : (
                         <FaCreditCard className="w-3 h-3" />
                       )}

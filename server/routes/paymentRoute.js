@@ -1,15 +1,13 @@
 import express from "express";
 import {
-  createPaymentIntent,
-  confirmPayment,
-  handleStripeWebhook,
   createOrder,
-  createStripeSession,
-  createPayPalOrder,
-  handleStripeSuccess,
-  handlePayPalSuccess,
+  getBankInfo,
+  generatePaymentQR,
+  confirmBankTransfer,
+  verifyBankTransfer,
 } from "../controllers/paymentController.js";
 import userAuth from "../middleware/userAuth.js";
+import adminAuth from "../middleware/adminAuth.js";
 
 const router = express.Router();
 
@@ -18,29 +16,14 @@ const routeValue = "/api/payment/";
 // Create order
 router.post("/api/order/create", userAuth, createOrder);
 
-// Stripe payment routes
-router.post(
-  `${routeValue}stripe/create-payment-intent`,
-  userAuth,
-  createPaymentIntent
-);
-router.post(`${routeValue}stripe/confirm-payment`, userAuth, confirmPayment);
+// Bank transfer routes
+router.get(`${routeValue}bank-info/:orderId`, userAuth, getBankInfo);
+router.post(`${routeValue}confirm-transfer`, userAuth, confirmBankTransfer);
 
-// Stripe webhook (no auth required)
-router.post(
-  `${routeValue}stripe/webhook`,
-  express.raw({ type: "application/json" }),
-  handleStripeWebhook
-);
+// QR Code payment
+router.get(`${routeValue}qr-code/:orderId`, userAuth, generatePaymentQR);
 
-// New payment flow routes
-router.post(
-  `${routeValue}create-stripe-session`,
-  userAuth,
-  createStripeSession
-);
-router.post(`${routeValue}create-paypal-order`, userAuth, createPayPalOrder);
-router.get(`${routeValue}stripe/success`, handleStripeSuccess);
-router.post(`${routeValue}paypal/success`, handlePayPalSuccess);
+// Admin: Verify bank transfer
+router.post(`${routeValue}verify-transfer`, adminAuth, verifyBankTransfer);
 
 export default router;

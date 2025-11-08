@@ -14,6 +14,7 @@ import {
   FaCalendarAlt,
 } from "react-icons/fa";
 import toast from "react-hot-toast";
+import axios from "axios";
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
@@ -22,54 +23,30 @@ const PaymentSuccess = () => {
   const [loading, setLoading] = useState(true);
 
   const orderId = searchParams.get("order_id");
-  const paymentIntentId = searchParams.get("payment_intent");
 
   useEffect(() => {
-    const confirmPaymentAndFetchOrder = async () => {
-      if (!orderId || !paymentIntentId) {
-        toast.error("Xác nhận thanh toán không hợp lệ");
+    const fetchOrder = async () => {
+      if (!orderId) {
+        toast.error("Không tìm thấy đơn hàng");
         navigate("/orders");
         return;
       }
 
       try {
-        const token = localStorage.getItem("token");
-
-        // xác nhận thanh toán với backend
-        const confirmResponse = await fetch(
-          "http://localhost:8000/api/payment/stripe/confirm-payment",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              paymentIntentId,
-              orderId,
-            }),
-          }
-        );
-
-        const confirmData = await confirmResponse.json();
-        if (confirmData.success) {
-          setOrder(confirmData.order);
-          toast.success("Thanh toán đã được xác nhận thành công!");
-        } else {
-          toast.error(confirmData.message || "Xác nhận thanh toán thất bại");
-          navigate("/orders");
-        }
+        const response = await axios.get(`/api/orders/${orderId}`);
+        setOrder(response.data.order);
+        toast.success("Đơn hàng đã được xác nhận thành công!");
       } catch (error) {
-        console.error("Lỗi xác nhận thanh toán:", error);
-        toast.error("Không thể xác nhận thanh toán");
+        console.error("Lỗi tải đơn hàng:", error);
+        toast.error("Không thể tải thông tin đơn hàng");
         navigate("/orders");
       } finally {
         setLoading(false);
       }
     };
 
-    confirmPaymentAndFetchOrder();
-  }, [orderId, paymentIntentId, navigate]);
+    fetchOrder();
+  }, [orderId, navigate]);
 
   const handlePrint = () => {
     window.print();

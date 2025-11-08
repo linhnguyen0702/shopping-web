@@ -75,7 +75,7 @@ const FAQ = () => {
         {
           question: "Phương thức thanh toán nào bạn chấp nhận?",
           answer:
-            "Chúng tôi chấp nhận tất cả các thẻ tín dụng chính (Visa, Mastercard, American Express, Discover), PayPal, Apple Pay, Google Pay và Shop Pay. Tất cả các thanh toán được xử lý an toàn bằng cách sử dụng mã hóa tiêu chuẩn công nghiệp.",
+            "Chúng tôi chấp nhận thanh toán khi nhận hàng (COD), chuyển khoản ngân hàng và thanh toán qua mã QR. Tất cả các thanh toán đều được xử lý an toàn.",
         },
         {
           question: "Thông tin thanh toán của tôi có an toàn không?",
@@ -128,9 +128,9 @@ const FAQ = () => {
               Các câu hỏi thường gặp
             </h1>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Tìm câu trả lời cho các câu hỏi thường gặp về mua hàng với Orebi. Không
-              tìm thấy những gì bạn đang tìm kiếm? Liên hệ với đội ngũ dịch vụ khách hàng
-              team.
+              Tìm câu trả lời cho các câu hỏi thường gặp về mua hàng với Orebi.
+              Không tìm thấy những gì bạn đang tìm kiếm? Liên hệ với đội ngũ
+              dịch vụ khách hàng team.
             </p>
           </div>
 
@@ -192,8 +192,8 @@ const FAQ = () => {
               Vẫn còn câu hỏi?
             </h2>
             <p className="text-gray-600 mb-6">
-              Đội ngũ dịch vụ khách hàng của chúng tôi ở đây để giúp bạn với bất kỳ câu hỏi
-              hoặc quan tâm.
+              Đội ngũ dịch vụ khách hàng của chúng tôi ở đây để giúp bạn với bất
+              kỳ câu hỏi hoặc quan tâm.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <a
