@@ -98,7 +98,14 @@ const orderSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["pending", "confirmed", "shipped", "delivered", "cancelled"],
+    enum: [
+      "draft",
+      "pending",
+      "confirmed",
+      "shipped",
+      "delivered",
+      "cancelled",
+    ],
     default: "pending",
   },
   paymentMethod: {
@@ -117,6 +124,10 @@ const orderSchema = new mongoose.Schema({
     verified: Boolean,
     verifiedAt: Date,
     rejectedAt: Date,
+  },
+  notificationSent: {
+    type: Boolean,
+    default: false,
   },
   date: {
     type: Date,

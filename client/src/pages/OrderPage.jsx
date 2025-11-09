@@ -17,6 +17,7 @@ import {
 } from "react-icons/fa";
 import Container from "../components/Container";
 import PriceFormat from "../components/PriceFormat";
+import PaymentModal from "../components/PaymentModal";
 import { removeSelectedItems, setOrderCount } from "../redux/orebiSlice";
 
 const OrderPage = () => {
@@ -45,6 +46,13 @@ const OrderPage = () => {
   const [showShippingModal, setShowShippingModal] = useState(false);
   const [currentShipping, setCurrentShipping] = useState(shippingMethod);
   const [currentShippingFee, setCurrentShippingFee] = useState(shippingFee);
+
+  // Payment Modal states
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [createdOrderId, setCreatedOrderId] = useState(null);
+  const [orderAmount, setOrderAmount] = useState(0);
+  const [pendingCartItems, setPendingCartItems] = useState([]); // Items to remove after payment confirmation
+
   const [addressForm, setAddressForm] = useState({
     label: "",
     street: "",
@@ -293,16 +301,30 @@ const OrderPage = () => {
 
       const data = await response.json();
       if (data.success) {
-        // Remove items from cart
-        const selectedItemIds = selectedItems.map((item) => item._id);
-        dispatch(removeSelectedItems(selectedItemIds));
+        // Xử lý theo payment method
+        if (selectedPaymentMethod === "cod") {
+          toast.success("Đặt hàng thành công!");
 
-        // Update order count
-        dispatch(setOrderCount(orderCount + 1));
+          // COD: Remove items from cart ngay
+          const selectedItemIds = selectedItems.map((item) => item._id);
+          dispatch(removeSelectedItems(selectedItemIds));
+          dispatch(setOrderCount(orderCount + 1));
 
-        // Redirect to checkout page for all payment methods
-        toast.success("Đặt hàng thành công!");
-        navigate(`/checkout/${data.order._id}`);
+          // Redirect trực tiếp đến trang chi tiết đơn hàng
+          navigate(`/checkout/${data.order._id}`);
+        } else {
+          // Bank transfer hoặc QR code: Hiển thị thông báo yêu cầu thanh toán
+          toast.success("Vui lòng thanh toán để đặt hàng thành công");
+
+          // Chưa remove cart, đợi user xác nhận
+          // Lưu items cần remove sau khi xác nhận thanh toán
+          const selectedItemIds = selectedItems.map((item) => item._id);
+          setPendingCartItems(selectedItemIds);
+
+          setCreatedOrderId(data.order._id);
+          setOrderAmount(data.order.amount);
+          setShowPaymentModal(true);
+        }
       } else {
         toast.error(data.message || "Đặt hàng thất bại");
       }
@@ -1103,6 +1125,27 @@ const OrderPage = () => {
           </div>
         </div>
       )}
+
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        orderId={createdOrderId}
+        orderAmount={orderAmount}
+        paymentMethod={selectedPaymentMethod}
+        onPaymentSuccess={(orderId) => {
+          // Remove items from cart when user confirms payment
+          if (pendingCartItems.length > 0) {
+            dispatch(removeSelectedItems(pendingCartItems));
+            dispatch(setOrderCount(orderCount + 1));
+            setPendingCartItems([]); // Clear pending items
+          }
+
+          setShowPaymentModal(false);
+          // Redirect đến trang chi tiết đơn hàng
+          navigate(`/checkout/${orderId}`);
+        }}
+      />
     </div>
   );
 };

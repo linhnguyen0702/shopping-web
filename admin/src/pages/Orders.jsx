@@ -62,7 +62,11 @@ const Orders = () => {
       const data = await response.json();
       if (data.success) {
         // Nếu API trả về thành công
-        setOrders(data.orders); // Cập nhật state danh sách đơn hàng
+        // Filter out draft orders (orders that haven't been confirmed by customer)
+        const confirmedOrders = data.orders.filter(
+          (order) => order.status !== "draft"
+        );
+        setOrders(confirmedOrders); // Cập nhật state danh sách đơn hàng
       } else {
         // Nếu API trả về thất bại
         toast.error(data.message || "Không thể lấy danh sách đơn hàng");
@@ -281,6 +285,8 @@ const Orders = () => {
   // Chuyển đổi trạng thái sang tiếng Việt
   const translateStatus = (status) => {
     switch (status) {
+      case "draft":
+        return "Nháp (Chưa xác nhận)";
       case "pending":
         return "Chờ xử lý";
       case "confirmed":
@@ -327,7 +333,7 @@ const Orders = () => {
 
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
-    const orderId = searchParams.get('search');
+    const orderId = searchParams.get("search");
     if (orderId) {
       setSearchTerm(orderId);
     }
@@ -525,8 +531,8 @@ const Orders = () => {
                   onClick={(e) => {
                     // Tránh khi click vào nút Sửa/Xóa cũng mở modal
                     if (
-                      e.target.closest('button') === null &&
-                      e.target.tagName !== 'BUTTON'
+                      e.target.closest("button") === null &&
+                      e.target.tagName !== "BUTTON"
                     ) {
                       setSelectedOrder(order);
                       setShowDetailsModal(true);
@@ -658,8 +664,8 @@ const Orders = () => {
               onClick={(e) => {
                 // Tránh khi click vào nút Sửa/Xóa cũng mở modal
                 if (
-                  e.target.closest('button') === null &&
-                  e.target.tagName !== 'BUTTON'
+                  e.target.closest("button") === null &&
+                  e.target.tagName !== "BUTTON"
                 ) {
                   setSelectedOrder(order);
                   setShowDetailsModal(true);
@@ -888,20 +894,47 @@ const Orders = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
                 {/* Customer Info */}
                 <div>
-                  <h4 className="font-medium text-gray-800 mb-2">Thông tin khách hàng</h4>
-                  <p className="text-sm text-gray-600"><strong>Tên:</strong> {selectedOrder.userId?.name || 'N/A'}</p>
-                  <p className="text-sm text-gray-600"><strong>Email:</strong> {selectedOrder.userId?.email || 'N/A'}</p>
-                  <p className="text-sm text-gray-600"><strong>Địa chỉ:</strong> {selectedOrder.address.street}, {selectedOrder.address.city}, {selectedOrder.address.country}</p>
-                  <p className="text-sm text-gray-600"><strong>SĐT:</strong> {selectedOrder.address.phone}</p>
+                  <h4 className="font-medium text-gray-800 mb-2">
+                    Thông tin khách hàng
+                  </h4>
+                  <p className="text-sm text-gray-600">
+                    <strong>Tên:</strong> {selectedOrder.userId?.name || "N/A"}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <strong>Email:</strong>{" "}
+                    {selectedOrder.userId?.email || "N/A"}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <strong>Địa chỉ:</strong> {selectedOrder.address.street},{" "}
+                    {selectedOrder.address.city},{" "}
+                    {selectedOrder.address.country}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <strong>SĐT:</strong> {selectedOrder.address.phone}
+                  </p>
                 </div>
 
                 {/* Order Status */}
                 <div>
-                  <h4 className="font-medium text-gray-800 mb-2">Trạng thái đơn hàng</h4>
-                  <p className="text-sm text-gray-600"><strong>Ngày đặt:</strong> {new Date(selectedOrder.date).toLocaleDateString()}</p>
-                  <p className="text-sm text-gray-600"><strong>Trạng thái:</strong> {translateStatus(selectedOrder.status)}</p>
-                  <p className="text-sm text-gray-600"><strong>Thanh toán:</strong> {translatePaymentStatus(selectedOrder.paymentStatus)}</p>
-                  <p className="text-sm text-gray-600"><strong>Phương thức:</strong> {selectedOrder.paymentMethod?.toUpperCase()}</p>
+                  <h4 className="font-medium text-gray-800 mb-2">
+                    Trạng thái đơn hàng
+                  </h4>
+                  <p className="text-sm text-gray-600">
+                    <strong>Ngày đặt:</strong>{" "}
+                    {new Date(selectedOrder.date).toLocaleDateString()}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <strong>Trạng thái:</strong>{" "}
+                    {translateStatus(selectedOrder.status)}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <strong>Thanh toán:</strong>{" "}
+                    {translatePaymentStatus(selectedOrder.paymentStatus)}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <strong>Phương thức:</strong>{" "}
+                    {selectedOrder.paymentMethod?.toUpperCase()}
+                  </p>
                 </div>
               </div>
 
@@ -912,21 +945,39 @@ const Orders = () => {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Ảnh</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Sản phẩm</th>
-                        <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Số lượng</th>
-                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Giá</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                          Ảnh
+                        </th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                          Sản phẩm
+                        </th>
+                        <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">
+                          Số lượng
+                        </th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
+                          Giá
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {selectedOrder.items.map(item => (
+                      {selectedOrder.items.map((item) => (
                         <tr key={item._id}>
                           <td className="px-4 py-2">
-                            <img src={item.image} alt={item.name} className="h-12 w-12 object-cover rounded" />
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              className="h-12 w-12 object-cover rounded"
+                            />
                           </td>
-                          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{item.name}</td>
-                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 text-center">{item.quantity}</td>
-                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 text-right">{formatVND(item.price)}</td>
+                          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {item.name}
+                          </td>
+                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 text-center">
+                            {item.quantity}
+                          </td>
+                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 text-right">
+                            {formatVND(item.price)}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -936,10 +987,86 @@ const Orders = () => {
 
               {/* Total Amount */}
               <div className="text-right mt-4">
-                <p className="text-sm text-gray-600">Tổng cộng: <span className="font-bold text-lg text-gray-900">{formatVND(selectedOrder.amount)}</span></p>
+                <p className="text-sm text-gray-600">
+                  Tổng cộng:{" "}
+                  <span className="font-bold text-lg text-gray-900">
+                    {formatVND(selectedOrder.amount)}
+                  </span>
+                </p>
               </div>
 
-              <div className="flex justify-end mt-6">
+              {/* Payment Confirmation Section */}
+              {selectedOrder.paymentStatus === "pending" &&
+                selectedOrder.paymentMethod !== "cod" && (
+                  <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div className="flex items-start">
+                      <FaClock className="w-5 h-5 text-yellow-600 mr-3 mt-0.5" />
+                      <div className="flex-1">
+                        <h4 className="text-sm font-semibold text-yellow-800 mb-2">
+                          Đơn hàng chờ xác nhận thanh toán
+                        </h4>
+                        <p className="text-xs text-yellow-700 mb-3">
+                          Phương thức:{" "}
+                          <strong>
+                            {selectedOrder.paymentMethod?.toUpperCase()}
+                          </strong>{" "}
+                          - Vui lòng kiểm tra tài khoản ngân hàng và xác nhận đã
+                          nhận được thanh toán.
+                        </p>
+                        <button
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                "Bạn đã kiểm tra và xác nhận nhận được thanh toán từ khách hàng?"
+                              )
+                            ) {
+                              updateOrderStatus(
+                                selectedOrder._id,
+                                "confirmed",
+                                "paid"
+                              );
+                              setShowDetailsModal(false);
+                              setSelectedOrder(null);
+                            }
+                          }}
+                          disabled={isUpdating}
+                          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                          <FaCheckCircle className="w-4 h-4" />
+                          {isUpdating
+                            ? "Đang xử lý..."
+                            : "Xác nhận đã thanh toán"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+              <div className="flex justify-end mt-6 gap-3">
+                {selectedOrder.paymentStatus === "pending" &&
+                  selectedOrder.paymentMethod !== "cod" && (
+                    <button
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            "Từ chối thanh toán sẽ đánh dấu thanh toán thất bại. Đơn hàng vẫn ở trạng thái chờ xử lý. Bạn có chắc chắn?"
+                          )
+                        ) {
+                          updateOrderStatus(
+                            selectedOrder._id,
+                            selectedOrder.status, // Giữ nguyên status hiện tại
+                            "failed"
+                          );
+                          setShowDetailsModal(false);
+                          setSelectedOrder(null);
+                        }
+                      }}
+                      disabled={isUpdating}
+                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Từ chối thanh toán
+                    </button>
+                  )}
                 <button
                   onClick={() => {
                     setShowDetailsModal(false);

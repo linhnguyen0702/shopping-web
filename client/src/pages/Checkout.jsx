@@ -22,7 +22,7 @@ const Checkout = () => {
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [paymentMethod, setPaymentMethod] = useState("cod");
+  const [paymentMethod, setPaymentMethod] = useState("");
   const [paymentStep, setPaymentStep] = useState("selection"); // 'selection', 'bank_transfer', 'qr_code', 'processing'
 
   const fetchOrderDetails = useCallback(async () => {
@@ -36,6 +36,14 @@ const Checkout = () => {
       const data = await response.json();
       if (data.success) {
         setOrder(data.order);
+
+        // Set payment method từ order data
+        const orderPaymentMethod = data.order.paymentMethod || "cod";
+        setPaymentMethod(orderPaymentMethod);
+
+        // Không tự động chuyển sang payment step nữa
+        // User đã thanh toán qua modal, trang này chỉ hiển thị chi tiết đơn hàng
+        setPaymentStep("selection");
       } else {
         toast.error("Không tìm thấy đơn hàng");
         navigate("/orders");
@@ -70,6 +78,14 @@ const Checkout = () => {
 
   const handlePaymentCancel = () => {
     setPaymentStep("selection");
+  };
+
+  const handlePaymentComplete = () => {
+    toast.success("Thanh toán hoàn tất!");
+    // Navigate đến trang chi tiết đơn hàng hoặc trang orders
+    setTimeout(() => {
+      navigate(`/orders`);
+    }, 500);
   };
 
   const translateStatus = (status) => {
@@ -337,6 +353,39 @@ const Checkout = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Shipping Method Info */}
+              {order.shippingMethod && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-2">
+                    Phương thức vận chuyển
+                  </h3>
+                  <div className="space-y-1 text-sm text-gray-600">
+                    <p>
+                      <span className="font-medium">Đơn vị:</span>{" "}
+                      {order.shippingMethod.provider?.toUpperCase() || "N/A"}
+                    </p>
+                    <p>
+                      <span className="font-medium">Dịch vụ:</span>{" "}
+                      {order.shippingMethod.serviceName || "Standard"}
+                    </p>
+                    <p>
+                      <span className="font-medium">Phí vận chuyển:</span>{" "}
+                      {order.shippingMethod.totalFee > 0 ? (
+                        <PriceFormat amount={order.shippingMethod.totalFee} />
+                      ) : (
+                        <span className="text-green-600">Miễn phí</span>
+                      )}
+                    </p>
+                    {order.shippingMethod.estimatedDelivery && (
+                      <p>
+                        <span className="font-medium">Thời gian dự kiến:</span>{" "}
+                        {order.shippingMethod.estimatedDelivery}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -360,7 +409,13 @@ const Checkout = () => {
                 <div className="flex justify-between">
                   <span className="text-gray-600">Vận chuyển</span>
                   <span className="font-medium text-green-600">
-                    Miễn phí vận chuyển (đơn từ 150.000đ)
+                    {order.shippingMethod?.totalFee > 0 ? (
+                      <PriceFormat amount={order.shippingMethod.totalFee} />
+                    ) : (
+                      "Miễn phí"
+                    )}
+                    {order.shippingMethod?.provider &&
+                      ` (${order.shippingMethod.provider.toUpperCase()})`}
                   </span>
                 </div>
                 <div className="flex justify-between text-lg font-semibold">
@@ -404,6 +459,7 @@ const Checkout = () => {
                       <BankTransferInfo
                         orderId={orderId}
                         totalAmount={order.amount}
+                        onPaymentComplete={handlePaymentComplete}
                       />
                     </div>
                   )}
@@ -425,6 +481,7 @@ const Checkout = () => {
                       <QRCodePayment
                         orderId={orderId}
                         totalAmount={order.amount}
+                        onPaymentComplete={handlePaymentComplete}
                       />
                     </div>
                   )}

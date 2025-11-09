@@ -6,7 +6,14 @@ import { notifyNewOrder } from "../services/notificationService.js";
 // Create a new order
 const createOrder = async (req, res) => {
   try {
-    const { items, amount, address } = req.body;
+    const {
+      items,
+      amount,
+      address,
+      paymentMethod,
+      shippingMethod,
+      shippingFee,
+    } = req.body;
     const userId = req.user?.id;
 
     // Debug: Log the received data
@@ -14,6 +21,9 @@ const createOrder = async (req, res) => {
     console.log("Items:", JSON.stringify(items, null, 2));
     console.log("Address:", JSON.stringify(address, null, 2));
     console.log("Amount:", amount);
+    console.log("Payment Method:", paymentMethod);
+    console.log("Shipping Method:", shippingMethod);
+    console.log("Shipping Fee:", shippingFee);
 
     // Validate authentication
     if (!userId) {
@@ -191,9 +201,11 @@ const createOrder = async (req, res) => {
         country: address.country || "",
         phone: address.phone || address.phoneNumber || "",
       },
-      paymentMethod: "cod", // Default to cash on delivery
-      status: "pending",
-      paymentStatus: "pending",
+      paymentMethod: paymentMethod || "cod", // Use payment method from request, default to COD
+      shippingMethod: shippingMethod || "standard",
+      shippingFee: shippingFee || 0,
+      status: "pending", // Always pending for new orders
+      paymentStatus: paymentMethod === "cod" ? "pending" : "pending", // Pending for all payment methods initially
     });
 
     // Save order first
@@ -500,6 +512,76 @@ const deleteOrder = async (req, res) => {
   }
 };
 
+// Send notification when customer views paid order details
+const notifyOrderViewed = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.json({
+        success: false,
+        message: "User not authenticated",
+      });
+    }
+
+    // Get order details
+    const order = await orderModel
+      .findById(orderId)
+      .populate("userId", "name email");
+
+    if (!order) {
+      return res.json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    // Verify order belongs to user
+    if (order.userId._id.toString() !== userId) {
+      return res.json({
+        success: false,
+        message: "Unauthorized access to order",
+      });
+    }
+
+    // Only send notification if payment is confirmed (paid) and not already notified
+    if (order.paymentStatus === "paid" && !order.notificationSent) {
+      try {
+        await notifyNewOrder(order);
+
+        // Mark notification as sent to avoid duplicates
+        order.notificationSent = true;
+        await order.save();
+
+        console.log("✅ Order notification sent for order:", order._id);
+
+        return res.json({
+          success: true,
+          message: "Notification sent successfully",
+        });
+      } catch (notifyError) {
+        console.error("❌ Error sending order notification:", notifyError);
+        return res.json({
+          success: false,
+          message: "Failed to send notification",
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: "No notification needed",
+    });
+  } catch (error) {
+    console.error("Notify Order Viewed Error:", error);
+    res.json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 export {
   createOrder,
   getAllOrders,
@@ -508,4 +590,5 @@ export {
   updateOrderStatus,
   getOrderStats,
   deleteOrder,
+  notifyOrderViewed,
 };

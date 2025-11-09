@@ -3,8 +3,10 @@ import PropTypes from "prop-types";
 import { FaBuilding, FaCopy, FaCheckCircle, FaUpload } from "react-icons/fa";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { BANK_INFO } from "../constants/paymentConfig";
+import { serverUrl } from "../../config";
 
-const BankTransferInfo = ({ orderId, totalAmount }) => {
+const BankTransferInfo = ({ orderId, totalAmount, onPaymentComplete }) => {
   const [bankInfo, setBankInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [transactionCode, setTransactionCode] = useState("");
@@ -14,18 +16,50 @@ const BankTransferInfo = ({ orderId, totalAmount }) => {
   useEffect(() => {
     const fetchBankInfo = async () => {
       try {
-        const response = await axios.get(`/api/payment/bank-info/${orderId}`);
-        setBankInfo(response.data);
+        const response = await axios.get(
+          `${serverUrl}/api/payment/bank-info/${orderId}`
+        );
+        console.log("Bank Info API Response:", response.data);
+
+        if (response.data.success) {
+          // Backend trả về { success, bankInfo }
+          setBankInfo(response.data.bankInfo);
+        } else {
+          console.error("Bank Info API Error:", response.data);
+          // Nếu API lỗi, dùng thông tin cố định
+          const transferContent = `OREBI ${orderId.slice(-8).toUpperCase()}`;
+          setBankInfo({
+            bankName: BANK_INFO.bankName,
+            accountNumber: BANK_INFO.accountNumber,
+            accountName: BANK_INFO.accountName,
+            branch: BANK_INFO.branch,
+            transferContent: transferContent,
+            amount: totalAmount,
+          });
+          toast.error(
+            response.data.message || "Đang sử dụng thông tin ngân hàng dự phòng"
+          );
+        }
       } catch (error) {
-        toast.error("Không thể tải thông tin ngân hàng");
-        console.error(error);
+        console.error("Bank Info API Exception:", error);
+        // Nếu exception, dùng thông tin cố định
+        const transferContent = `OREBI ${orderId.slice(-8).toUpperCase()}`;
+        setBankInfo({
+          bankName: BANK_INFO.bankName,
+          accountNumber: BANK_INFO.accountNumber,
+          accountName: BANK_INFO.accountName,
+          branch: BANK_INFO.branch,
+          transferContent: transferContent,
+          amount: totalAmount,
+        });
+        toast.error("Đang sử dụng thông tin ngân hàng dự phòng");
       } finally {
         setLoading(false);
       }
     };
 
     fetchBankInfo();
-  }, [orderId]);
+  }, [orderId, totalAmount]);
 
   const handleCopy = (text, field) => {
     navigator.clipboard.writeText(text);
@@ -46,14 +80,24 @@ const BankTransferInfo = ({ orderId, totalAmount }) => {
 
     setSubmitting(true);
     try {
-      await axios.post("/api/payment/confirm-transfer", {
+      await axios.post(`${serverUrl}/api/payment/confirm-transfer`, {
         orderId,
         transactionCode: transactionCode.trim(),
       });
-      toast.success(
-        "Đã gửi thông tin chuyển khoản. Chúng tôi sẽ xác nhận trong ít phút."
-      );
+
+      toast.success("Đã gửi thông tin chuyển khoản thành công!");
+
       setTransactionCode("");
+
+      // Show success message and redirect to order details
+      setTimeout(() => {
+        toast.success("Đang chuyển đến trang chi tiết đơn hàng...");
+        setTimeout(() => {
+          if (onPaymentComplete) {
+            onPaymentComplete();
+          }
+        }, 1000);
+      }, 1500);
     } catch (error) {
       toast.error(error.response?.data?.message || "Có lỗi xảy ra");
     } finally {
@@ -225,16 +269,16 @@ const BankTransferInfo = ({ orderId, totalAmount }) => {
             disabled={submitting}
             className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            {submitting ? "Đang gửi..." : "Xác nhận đã chuyển khoản"}
+            {submitting ? "Đang gửi..." : "Gửi mã giao dịch"}
           </button>
         </form>
       </div>
 
       <div className="mt-6 p-4 bg-gray-50 rounded-lg">
         <p className="text-sm text-gray-600 leading-relaxed">
-          <strong>Lưu ý:</strong> Đơn hàng sẽ được xử lý sau khi chúng tôi xác
-          nhận thanh toán. Thời gian xác nhận thường trong vòng 5-15 phút trong
-          giờ làm việc.
+          <strong>Lưu ý:</strong> Sau khi nhập mã giao dịch, bạn sẽ được chuyển
+          đến trang chi tiết đơn hàng. Đơn hàng sẽ được xử lý sau khi chúng tôi
+          xác nhận thanh toán (5-15 phút).
         </p>
       </div>
     </div>
@@ -244,6 +288,7 @@ const BankTransferInfo = ({ orderId, totalAmount }) => {
 BankTransferInfo.propTypes = {
   orderId: PropTypes.string.isRequired,
   totalAmount: PropTypes.number.isRequired,
+  onPaymentComplete: PropTypes.func,
 };
 
 export default BankTransferInfo;

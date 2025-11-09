@@ -7,6 +7,7 @@ import {
   updateOrderStatus,
   getOrderStats,
   deleteOrder,
+  notifyOrderViewed,
 } from "../controllers/orderController.mjs";
 import adminAuth from "../middleware/adminAuth.js";
 import userAuth from "../middleware/userAuth.js";
@@ -19,6 +20,7 @@ const routeValue = "/api/order/";
 router.post(`${routeValue}create`, userAuth, createOrder);
 router.get(`${routeValue}my-orders`, userAuth, getUserOrders);
 router.get(`${routeValue}user/:orderId`, userAuth, getUserOrderById);
+router.post(`${routeValue}notify/:orderId`, userAuth, notifyOrderViewed);
 
 // Admin routes
 router.get(`${routeValue}admin/user/:userId`, adminAuth, getUserOrders);

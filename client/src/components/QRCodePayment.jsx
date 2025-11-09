@@ -3,48 +3,63 @@ import PropTypes from "prop-types";
 import { FaQrcode, FaCheckCircle, FaSpinner } from "react-icons/fa";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { BANK_INFO, generateQRCodeUrl } from "../constants/paymentConfig";
+import { serverUrl } from "../../config";
 
-const QRCodePayment = ({ orderId, totalAmount }) => {
+const QRCodePayment = ({ orderId, totalAmount, onPaymentComplete }) => {
   const [qrData, setQrData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [paymentStatus, setPaymentStatus] = useState("pending");
 
   useEffect(() => {
     const fetchQRCode = async () => {
       try {
-        const response = await axios.get(`/api/payment/qr-code/${orderId}`);
-        setQrData(response.data);
+        const response = await axios.get(
+          `${serverUrl}/api/payment/qr-code/${orderId}`
+        );
+        console.log("QR API Response:", response.data);
+
+        if (response.data.success) {
+          // Backend trả về { success, qrCode, bankInfo }
+          setQrData({
+            qrCodeUrl: response.data.qrCode,
+            bankName: response.data.bankInfo.bankName,
+            accountNumber: response.data.bankInfo.accountNumber,
+            accountName: response.data.bankInfo.accountName,
+            transferContent: response.data.bankInfo.transferContent,
+            amount: response.data.bankInfo.amount,
+          });
+        } else {
+          console.error("QR API Error:", response.data);
+          // Nếu API lỗi, dùng QR code cố định
+          const transferContent = `OREBI ${orderId.slice(-8).toUpperCase()}`;
+          setQrData({
+            qrCodeUrl: generateQRCodeUrl(totalAmount, transferContent),
+            bankName: BANK_INFO.bankName,
+            accountNumber: BANK_INFO.accountNumber,
+            accountName: BANK_INFO.accountName,
+            transferContent: transferContent,
+            amount: totalAmount,
+          });
+        }
       } catch (error) {
-        toast.error("Không thể tải mã QR");
-        console.error(error);
+        console.error("QR API Exception:", error);
+        // Nếu exception, dùng QR code cố định
+        const transferContent = `OREBI ${orderId.slice(-8).toUpperCase()}`;
+        setQrData({
+          qrCodeUrl: generateQRCodeUrl(totalAmount, transferContent),
+          bankName: BANK_INFO.bankName,
+          accountNumber: BANK_INFO.accountNumber,
+          accountName: BANK_INFO.accountName,
+          transferContent: transferContent,
+          amount: totalAmount,
+        });
       } finally {
         setLoading(false);
       }
     };
 
     fetchQRCode();
-  }, [orderId]);
-
-  // Polling để kiểm tra trạng thái thanh toán
-  useEffect(() => {
-    if (!orderId || paymentStatus === "completed") return;
-
-    const checkPaymentStatus = async () => {
-      try {
-        const response = await axios.get(`/api/orders/${orderId}`);
-        if (response.data.order.paymentStatus === "completed") {
-          setPaymentStatus("completed");
-          toast.success("Thanh toán thành công!");
-        }
-      } catch (error) {
-        console.error("Error checking payment status:", error);
-      }
-    };
-
-    const interval = setInterval(checkPaymentStatus, 10000); // Check every 10s
-
-    return () => clearInterval(interval);
-  }, [orderId, paymentStatus]);
+  }, [orderId, totalAmount]);
 
   if (loading) {
     return (
@@ -59,20 +74,6 @@ const QRCodePayment = ({ orderId, totalAmount }) => {
     return (
       <div className="text-center py-8 text-red-600">
         Không thể tạo mã QR thanh toán
-      </div>
-    );
-  }
-
-  if (paymentStatus === "completed") {
-    return (
-      <div className="bg-green-50 border border-green-200 rounded-xl p-8 text-center">
-        <FaCheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
-        <h3 className="text-2xl font-bold text-green-900 mb-2">
-          Thanh toán thành công!
-        </h3>
-        <p className="text-green-700">
-          Đơn hàng của bạn đã được xác nhận và đang được xử lý
-        </p>
       </div>
     );
   }
@@ -156,22 +157,76 @@ const QRCodePayment = ({ orderId, totalAmount }) => {
         </ol>
       </div>
 
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
         <p className="text-sm text-yellow-800 flex items-start gap-2">
           <span className="text-xl">⚠️</span>
           <span>
-            <strong>Lưu ý:</strong> Đơn hàng sẽ tự động được xác nhận sau khi
-            thanh toán thành công. Vui lòng không tắt trang này cho đến khi nhận
-            được xác nhận.
+            <strong>Lưu ý:</strong> Sau khi chuyển khoản thành công, vui lòng
+            nhấn nút bên dưới để xem chi tiết đơn hàng.
           </span>
         </p>
       </div>
 
+      {/* Confirmation Button */}
+      <button
+        onClick={async () => {
+          try {
+            // Send notification to admin
+            const token = localStorage.getItem("token");
+            console.log(
+              "Calling API:",
+              `${serverUrl}/api/payment/notify/${orderId}`
+            );
+
+            const response = await axios.post(
+              `${serverUrl}/api/payment/notify/${orderId}`,
+              {},
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+
+            console.log("API Response:", response.data);
+
+            if (response.data.success) {
+              toast.success(
+                "Đã xác nhận thanh toán! Đang chuyển đến trang chi tiết đơn hàng..."
+              );
+              console.log("✅ Payment confirmation notification sent");
+
+              // Wait a moment for user to see the message
+              setTimeout(() => {
+                if (onPaymentComplete) {
+                  onPaymentComplete();
+                }
+              }, 1500);
+            } else {
+              console.error("API returned error:", response.data);
+              toast.error(
+                response.data.message || "Có lỗi xảy ra. Vui lòng thử lại!"
+              );
+            }
+          } catch (error) {
+            console.error(
+              "Error details:",
+              error.response?.data || error.message
+            );
+            toast.error("Không thể xác nhận thanh toán. Vui lòng thử lại!");
+          }
+        }}
+        className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2 shadow-lg"
+      >
+        <FaCheckCircle className="w-5 h-5" />
+        Tôi đã chuyển khoản - Xem chi tiết đơn hàng
+      </button>
+
       {/* Auto-check indicator */}
-      <div className="mt-4 text-center">
+      <div className="text-center mt-4">
         <div className="inline-flex items-center gap-2 text-sm text-gray-500">
           <div className="animate-pulse w-2 h-2 bg-blue-500 rounded-full"></div>
-          <span>Đang tự động kiểm tra thanh toán...</span>
+          <span>Hệ thống sẽ tự động kiểm tra thanh toán</span>
         </div>
       </div>
     </div>
@@ -181,6 +236,7 @@ const QRCodePayment = ({ orderId, totalAmount }) => {
 QRCodePayment.propTypes = {
   orderId: PropTypes.string.isRequired,
   totalAmount: PropTypes.number.isRequired,
+  onPaymentComplete: PropTypes.func,
 };
 
 export default QRCodePayment;
