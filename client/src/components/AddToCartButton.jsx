@@ -16,7 +16,7 @@ const AddToCartButton = ({ item, className }) => {
   const [existingProduct, setExistingProduct] = useState(null);
   useEffect(() => {
     const availableItem = products.find(
-      (product) => product?._id === item?._id
+      (product) => (product.cartKey || product?._id) === (item.cartKey || item?._id)
     );
 
     setExistingProduct(availableItem || null);
@@ -39,7 +39,7 @@ const AddToCartButton = ({ item, className }) => {
           <button
             disabled={existingProduct?.quantity <= 1}
             onClick={() => {
-              dispatch(decreaseQuantity(item?._id));
+              dispatch(decreaseQuantity(item?.cartKey || item?._id));
               toast.success("Giảm số lượng thành công!");
             }}
             className="border border-gray-300 text-gray-700 p-2 hover:border-black hover:text-black rounded-md text-sm transition-all duration-200 cursor-pointer disabled:text-gray-300 disabled:border-gray-200 disabled:hover:border-gray-200 disabled:hover:text-gray-300"
@@ -51,7 +51,7 @@ const AddToCartButton = ({ item, className }) => {
           </p>
           <button
             onClick={() => {
-              dispatch(increaseQuantity(item?._id));
+              dispatch(increaseQuantity(item?.cartKey || item?._id));
               toast.success("Số lượng đã được tăng thành công!");
             }}
             className="border border-gray-300 text-gray-700 p-2 hover:border-black hover:text-black rounded-md text-sm transition-all duration-200 cursor-pointer"
@@ -75,6 +75,7 @@ AddToCartButton.propTypes = {
   item: PropTypes.shape({
     _id: PropTypes.string,
     name: PropTypes.string,
+    cartKey: PropTypes.string,
   }).isRequired,
   className: PropTypes.string,
 };

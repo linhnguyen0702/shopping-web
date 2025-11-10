@@ -34,6 +34,8 @@ const addProduct = async (req, res) => {
       offer,
       description,
       tags,
+      options,
+      combos,
     } = req.body;
     const image1 = req.files.image1 && req.files.image1[0];
     const image2 = req.files.image2 && req.files.image2[0];
@@ -87,6 +89,24 @@ const addProduct = async (req, res) => {
     }
 
     const numericStock = stock ? Number(stock) : 0;
+    // Parse options/combos if provided
+    let parsedOptions = [];
+    if (options) {
+      try {
+        parsedOptions = Array.isArray(options) ? options : JSON.parse(options);
+      } catch {
+        parsedOptions = [];
+      }
+    }
+    let parsedCombos = [];
+    if (combos) {
+      try {
+        parsedCombos = Array.isArray(combos) ? combos : JSON.parse(combos);
+      } catch {
+        parsedCombos = [];
+      }
+    }
+
     const productData = {
       _type: _type ? _type : "",
       name,
@@ -105,6 +125,8 @@ const addProduct = async (req, res) => {
       description,
       tags: tags ? parsedTags : [],
       images: imagesUrl,
+      options: parsedOptions,
+      combos: parsedCombos,
     };
 
     const product = new productModel(productData);
@@ -392,6 +414,8 @@ const updateProduct = async (req, res) => {
       offer,
       description,
       tags,
+      options,
+      combos,
     } = req.body;
 
     const image1 = req.files?.image1 && req.files.image1[0];
@@ -472,6 +496,24 @@ const updateProduct = async (req, res) => {
     }
 
     const updatedStock = stock ? Number(stock) : 0;
+
+    // Parse options/combos if provided
+    let parsedOptions = undefined;
+    if (typeof options !== "undefined") {
+      try {
+        parsedOptions = Array.isArray(options) ? options : JSON.parse(options);
+      } catch {
+        parsedOptions = [];
+      }
+    }
+    let parsedCombos = undefined;
+    if (typeof combos !== "undefined") {
+      try {
+        parsedCombos = Array.isArray(combos) ? combos : JSON.parse(combos);
+      } catch {
+        parsedCombos = [];
+      }
+    }
     const updateData = {
       _type: _type || "",
       name,
@@ -490,6 +532,9 @@ const updateProduct = async (req, res) => {
       tags: parsedTags,
       images: imagesUrl,
     };
+
+    if (parsedOptions !== undefined) updateData.options = parsedOptions;
+    if (parsedCombos !== undefined) updateData.combos = parsedCombos;
 
     const updatedProduct = await productModel.findByIdAndUpdate(
       productId,

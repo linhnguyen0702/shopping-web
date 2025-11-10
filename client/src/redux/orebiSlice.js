@@ -11,27 +11,41 @@ export const orebiSlice = createSlice({
   initialState,
   reducers: {
     addToCart: (state, action) => {
-      const item = state.products.find(
-        (item) => item._id === action.payload._id
-      );
+      const key = action.payload.cartKey || action.payload._id;
+      const item = state.products.find((item) => (item.cartKey || item._id) === key);
       if (item) {
         item.quantity = (item.quantity || 0) + (action.payload.quantity || 1);
+        // cập nhật giá và nhãn nếu thay đổi lựa chọn
+        if (typeof action.payload.price === "number") {
+          item.price = action.payload.price;
+        }
+        if (action.payload.selectedLabel) {
+          item.selectedLabel = action.payload.selectedLabel;
+          item.selectedType = action.payload.selectedType;
+          item.selectedId = action.payload.selectedId;
+          item.cartKey = key;
+        }
       } else {
         state.products.push({
           ...action.payload,
           quantity: action.payload.quantity || 1,
+          cartKey: key,
         });
       }
     },
     increaseQuantity: (state, action) => {
-      const item = state.products.find((item) => item._id === action.payload);
+      const item = state.products.find(
+        (item) => (item.cartKey || item._id) === action.payload
+      );
 
       if (item) {
         item.quantity = (item.quantity || 0) + 1;
       }
     },
     decreaseQuantity: (state, action) => {
-      const item = state.products.find((item) => item._id === action.payload);
+      const item = state.products.find(
+        (item) => (item.cartKey || item._id) === action.payload
+      );
 
       if (item) {
         const currentQuantity = item.quantity || 1;
@@ -43,15 +57,13 @@ export const orebiSlice = createSlice({
       }
     },
     deleteItem: (state, action) => {
-      state.products = state.products.filter(
-        (item) => item._id !== action.payload
-      );
+      state.products = state.products.filter((item) => (item.cartKey || item._id) !== action.payload);
     },
     removeSelectedItems: (state, action) => {
       // action.payload là array các id của sản phẩm cần xóa
       const selectedIds = action.payload;
       state.products = state.products.filter(
-        (item) => !selectedIds.includes(item._id)
+        (item) => !selectedIds.includes(item.cartKey || item._id)
       );
     },
     resetCart: (state) => {

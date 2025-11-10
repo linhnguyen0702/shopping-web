@@ -29,6 +29,8 @@ const Add = ({ token }) => {
     isAvailable: true,
     badge: false,
     tags: [],
+    options: [],
+    combos: [],
   });
   const [imageFiles, setImageFiles] = useState({
     image1: null,
@@ -158,6 +160,8 @@ const Add = ({ token }) => {
       data.append("isAvailable", formData.isAvailable);
       data.append("badge", formData.badge);
       data.append("tags", JSON.stringify(formData.tags));
+      data.append("options", JSON.stringify(formData.options));
+      data.append("combos", JSON.stringify(formData.combos));
 
       // Append image files
       Object.keys(imageFiles).forEach((key) => {
@@ -186,6 +190,56 @@ const Add = ({ token }) => {
       setLoading(false);
     }
   };
+
+  // Handlers for options
+  const addOption = () => {
+    setFormData((prev) => ({
+      ...prev,
+      options: [...prev.options, { label: "", price: "", stock: "" }],
+    }));
+  };
+
+  const removeOption = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      options: prev.options.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleOptionChange = (index, e) => {
+    const { name, value } = e.target;
+    const newOptions = [...formData.options];
+    newOptions[index][name] =
+      name === "price" || name === "stock" ? Number(value) : value;
+    setFormData((prev) => ({ ...prev, options: newOptions }));
+  };
+
+  // Handlers for combos
+  const addCombo = () => {
+    setFormData((prev) => ({
+      ...prev,
+      combos: [
+        ...prev.combos,
+        { name: "", items: "", price: "", stock: "", discountNote: "" },
+      ],
+    }));
+  };
+
+  const removeCombo = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      combos: prev.combos.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleComboChange = (index, e) => {
+    const { name, value } = e.target;
+    const newCombos = [...formData.combos];
+    newCombos[index][name] =
+      name === "price" || name === "stock" ? Number(value) : value;
+    setFormData((prev) => ({ ...prev, combos: newCombos }));
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-3 sm:p-4 lg:p-6">
       <div className="xl:max-w-5xl bg-white rounded-xl shadow-sm border border-gray-200">
@@ -340,8 +394,12 @@ const Add = ({ token }) => {
             {/* Pricing */}
             <div className="bg-gray-50 rounded-lg p-4 sm:p-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                Giá và kho hàng
+                Giá và kho hàng (Mặc định)
               </h3>
+              <p className="text-sm text-gray-500 -mt-3 mb-4">
+                Giá và tồn kho này áp dụng khi sản phẩm không có lựa chọn nào
+                hoặc khi được mua riêng lẻ.
+              </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
                 <div className="flex flex-col">
                   <Label htmlFor="price">Giá </Label>
@@ -388,6 +446,186 @@ const Add = ({ token }) => {
                   />
                 </div>
               </div>
+            </div>
+
+            {/* Product Options (Variants) */}
+            <div className="bg-gray-50 rounded-lg p-4 sm:p-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                Lựa chọn sản phẩm (mua lẻ)
+              </h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Thêm các lựa chọn khác nhau cho sản phẩm như màu sắc, kích
+                thước, loại... Mỗi lựa chọn sẽ có giá và tồn kho riêng.
+              </p>
+              <div className="space-y-3">
+                {formData.options.map((option, index) => (
+                  <div
+                    key={index}
+                    className="grid grid-cols-12 gap-3 items-end"
+                  >
+                    <div className="col-span-5 flex flex-col">
+                      <Label htmlFor={`option_label_${index}`} className="mb-1">
+                        Tên lựa chọn
+                      </Label>
+                      <Input
+                        type="text"
+                        name="label"
+                        placeholder="VD: Màu đen, Size L"
+                        value={option.label}
+                        onChange={(e) => handleOptionChange(index, e)}
+                      />
+                    </div>
+                    <div className="col-span-3 flex flex-col">
+                      <Label htmlFor={`option_price_${index}`} className="mb-1">
+                        Giá
+                      </Label>
+                      <Input
+                        type="number"
+                        name="price"
+                        placeholder="Giá lựa chọn"
+                        value={option.price}
+                        onChange={(e) => handleOptionChange(index, e)}
+                      />
+                    </div>
+                    <div className="col-span-3 flex flex-col">
+                      <Label htmlFor={`option_stock_${index}`} className="mb-1">
+                        Tồn kho
+                      </Label>
+                      <Input
+                        type="number"
+                        name="stock"
+                        placeholder="Tồn kho"
+                        value={option.stock}
+                        onChange={(e) => handleOptionChange(index, e)}
+                      />
+                    </div>
+                    <div className="col-span-1">
+                      <button
+                        type="button"
+                        onClick={() => removeOption(index)}
+                        className="w-full bg-red-500 text-white px-2 rounded hover:bg-red-600 transition-colors h-[36px] flex items-center justify-center text-sm"
+                      >
+                        <FaTimes />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={addOption}
+                className="mt-4 bg-blue-100 text-blue-700 px-4 py-2 rounded-md hover:bg-blue-200 transition-colors text-sm font-medium"
+              >
+                + Thêm lựa chọn
+              </button>
+            </div>
+
+            {/* Product Combos */}
+            <div className="bg-gray-50 rounded-lg p-4 sm:p-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                Gói Combo
+              </h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Tạo các gói combo để bán nhiều sản phẩm cùng lúc với giá ưu đãi.
+              </p>
+              <div className="space-y-4">
+                {formData.combos.map((combo, index) => (
+                  <div key={index} className="space-y-3">
+                    <div className="grid grid-cols-12 gap-3 items-end">
+                      <div className="col-span-12 sm:col-span-3 flex flex-col">
+                        <Label htmlFor={`combo_name_${index}`} className="mb-1">
+                          Tên Combo
+                        </Label>
+                        <Input
+                          type="text"
+                          name="name"
+                          placeholder="VD: Combo 2 món"
+                          value={combo.name}
+                          onChange={(e) => handleComboChange(index, e)}
+                        />
+                      </div>
+                      <div className="col-span-12 sm:col-span-6 flex flex-col">
+                        <Label
+                          htmlFor={`combo_items_${index}`}
+                          className="mb-1"
+                        >
+                          Mô tả Combo
+                        </Label>
+                        <Input
+                          type="text"
+                          name="items"
+                          placeholder="VD: 1 bàn + 2 ghế"
+                          value={combo.items}
+                          onChange={(e) => handleComboChange(index, e)}
+                        />
+                      </div>
+                      <div className="col-span-12 sm:col-span-3 flex flex-col">
+                        <Label
+                          htmlFor={`combo_price_${index}`}
+                          className="mb-1"
+                        >
+                          Giá Combo
+                        </Label>
+                        <Input
+                          type="number"
+                          name="price"
+                          placeholder="Giá combo"
+                          value={combo.price}
+                          onChange={(e) => handleComboChange(index, e)}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-12 gap-3 items-end">
+                      <div className="col-span-12 sm:col-span-7 flex flex-col">
+                        <Label
+                          htmlFor={`combo_discountNote_${index}`}
+                          className="mb-1"
+                        >
+                          Ghi chú KM
+                        </Label>
+                        <Input
+                          type="text"
+                          name="discountNote"
+                          placeholder="VD: Tiết kiệm 15%"
+                          value={combo.discountNote}
+                          onChange={(e) => handleComboChange(index, e)}
+                        />
+                      </div>
+                      <div className="col-span-11 sm:col-span-4 flex flex-col">
+                        <Label
+                          htmlFor={`combo_stock_${index}`}
+                          className="mb-1"
+                        >
+                          Tồn kho
+                        </Label>
+                        <Input
+                          type="number"
+                          name="stock"
+                          placeholder="Số lượng"
+                          value={combo.stock}
+                          onChange={(e) => handleComboChange(index, e)}
+                        />
+                      </div>
+                      <div className="col-span-1">
+                        <button
+                          type="button"
+                          onClick={() => removeCombo(index)}
+                          className="w-full bg-red-500 text-white px-2 rounded hover:bg-red-600 transition-colors h-[36px] flex items-center justify-center text-sm"
+                        >
+                          <FaTimes />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={addCombo}
+                className="mt-4 bg-green-100 text-green-700 px-4 py-2 rounded-md hover:bg-green-200 transition-colors text-sm font-medium"
+              >
+                + Thêm Combo
+              </button>
             </div>
 
             {/* Category and Settings */}

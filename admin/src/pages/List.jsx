@@ -58,6 +58,8 @@ const List = ({ token }) => {
     isAvailable: true,
     badge: false,
     tags: [],
+    options: [],
+    combos: [],
   });
 
   const [imageFiles, setImageFiles] = useState({
@@ -192,6 +194,8 @@ const List = ({ token }) => {
       isAvailable: product.isAvailable !== false,
       badge: product.badge || false,
       tags: product.tags || [],
+      options: product.options || [],
+      combos: product.combos || [],
     });
     setImageFiles({
       image1: null,
@@ -219,6 +223,8 @@ const List = ({ token }) => {
       isAvailable: true,
       badge: false,
       tags: [],
+      options: [],
+      combos: [],
     });
     setImageFiles({
       image1: null,
@@ -249,6 +255,55 @@ const List = ({ token }) => {
   const closeDetailsModal = () => {
     setShowDetailsModal(false);
     setSelectedProduct(null);
+  };
+
+  // Handlers for options
+  const addOption = () => {
+    setFormData((prev) => ({
+      ...prev,
+      options: [...prev.options, { label: "", price: "", stock: "" }],
+    }));
+  };
+
+  const removeOption = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      options: prev.options.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleOptionChange = (index, e) => {
+    const { name, value } = e.target;
+    const newOptions = [...formData.options];
+    newOptions[index][name] =
+      name === "price" || name === "stock" ? Number(value) : value;
+    setFormData((prev) => ({ ...prev, options: newOptions }));
+  };
+
+  // Handlers for combos
+  const addCombo = () => {
+    setFormData((prev) => ({
+      ...prev,
+      combos: [
+        ...prev.combos,
+        { name: "", items: "", price: "", stock: "", discountNote: "" },
+      ],
+    }));
+  };
+
+  const removeCombo = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      combos: prev.combos.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleComboChange = (index, e) => {
+    const { name, value } = e.target;
+    const newCombos = [...formData.combos];
+    newCombos[index][name] =
+      name === "price" || name === "stock" ? Number(value) : value;
+    setFormData((prev) => ({ ...prev, combos: newCombos }));
   };
 
   // Handle product update
@@ -282,6 +337,8 @@ const List = ({ token }) => {
       data.append("isAvailable", formData.isAvailable);
       data.append("badge", formData.badge);
       data.append("tags", JSON.stringify(formData.tags));
+      data.append("options", JSON.stringify(formData.options));
+      data.append("combos", JSON.stringify(formData.combos));
 
       // Append image files only if new images are selected
       Object.keys(imageFiles).forEach((key) => {
@@ -1071,6 +1128,202 @@ const List = ({ token }) => {
                   </div>
                 </div>
 
+                {/* Product Options (Variants) */}
+                <div>
+                  <h4 className="text-md font-semibold text-gray-800 mb-2">
+                    Lựa chọn sản phẩm (mua lẻ)
+                  </h4>
+                  <p className="text-sm text-gray-500 mb-3">
+                    Thêm các lựa chọn khác nhau cho sản phẩm như màu sắc, kích
+                    thước, loại...
+                  </p>
+                  <div className="space-y-3">
+                    {formData.options.map((option, index) => (
+                      <div
+                        key={index}
+                        className="grid grid-cols-12 gap-3 items-end p-2 bg-gray-50 rounded border"
+                      >
+                        <div className="col-span-12 sm:col-span-5 flex flex-col">
+                          <Label
+                            htmlFor={`edit_option_label_${index}`}
+                            className="mb-1"
+                          >
+                            Tên lựa chọn
+                          </Label>
+                          <Input
+                            type="text"
+                            name="label"
+                            placeholder="VD: Màu đen"
+                            value={option.label}
+                            onChange={(e) => handleOptionChange(index, e)}
+                          />
+                        </div>
+                        <div className="col-span-6 sm:col-span-3 flex flex-col">
+                          <Label
+                            htmlFor={`edit_option_price_${index}`}
+                            className="mb-1"
+                          >
+                            Giá
+                          </Label>
+                          <Input
+                            type="number"
+                            name="price"
+                            placeholder="Giá"
+                            value={option.price}
+                            onChange={(e) => handleOptionChange(index, e)}
+                          />
+                        </div>
+                        <div className="col-span-5 sm:col-span-3 flex flex-col">
+                          <Label
+                            htmlFor={`edit_option_stock_${index}`}
+                            className="mb-1"
+                          >
+                            Tồn kho
+                          </Label>
+                          <Input
+                            type="number"
+                            name="stock"
+                            placeholder="Tồn kho"
+                            value={option.stock}
+                            onChange={(e) => handleOptionChange(index, e)}
+                          />
+                        </div>
+                        <div className="col-span-1">
+                          <button
+                            type="button"
+                            onClick={() => removeOption(index)}
+                            className="w-full bg-red-500 text-white px-2 rounded hover:bg-red-600 h-[36px] flex items-center justify-center text-sm"
+                          >
+                            <FaTimes />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addOption}
+                    className="mt-3 bg-blue-100 text-blue-700 px-3 py-2 rounded text-sm font-medium hover:bg-blue-200"
+                  >
+                    + Thêm lựa chọn
+                  </button>
+                </div>
+
+                {/* Product Combos */}
+                <div>
+                  <h4 className="text-md font-semibold text-gray-800 mb-2">
+                    Gói Combo
+                  </h4>
+                  <p className="text-sm text-gray-500 mb-3">
+                    Tạo các gói combo để bán nhiều sản phẩm cùng lúc với giá ưu
+                    đãi.
+                  </p>
+                  <div className="space-y-4">
+                    {formData.combos.map((combo, index) => (
+                      <div
+                        key={index}
+                        className="space-y-3 p-2 bg-gray-50 rounded border"
+                      >
+                        <div className="grid grid-cols-12 gap-3 items-end">
+                          <div className="col-span-12 sm:col-span-3 flex flex-col">
+                            <Label
+                              htmlFor={`edit_combo_name_${index}`}
+                              className="mb-1"
+                            >
+                              Tên Combo
+                            </Label>
+                            <Input
+                              type="text"
+                              name="name"
+                              placeholder="VD: Combo 2 món"
+                              value={combo.name}
+                              onChange={(e) => handleComboChange(index, e)}
+                            />
+                          </div>
+                          <div className="col-span-12 sm:col-span-6 flex flex-col">
+                            <Label
+                              htmlFor={`edit_combo_items_${index}`}
+                              className="mb-1"
+                            >
+                              Mô tả Combo
+                            </Label>
+                            <Input
+                              type="text"
+                              name="items"
+                              placeholder="VD: 1 bàn + 2 ghế"
+                              value={combo.items}
+                              onChange={(e) => handleComboChange(index, e)}
+                            />
+                          </div>
+                          <div className="col-span-12 sm:col-span-3 flex flex-col">
+                            <Label
+                              htmlFor={`edit_combo_price_${index}`}
+                              className="mb-1"
+                            >
+                              Giá Combo
+                            </Label>
+                            <Input
+                              type="number"
+                              name="price"
+                              placeholder="Giá combo"
+                              value={combo.price}
+                              onChange={(e) => handleComboChange(index, e)}
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-12 gap-3 items-end">
+                          <div className="col-span-12 sm:col-span-7 flex flex-col">
+                            <Label
+                              htmlFor={`edit_combo_discountNote_${index}`}
+                              className="mb-1"
+                            >
+                              Ghi chú KM
+                            </Label>
+                            <Input
+                              type="text"
+                              name="discountNote"
+                              placeholder="VD: Tiết kiệm 15%"
+                              value={combo.discountNote}
+                              onChange={(e) => handleComboChange(index, e)}
+                            />
+                          </div>
+                          <div className="col-span-11 sm:col-span-4 flex flex-col">
+                            <Label
+                              htmlFor={`edit_combo_stock_${index}`}
+                              className="mb-1"
+                            >
+                              Tồn kho
+                            </Label>
+                            <Input
+                              type="number"
+                              name="stock"
+                              placeholder="Số lượng"
+                              value={combo.stock}
+                              onChange={(e) => handleComboChange(index, e)}
+                            />
+                          </div>
+                          <div className="col-span-1">
+                            <button
+                              type="button"
+                              onClick={() => removeCombo(index)}
+                              className="w-full bg-red-500 text-white px-2 rounded hover:bg-red-600 transition-colors h-[36px] flex items-center justify-center text-sm"
+                            >
+                              <FaTimes />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addCombo}
+                    className="mt-3 bg-green-100 text-green-700 px-3 py-2 rounded text-sm font-medium hover:bg-green-200"
+                  >
+                    + Thêm Combo
+                  </button>
+                </div>
+
                 <div className="flex gap-3 pt-4 border-t">
                   <button
                     type="button"
@@ -1205,65 +1458,119 @@ const List = ({ token }) => {
               <div className="p-6 space-y-6">
                 {/* Product Header */}
                 <div>
-                  <h3 className="text-2xl font-bold text-gray-900">{selectedProduct.name}</h3>
+                  <h3 className="text-2xl font-bold text-gray-900">
+                    {selectedProduct.name}
+                  </h3>
                   <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                    <span><strong>Thương hiệu:</strong> {selectedProduct.brand || 'N/A'}</span>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">{selectedProduct.category}</span>
+                    <span>
+                      <strong>Thương hiệu:</strong>{" "}
+                      {selectedProduct.brand || "N/A"}
+                    </span>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {selectedProduct.category}
+                    </span>
                   </div>
                 </div>
 
                 {/* Image Gallery */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   {selectedProduct.images.map((img, index) => (
-                    <div key={index} className="border rounded-lg overflow-hidden">
-                      <img src={img} alt={`${selectedProduct.name} - image ${index + 1}`} className="w-full h-40 object-cover" />
+                    <div
+                      key={index}
+                      className="border rounded-lg overflow-hidden"
+                    >
+                      <img
+                        src={img}
+                        alt={`${selectedProduct.name} - image ${index + 1}`}
+                        className="w-full h-40 object-cover"
+                      />
                     </div>
                   ))}
                 </div>
 
                 {/* Description */}
                 <div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-2">Mô tả</h4>
-                  <p className="text-gray-600 whitespace-pre-wrap">{selectedProduct.description}</p>
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">
+                    Mô tả
+                  </h4>
+                  <p className="text-gray-600 whitespace-pre-wrap">
+                    {selectedProduct.description}
+                  </p>
                 </div>
 
                 {/* Pricing & Stock */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
                   <div>
                     <Label>Giá</Label>
-                    <p className="text-lg font-semibold text-gray-900"><PriceFormat amount={selectedProduct.price} /></p>
+                    <p className="text-lg font-semibold text-gray-900">
+                      <PriceFormat amount={selectedProduct.price} />
+                    </p>
                   </div>
                   <div>
                     <Label>Giảm giá</Label>
-                    <p className={`text-lg font-semibold ${selectedProduct.discountedPercentage > 0 ? 'text-green-600' : 'text-gray-900'}`}>
-                      {selectedProduct.discountedPercentage}%</p>
+                    <p
+                      className={`text-lg font-semibold ${
+                        selectedProduct.discountedPercentage > 0
+                          ? "text-green-600"
+                          : "text-gray-900"
+                      }`}
+                    >
+                      {selectedProduct.discountedPercentage}%
+                    </p>
                   </div>
                   <div>
                     <Label>Tồn kho</Label>
-                    <p className={`text-lg font-semibold ${selectedProduct.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {selectedProduct.stock} ({selectedProduct.stock > 0 ? 'Còn hàng' : 'Hết hàng'})
+                    <p
+                      className={`text-lg font-semibold ${
+                        selectedProduct.stock > 0
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {selectedProduct.stock} (
+                      {selectedProduct.stock > 0 ? "Còn hàng" : "Hết hàng"})
                     </p>
                   </div>
                 </div>
 
                 {/* Other Details */}
                 <div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-2">Thông tin khác</h4>
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">
+                    Thông tin khác
+                  </h4>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-                    <p><strong>Loại:</strong> {selectedProduct._type || 'N/A'}</p>
-                    <p><strong>Ưu đãi:</strong> {selectedProduct.offer ? 'Có' : 'Không'}</p>
-                    <p><strong>Nhãn:</strong> {selectedProduct.badge ? 'Có' : 'Không'}</p>
-                    <p><strong>Tình trạng:</strong> {selectedProduct.isAvailable ? 'Hiển thị' : 'Ẩn'}</p>
+                    <p>
+                      <strong>Loại:</strong> {selectedProduct._type || "N/A"}
+                    </p>
+                    <p>
+                      <strong>Ưu đãi:</strong>{" "}
+                      {selectedProduct.offer ? "Có" : "Không"}
+                    </p>
+                    <p>
+                      <strong>Nhãn:</strong>{" "}
+                      {selectedProduct.badge ? "Có" : "Không"}
+                    </p>
+                    <p>
+                      <strong>Tình trạng:</strong>{" "}
+                      {selectedProduct.isAvailable ? "Hiển thị" : "Ẩn"}
+                    </p>
                   </div>
                 </div>
 
                 {/* Tags */}
                 {selectedProduct.tags && selectedProduct.tags.length > 0 && (
                   <div>
-                    <h4 className="text-lg font-medium text-gray-900 mb-2">Tags</h4>
+                    <h4 className="text-lg font-medium text-gray-900 mb-2">
+                      Tags
+                    </h4>
                     <div className="flex flex-wrap gap-2">
-                      {selectedProduct.tags.map(tag => (
-                        <span key={tag} className="px-3 py-1 bg-gray-200 text-gray-800 text-sm rounded-full">{tag}</span>
+                      {selectedProduct.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="px-3 py-1 bg-gray-200 text-gray-800 text-sm rounded-full"
+                        >
+                          {tag}
+                        </span>
                       ))}
                     </div>
                   </div>

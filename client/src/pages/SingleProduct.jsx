@@ -52,6 +52,9 @@ const SingleProduct = () => {
   const [productReviews, setProductReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [averageRating, setAverageRating] = useState(0);
+  // Variant/combo selections
+  const [selectedOptionId, setSelectedOptionId] = useState(null);
+  const [selectedComboId, setSelectedComboId] = useState(null);
 
   // Review form states
   const [showReviewForm, setShowReviewForm] = useState(false);
@@ -477,6 +480,17 @@ const SingleProduct = () => {
           productInfo?.image,
         ].filter((img) => img); // Filter out undefined images
 
+  // Compute active price based on selection
+  const activeOption =
+    productInfo?.options?.find((o) => o._id === selectedOptionId) || null;
+  const activeCombo =
+    productInfo?.combos?.find((c) => c._id === selectedComboId) || null;
+  const displayPrice = activeCombo
+    ? activeCombo.price
+    : activeOption
+    ? activeOption.price
+    : productInfo?.price;
+
   const handleQuantityChange = (type) => {
     if (type === "increment") {
       setQuantity((prev) => prev + 1);
@@ -587,7 +601,34 @@ const SingleProduct = () => {
     e.preventDefault();
 
     // Thêm vào Redux ngay lập tức để UX mượt mà
-    dispatch(addToCart({ ...productInfo, quantity }));
+    const cartKeyBase = productInfo._id;
+    const usingCombo = !!activeCombo;
+    const usingOption = !!activeOption && !activeCombo;
+    const cartKey = usingCombo
+      ? `${cartKeyBase}::combo:${activeCombo._id}`
+      : usingOption
+      ? `${cartKeyBase}::opt:${activeOption._id}`
+      : cartKeyBase;
+
+    const cartPayload = {
+      ...productInfo,
+      price: displayPrice,
+      quantity,
+      cartKey,
+      selectedLabel: usingCombo
+        ? `Combo: ${activeCombo.name}`
+        : usingOption
+        ? `Lựa chọn: ${activeOption.label}`
+        : undefined,
+      selectedType: usingCombo ? "combo" : usingOption ? "option" : "base",
+      selectedId: usingCombo
+        ? activeCombo._id
+        : usingOption
+        ? activeOption._id
+        : undefined,
+    };
+
+    dispatch(addToCart(cartPayload));
     toast.success("Đã thêm vào giỏ hàng");
 
     // Đồng bộ backend nếu đã đăng nhập (chạy background)
@@ -597,16 +638,20 @@ const SingleProduct = () => {
         console.log("🛒 Đang đồng bộ giỏ hàng với server...");
 
         // Tính toán products mới dựa trên state hiện tại
-        const existingItem = products.find((p) => p._id === productInfo._id);
+        const existingItem = products.find(
+          (p) => (p.cartKey || p._id) === cartKey
+        );
         const newQuantity = existingItem
           ? existingItem.quantity + quantity
           : quantity;
 
         const updatedProducts = existingItem
           ? products.map((p) =>
-              p._id === productInfo._id ? { ...p, quantity: newQuantity } : p
+              (p.cartKey || p._id) === cartKey
+                ? { ...p, quantity: newQuantity }
+                : p
             )
-          : [...products, { ...productInfo, quantity }];
+          : [...products, cartPayload];
 
         await updateUserCart(updatedProducts);
         console.log("✅ Giỏ hàng đã được đồng bộ thành công!");
@@ -815,7 +860,7 @@ const SingleProduct = () => {
 
             {/* Price */}
             <div className="flex items-center gap-4">
-              {productInfo?.discountedPercentage > 0 && (
+              {productInfo?.discountedPercentage > 0 && !activeOption && !activeCombo && (
                 <span className="text-2xl text-gray-400 line-through">
                   <PriceFormat
                     amount={
@@ -826,9 +871,9 @@ const SingleProduct = () => {
                 </span>
               )}
               <span className="text-3xl font-light text-gray-900">
-                <PriceFormat amount={productInfo?.price} />
+                <PriceFormat amount={displayPrice} />
               </span>
-              {productInfo?.discountedPercentage > 0 && (
+              {productInfo?.discountedPercentage > 0 && !activeOption && !activeCombo && (
                 <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-medium">
                   Giảm {productInfo.discountedPercentage}%
                 </span>
@@ -876,6 +921,85 @@ const SingleProduct = () => {
                   : productInfo.description
                 : "Sản phẩm chất lượng cao với thiết kế hiện đại và tính năng ưu việt, mang đến trải nghiệm tuyệt vời cho người sử dụng."}
             </p>
+
+            {/* Variants / Combos */}
+            {(productInfo?.options?.length > 0 || productInfo?.combos?.length > 0) && (
+              <div className="space-y-6">
+                {productInfo?.options?.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="text-sm font-medium text-gray-900">Lựa chọn</div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {productInfo.options.map((opt) => {
+                        const checked = selectedOptionId === opt._id && !selectedComboId;
+                        return (
+                          <label
+                            key={opt._id}
+                            className={`border rounded-lg p-3 cursor-pointer flex items-center justify-between ${checked ? "border-black" : "border-gray-200 hover:border-gray-300"}`}
+                            onClick={() => {
+                              setSelectedComboId(null);
+                              setSelectedOptionId(opt._id);
+                            }}
+                          >
+                            <div className="flex flex-col">
+                              <span className="text-sm text-gray-900">{opt.label}</span>
+                              <span className="text-xs text-gray-500">
+                                <PriceFormat amount={opt.price} />
+                              </span>
+                            </div>
+                            <input
+                              readOnly
+                              type="radio"
+                              className="accent-black"
+                              checked={checked}
+                            />
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {productInfo?.combos?.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="text-sm font-medium text-gray-900">Combo tiết kiệm</div>
+                    <div className="space-y-3">
+                      {productInfo.combos.map((combo) => {
+                        const checked = selectedComboId === combo._id;
+                        return (
+                          <label
+                            key={combo._id}
+                            className={`border rounded-lg p-3 cursor-pointer flex items-center justify-between ${checked ? "border-black" : "border-gray-200 hover:border-gray-300"}`}
+                            onClick={() => {
+                              setSelectedOptionId(null);
+                              setSelectedComboId(combo._id);
+                            }}
+                          >
+                            <div className="flex flex-col">
+                              <span className="text-sm text-gray-900">{combo.name}</span>
+                              <span className="text-xs text-gray-500">
+                                <PriceFormat amount={combo.price} />
+                                {combo.discountNote ? ` • ${combo.discountNote}` : ""}
+                              </span>
+                              {combo.items?.length ? (
+                                <span className="text-xs text-gray-400">
+                                  Bao gồm: {combo.items.join(", ")}
+                                </span>
+                              ) : null}
+                            </div>
+                            <input
+                              readOnly
+                              type="radio"
+                              className="accent-black"
+                              checked={checked}
+                            />
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Quantity & Add to Cart */}
             <div className="space-y-4">

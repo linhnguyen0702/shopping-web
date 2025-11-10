@@ -16,6 +16,28 @@ const productSchema = new mongoose.Schema(
     offer: { type: Boolean },
     description: { type: String, required: true },
     tags: { type: Array },
+    // Các lựa chọn biến thể (mua lẻ)
+    options: [
+      {
+        _id: { type: mongoose.Schema.Types.ObjectId, auto: true },
+        label: { type: String, required: true }, // Ví dụ: "Loại A", "Màu Đen", "Size L"
+        price: { type: Number, required: true },
+        stock: { type: Number, default: 0 },
+        sku: { type: String },
+      },
+    ],
+    // Các gói combo (mua kèm rẻ hơn)
+    combos: [
+      {
+        _id: { type: mongoose.Schema.Types.ObjectId, auto: true },
+        name: { type: String, required: true }, // Ví dụ: "Combo 2 ngăn", "Combo đầy đủ"
+        items: [{ type: String }], // mô tả nhanh những gì bao gồm
+        price: { type: Number, required: true }, // giá combo (thường thấp hơn tổng lẻ)
+        stock: { type: Number, default: 0 },
+        sku: { type: String },
+        discountNote: { type: String }, // ví dụ: "Tiết kiệm 10% so với mua lẻ"
+      },
+    ],
     // Thông tin vận chuyển
     shipping: {
       weight: { type: Number, default: 0.5 }, // kg

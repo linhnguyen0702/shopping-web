@@ -70,7 +70,7 @@ const Cart = () => {
     let discountedPrice = 0;
     products.forEach((item) => {
       // Chỉ tính toán cho các sản phẩm được chọn
-      if (selectedItems.has(item._id)) {
+      if (selectedItems.has(item.cartKey || item._id)) {
         const itemPrice = item?.price || 0;
         const itemQuantity = item?.quantity || 1;
         const itemDiscountPercentage = item?.discountedPercentage || 0;
@@ -102,7 +102,7 @@ const Cart = () => {
     setLoadingShipping(true);
     try {
       const selectedProducts = products.filter((item) =>
-        selectedItems.has(item._id)
+        selectedItems.has(item.cartKey || item._id)
       );
 
       const response = await fetch(
@@ -161,7 +161,7 @@ const Cart = () => {
   useEffect(() => {
     if (prevProductsLength.current < products.length) {
       // Có sản phẩm mới được thêm vào (thêm sản phẩm từ trang khác)
-      const currentProductIds = new Set(products.map((item) => item._id));
+      const currentProductIds = new Set(products.map((item) => item.cartKey || item._id));
 
       // Lấy ID của các sản phẩm đã có trước đó (từ selectedItems và itemSelectionHistory)
       const previousProductIds = new Set([
@@ -195,7 +195,7 @@ const Cart = () => {
       const autoSelectedItems = new Set();
 
       products.forEach((product) => {
-        const itemId = product._id;
+        const itemId = product.cartKey || product._id;
         if (!itemSelectionHistory.has(itemId)) {
           // Sản phẩm mới chưa từng có thay đổi -> tự động chọn
           autoSelectedItems.add(itemId);
@@ -221,7 +221,7 @@ const Cart = () => {
       });
     } else if (prevProductsLength.current > products.length) {
       // Có sản phẩm bị xóa - dọn dẹp lịch sử
-      const currentProductIds = new Set(products.map((item) => item._id));
+      const currentProductIds = new Set(products.map((item) => item.cartKey || item._id));
 
       setItemSelectionHistory((prevHistory) => {
         const newHistory = new Map(prevHistory);
@@ -383,7 +383,7 @@ const Cart = () => {
     }
     // Wait for Redux to update, then sync
     const updatedProducts = products.map((item) =>
-      item._id === id
+      (item.cartKey || item._id) === id
         ? {
             ...item,
             quantity:
@@ -413,13 +413,13 @@ const Cart = () => {
     });
 
     // Cập nhật trạng thái "chọn tất cả"
-    const remainingProducts = products.filter((item) => item._id !== id);
+    const remainingProducts = products.filter((item) => (item.cartKey || item._id) !== id);
     setSelectAll(
       newSelectedItems.size === remainingProducts.length &&
         remainingProducts.length > 0
     );
 
-    const updatedProducts = products.filter((item) => item._id !== id);
+    const updatedProducts = products.filter((item) => (item.cartKey || item._id) !== id);
     await syncCartToBackend(updatedProducts);
   };
 
@@ -448,7 +448,7 @@ const Cart = () => {
   const handleSelectAll = (checked) => {
     setSelectAll(checked);
     if (checked) {
-      const allItemIds = new Set(products.map((item) => item._id));
+      const allItemIds = new Set(products.map((item) => item.cartKey || item._id));
       setSelectedItems(allItemIds);
     } else {
       setSelectedItems(new Set());
@@ -458,7 +458,7 @@ const Cart = () => {
     setItemSelectionHistory((prevHistory) => {
       const newHistory = new Map(prevHistory);
       products.forEach((item) => {
-        newHistory.set(item._id, checked);
+        newHistory.set(item.cartKey || item._id, checked);
       });
       return newHistory;
     });
@@ -528,7 +528,7 @@ const Cart = () => {
                 {/* Cart Items List */}
                 <div className="divide-y divide-gray-200">
                   {products.map((item) => (
-                    <div key={item._id} className="p-4 lg:px-8 lg:py-6">
+                    <div key={item.cartKey || item._id} className="p-4 lg:px-8 lg:py-6">
                       {/* Mobile Layout */}
                       <div className="lg:hidden">
                         <div className="flex space-x-4">
@@ -536,9 +536,9 @@ const Cart = () => {
                           <div className="flex items-start pt-2">
                             <input
                               type="checkbox"
-                              checked={selectedItems.has(item._id)}
+                              checked={selectedItems.has(item.cartKey || item._id)}
                               onChange={(e) =>
-                                handleItemSelect(item._id, e.target.checked)
+                                handleItemSelect(item.cartKey || item._id, e.target.checked)
                               }
                               className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                             />
@@ -616,7 +616,7 @@ const Cart = () => {
                             <div className="flex items-center border border-gray-300 rounded-lg">
                               <button
                                 onClick={() =>
-                                  handleQuantityChange(item._id, "decrease")
+                                  handleQuantityChange(item.cartKey || item._id, "decrease")
                                 }
                                 disabled={(item?.quantity || 1) <= 1}
                                 className="p-1.5 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-l-lg"
@@ -628,7 +628,7 @@ const Cart = () => {
                               </span>
                               <button
                                 onClick={() =>
-                                  handleQuantityChange(item._id, "increase")
+                                  handleQuantityChange(item.cartKey || item._id, "increase")
                                 }
                                 className="p-1.5 hover:bg-gray-50 transition-colors rounded-r-lg"
                               >
@@ -653,7 +653,7 @@ const Cart = () => {
                             </div>
                             <button
                               onClick={() =>
-                                handleRemoveItem(item._id, item.name)
+                                handleRemoveItem(item.cartKey || item._id, item.name)
                               }
                               className="flex items-center gap-2 px-3 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors border border-red-200"
                               title="Xóa sản phẩm"
@@ -669,11 +669,11 @@ const Cart = () => {
                       <div className="hidden lg:grid lg:grid-cols-12 gap-6 items-center">
                         {/* Checkbox */}
                         <div className="lg:col-span-1 flex items-center justify-center">
-                          <input
+                            <input
                             type="checkbox"
-                            checked={selectedItems.has(item._id)}
+                              checked={selectedItems.has(item.cartKey || item._id)}
                             onChange={(e) =>
-                              handleItemSelect(item._id, e.target.checked)
+                              handleItemSelect(item.cartKey || item._id, e.target.checked)
                             }
                             className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                           />
@@ -749,7 +749,7 @@ const Cart = () => {
                             <div className="flex items-center border border-gray-300 rounded-md">
                               <button
                                 onClick={() =>
-                                  handleQuantityChange(item._id, "decrease")
+                                  handleQuantityChange(item.cartKey || item._id, "decrease")
                                 }
                                 disabled={(item?.quantity || 1) <= 1}
                                 className="p-1.5 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -761,7 +761,7 @@ const Cart = () => {
                               </span>
                               <button
                                 onClick={() =>
-                                  handleQuantityChange(item._id, "increase")
+                                  handleQuantityChange(item.cartKey || item._id, "increase")
                                 }
                                 className="p-1.5 hover:bg-gray-50 transition-colors"
                               >
@@ -791,7 +791,7 @@ const Cart = () => {
                           <div className="flex lg:justify-center">
                             <button
                               onClick={() =>
-                                handleRemoveItem(item._id, item.name)
+                                handleRemoveItem(item.cartKey || item._id, item.name)
                               }
                               className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors border border-red-200 hover:border-red-300"
                               title="Xóa sản phẩm"
