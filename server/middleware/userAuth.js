@@ -12,7 +12,7 @@ const userAuth = async (req, res, next) => {
     if (!token) {
       return res.json({
         success: false,
-        message: "Not Authorized, login required",
+        message: "",
       });
     }
 

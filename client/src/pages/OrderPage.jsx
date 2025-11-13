@@ -28,30 +28,39 @@ const OrderPage = () => {
   const orderCount = useSelector((state) => state.orebiReducer.orderCount);
 
   // Get data from location state (passed from Cart.jsx)
-  const {
-    selectedItems,
-    selectedAddress,
-    totalAmount,
-    discountAmount,
-    shippingMethod,
-    shippingFee,
-  } = location.state || {};
+  const locationState = location.state || {};
+
+  // Store order data in local state to persist across re-renders
+  const [orderData] = useState({
+    selectedItems: locationState.selectedItems || [],
+    totalAmount: locationState.totalAmount || 0,
+    discountAmount: locationState.discountAmount || 0,
+  });
 
   const [processing, setProcessing] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("");
   const [addresses, setAddresses] = useState([]);
-  const [currentAddress, setCurrentAddress] = useState(selectedAddress);
+  const [currentAddress, setCurrentAddress] = useState(
+    locationState.selectedAddress
+  );
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [isAddressesExpanded, setIsAddressesExpanded] = useState(false);
   const [showShippingModal, setShowShippingModal] = useState(false);
-  const [currentShipping, setCurrentShipping] = useState(shippingMethod);
-  const [currentShippingFee, setCurrentShippingFee] = useState(shippingFee);
+  const [currentShipping, setCurrentShipping] = useState(
+    locationState.shippingMethod
+  );
+  const [currentShippingFee, setCurrentShippingFee] = useState(
+    locationState.shippingFee
+  );
 
   // Payment Modal states
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [createdOrderId, setCreatedOrderId] = useState(null);
   const [orderAmount, setOrderAmount] = useState(0);
   const [pendingCartItems, setPendingCartItems] = useState([]); // Items to remove after payment confirmation
+
+  // Destructure from orderData for easier access
+  const { selectedItems, totalAmount, discountAmount } = orderData;
 
   const [addressForm, setAddressForm] = useState({
     label: "",
@@ -155,13 +164,14 @@ const OrderPage = () => {
     []
   );
 
-  // Redirect if no order data
+  // Redirect if no order data - only check on mount
   useEffect(() => {
     if (!selectedItems || selectedItems.length === 0) {
       toast.error("Không có sản phẩm để đặt hàng");
       navigate("/cart");
     }
-  }, [selectedItems, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   // Set default shipping if not provided
   useEffect(() => {
@@ -279,30 +289,31 @@ const OrderPage = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:8000/api/order/create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          items: selectedItems,
-          amount: discountAmount || totalAmount,
-          address: {
-            ...currentAddress,
-            email: userInfo.email,
-            name: userInfo.name,
-          },
-          paymentMethod: selectedPaymentMethod,
-          shippingMethod: currentShipping,
-          shippingFee: currentShippingFee || 0,
-        }),
-      });
 
-      const data = await response.json();
-      if (data.success) {
-        // Xử lý theo payment method
-        if (selectedPaymentMethod === "cod") {
+      // COD: Use old endpoint (creates order immediately)
+      if (selectedPaymentMethod === "cod") {
+        const response = await fetch("http://localhost:8000/api/order/create", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            items: selectedItems,
+            amount: discountAmount || totalAmount,
+            address: {
+              ...currentAddress,
+              email: userInfo.email,
+              name: userInfo.name,
+            },
+            paymentMethod: "cod",
+            shippingMethod: currentShipping,
+            shippingFee: currentShippingFee || 0,
+          }),
+        });
+
+        const data = await response.json();
+        if (data.success) {
           toast.success("Đặt hàng thành công!");
 
           // COD: Remove items from cart ngay
@@ -313,20 +324,81 @@ const OrderPage = () => {
           // Redirect trực tiếp đến trang chi tiết đơn hàng
           navigate(`/checkout/${data.order._id}`);
         } else {
-          // Bank transfer hoặc QR code: Hiển thị thông báo yêu cầu thanh toán
-          toast.success("Vui lòng thanh toán để đặt hàng thành công");
-
-          // Chưa remove cart, đợi user xác nhận
-          // Lưu items cần remove sau khi xác nhận thanh toán
-          const selectedItemIds = selectedItems.map((item) => item._id);
-          setPendingCartItems(selectedItemIds);
-
-          setCreatedOrderId(data.order._id);
-          setOrderAmount(data.order.amount);
-          setShowPaymentModal(true);
+          toast.error(data.message || "Đặt hàng thất bại");
         }
-      } else {
-        toast.error(data.message || "Đặt hàng thất bại");
+      }
+      // Online payments: Use new endpoint (creates temp order, real order after payment)
+      else {
+        const response = await fetch(
+          "http://localhost:8000/api/payment/initiate",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              items: selectedItems,
+              address: {
+                ...currentAddress,
+                email: userInfo.email,
+                name: userInfo.name,
+              },
+              paymentMethod: selectedPaymentMethod,
+              shippingMethod: currentShipping,
+              shippingFee: currentShippingFee || 0,
+            }),
+          }
+        );
+
+        const data = await response.json();
+
+        if (data.success) {
+          if (selectedPaymentMethod === "vnpay") {
+            // VNPay: Redirect to payment URL
+            toast.success("Đang chuyển đến trang thanh toán VNPay...");
+
+            if (data.paymentUrl) {
+              // Lưu cart items để xử lý sau khi thanh toán thành công
+              localStorage.setItem(
+                "pendingVNPayOrder",
+                JSON.stringify({
+                  transactionId: data.transactionId,
+                  cartItemIds: selectedItems.map((item) => item._id),
+                })
+              );
+
+              // Redirect đến VNPay
+              window.location.href = data.paymentUrl;
+            } else {
+              toast.error("Không thể tạo thanh toán VNPay");
+            }
+          } else if (selectedPaymentMethod === "qr_code") {
+            // QR Code: Show payment modal with QR
+            toast.success("Vui lòng quét mã QR để thanh toán");
+
+            // Lưu items cần remove sau khi xác nhận thanh toán
+            const selectedItemIds = selectedItems.map((item) => item._id);
+            setPendingCartItems(selectedItemIds);
+
+            setCreatedOrderId(data.transactionId);
+            setOrderAmount(data.bankInfo.amount);
+            setShowPaymentModal(true);
+          } else if (selectedPaymentMethod === "bank_transfer") {
+            // Bank Transfer: Show payment modal with bank info
+            toast.success("Vui lòng chuyển khoản để hoàn tất đặt hàng");
+
+            // Lưu items cần remove sau khi xác nhận thanh toán
+            const selectedItemIds = selectedItems.map((item) => item._id);
+            setPendingCartItems(selectedItemIds);
+
+            setCreatedOrderId(data.transactionId);
+            setOrderAmount(data.bankInfo.amount);
+            setShowPaymentModal(true);
+          }
+        } else {
+          toast.error(data.message || "Không thể khởi tạo thanh toán");
+        }
       }
     } catch (error) {
       console.error("Lỗi khi đặt hàng:", error);
@@ -343,6 +415,13 @@ const OrderPage = () => {
       description: "Thanh toán bằng tiền mặt khi nhận hàng",
       icon: FaMoneyBillWave,
       color: "green",
+    },
+    {
+      id: "vnpay",
+      name: "VNPay - Thanh toán online",
+      description: "Thanh toán qua ví điện tử, ATM, thẻ tín dụng",
+      icon: FaCreditCard,
+      color: "blue",
     },
     {
       id: "bank_transfer",

@@ -110,7 +110,7 @@ const orderSchema = new mongoose.Schema({
   },
   paymentMethod: {
     type: String,
-    enum: ["cod", "bank_transfer", "qr_code"],
+    enum: ["cod", "bank_transfer", "qr_code", "vnpay"],
     default: "cod",
   },
   paymentStatus: {
@@ -124,6 +124,13 @@ const orderSchema = new mongoose.Schema({
     verified: Boolean,
     verifiedAt: Date,
     rejectedAt: Date,
+  },
+  vnpayInfo: {
+    transactionNo: String,
+    bankCode: String,
+    paidAt: Date,
+    failedAt: Date,
+    responseCode: String,
   },
   notificationSent: {
     type: Boolean,

@@ -28,16 +28,17 @@ const PaymentModal = ({
     };
   }, [isOpen]);
 
-  const handlePaymentComplete = () => {
-    setPaymentCompleted(true);
-    toast.success("Thanh toán hoàn tất!");
-
-    // Đợi 2 giây rồi gọi callback để redirect
+  const handlePaymentComplete = (newOrderId) => {
+    // Don't show completion state, close modal immediately
+    if (onPaymentSuccess) {
+      // Use newOrderId if provided, otherwise fallback to orderId
+      onPaymentSuccess(newOrderId || orderId);
+    }
+    // Close modal after callback
     setTimeout(() => {
-      if (onPaymentSuccess) {
-        onPaymentSuccess(orderId);
-      }
-    }, 2000);
+      setPaymentCompleted(false); // Reset state for next time
+      onClose();
+    }, 100);
   };
 
   if (!isOpen) return null;

@@ -161,7 +161,9 @@ const Cart = () => {
   useEffect(() => {
     if (prevProductsLength.current < products.length) {
       // Có sản phẩm mới được thêm vào (thêm sản phẩm từ trang khác)
-      const currentProductIds = new Set(products.map((item) => item.cartKey || item._id));
+      const currentProductIds = new Set(
+        products.map((item) => item.cartKey || item._id)
+      );
 
       // Lấy ID của các sản phẩm đã có trước đó (từ selectedItems và itemSelectionHistory)
       const previousProductIds = new Set([
@@ -186,12 +188,47 @@ const Cart = () => {
         });
 
         // Chỉ thêm sản phẩm mới vào danh sách đã chọn, giữ nguyên trạng thái các sản phẩm cũ
-        const newSelectedItems = new Set([...selectedItems, ...newItems]);
-        setSelectedItems(newSelectedItems);
-        setSelectAll(newSelectedItems.size === products.length);
+        setSelectedItems((prevSelected) => {
+          const newSelectedItems = new Set([...prevSelected, ...newItems]);
+          setSelectAll(newSelectedItems.size === products.length);
+          return newSelectedItems;
+        });
       }
-    } else if (products.length > 0) {
-      // Khôi phục trạng thái cho các sản phẩm đã có
+    } else if (prevProductsLength.current > products.length) {
+      // Có sản phẩm bị xóa - dọn dẹp lịch sử và cập nhật selectedItems
+      const currentProductIds = new Set(
+        products.map((item) => item.cartKey || item._id)
+      );
+
+      setItemSelectionHistory((prevHistory) => {
+        const newHistory = new Map(prevHistory);
+        for (const id of prevHistory.keys()) {
+          if (!currentProductIds.has(id)) {
+            newHistory.delete(id);
+          }
+        }
+        return newHistory;
+      });
+
+      // Remove deleted items from selectedItems
+      setSelectedItems((prevSelected) => {
+        const newSelected = new Set(
+          [...prevSelected].filter((id) => currentProductIds.has(id))
+        );
+        setSelectAll(
+          newSelected.size === products.length && products.length > 0
+        );
+        return newSelected;
+      });
+    }
+
+    prevProductsLength.current = products.length;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products]); // Only depend on products, not selectedItems or itemSelectionHistory
+
+  // Khôi phục trạng thái chọn khi component mount lần đầu
+  useEffect(() => {
+    if (products.length > 0 && selectedItems.size === 0) {
       const autoSelectedItems = new Set();
 
       products.forEach((product) => {
@@ -203,39 +240,30 @@ const Cart = () => {
           // Sản phẩm đã từng được chọn trước đó -> tự động chọn lại
           autoSelectedItems.add(itemId);
         }
-        // Nếu itemSelectionHistory.get(itemId) === false -> không tự động chọn
       });
 
-      // Chỉ cập nhật nếu có thay đổi
-      setSelectedItems((prevSelected) => {
-        const autoArray = Array.from(autoSelectedItems);
-
-        if (
-          autoSelectedItems.size !== prevSelected.size ||
-          !autoArray.every((id) => prevSelected.has(id))
-        ) {
-          setSelectAll(autoSelectedItems.size === products.length);
-          return autoSelectedItems;
-        }
-        return prevSelected;
-      });
-    } else if (prevProductsLength.current > products.length) {
-      // Có sản phẩm bị xóa - dọn dẹp lịch sử
-      const currentProductIds = new Set(products.map((item) => item.cartKey || item._id));
-
-      setItemSelectionHistory((prevHistory) => {
-        const newHistory = new Map(prevHistory);
-        for (const id of prevHistory.keys()) {
-          if (!currentProductIds.has(id)) {
-            newHistory.delete(id);
-          }
-        }
-        return newHistory;
-      });
+      if (autoSelectedItems.size > 0) {
+        setSelectedItems(autoSelectedItems);
+        setSelectAll(autoSelectedItems.size === products.length);
+      }
     }
+    // Only run once on mount when products are loaded
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products.length]);
 
-    prevProductsLength.current = products.length;
-  }, [products, itemSelectionHistory, selectedItems]);
+  // Lưu itemSelectionHistory vào localStorage mỗi khi thay đổi
+  useEffect(() => {
+    if (itemSelectionHistory.size > 0) {
+      try {
+        localStorage.setItem(
+          "cartItemSelectionHistory",
+          JSON.stringify(Array.from(itemSelectionHistory.entries()))
+        );
+      } catch (error) {
+        console.error("Failed to save selection history:", error);
+      }
+    }
+  }, [itemSelectionHistory]);
 
   const fetchAddresses = async () => {
     try {
@@ -352,8 +380,13 @@ const Cart = () => {
 
     // Chỉ lấy các sản phẩm được chọn
     const selectedProducts = products.filter((item) =>
-      selectedItems.has(item._id)
+      selectedItems.has(item.cartKey || item._id)
     );
+
+    if (selectedProducts.length === 0) {
+      toast.error("Không tìm thấy sản phẩm đã chọn");
+      return;
+    }
 
     // Navigate to order page with selected items, address, and shipping info
     navigate("/order", {
@@ -413,13 +446,17 @@ const Cart = () => {
     });
 
     // Cập nhật trạng thái "chọn tất cả"
-    const remainingProducts = products.filter((item) => (item.cartKey || item._id) !== id);
+    const remainingProducts = products.filter(
+      (item) => (item.cartKey || item._id) !== id
+    );
     setSelectAll(
       newSelectedItems.size === remainingProducts.length &&
         remainingProducts.length > 0
     );
 
-    const updatedProducts = products.filter((item) => (item.cartKey || item._id) !== id);
+    const updatedProducts = products.filter(
+      (item) => (item.cartKey || item._id) !== id
+    );
     await syncCartToBackend(updatedProducts);
   };
 
@@ -448,7 +485,9 @@ const Cart = () => {
   const handleSelectAll = (checked) => {
     setSelectAll(checked);
     if (checked) {
-      const allItemIds = new Set(products.map((item) => item.cartKey || item._id));
+      const allItemIds = new Set(
+        products.map((item) => item.cartKey || item._id)
+      );
       setSelectedItems(allItemIds);
     } else {
       setSelectedItems(new Set());
@@ -528,7 +567,10 @@ const Cart = () => {
                 {/* Cart Items List */}
                 <div className="divide-y divide-gray-200">
                   {products.map((item) => (
-                    <div key={item.cartKey || item._id} className="p-4 lg:px-8 lg:py-6">
+                    <div
+                      key={item.cartKey || item._id}
+                      className="p-4 lg:px-8 lg:py-6"
+                    >
                       {/* Mobile Layout */}
                       <div className="lg:hidden">
                         <div className="flex space-x-4">
@@ -536,9 +578,14 @@ const Cart = () => {
                           <div className="flex items-start pt-2">
                             <input
                               type="checkbox"
-                              checked={selectedItems.has(item.cartKey || item._id)}
+                              checked={selectedItems.has(
+                                item.cartKey || item._id
+                              )}
                               onChange={(e) =>
-                                handleItemSelect(item.cartKey || item._id, e.target.checked)
+                                handleItemSelect(
+                                  item.cartKey || item._id,
+                                  e.target.checked
+                                )
                               }
                               className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                             />
@@ -616,7 +663,10 @@ const Cart = () => {
                             <div className="flex items-center border border-gray-300 rounded-lg">
                               <button
                                 onClick={() =>
-                                  handleQuantityChange(item.cartKey || item._id, "decrease")
+                                  handleQuantityChange(
+                                    item.cartKey || item._id,
+                                    "decrease"
+                                  )
                                 }
                                 disabled={(item?.quantity || 1) <= 1}
                                 className="p-1.5 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-l-lg"
@@ -628,7 +678,10 @@ const Cart = () => {
                               </span>
                               <button
                                 onClick={() =>
-                                  handleQuantityChange(item.cartKey || item._id, "increase")
+                                  handleQuantityChange(
+                                    item.cartKey || item._id,
+                                    "increase"
+                                  )
                                 }
                                 className="p-1.5 hover:bg-gray-50 transition-colors rounded-r-lg"
                               >
@@ -653,7 +706,10 @@ const Cart = () => {
                             </div>
                             <button
                               onClick={() =>
-                                handleRemoveItem(item.cartKey || item._id, item.name)
+                                handleRemoveItem(
+                                  item.cartKey || item._id,
+                                  item.name
+                                )
                               }
                               className="flex items-center gap-2 px-3 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors border border-red-200"
                               title="Xóa sản phẩm"
@@ -669,11 +725,16 @@ const Cart = () => {
                       <div className="hidden lg:grid lg:grid-cols-12 gap-6 items-center">
                         {/* Checkbox */}
                         <div className="lg:col-span-1 flex items-center justify-center">
-                            <input
+                          <input
                             type="checkbox"
-                              checked={selectedItems.has(item.cartKey || item._id)}
+                            checked={selectedItems.has(
+                              item.cartKey || item._id
+                            )}
                             onChange={(e) =>
-                              handleItemSelect(item.cartKey || item._id, e.target.checked)
+                              handleItemSelect(
+                                item.cartKey || item._id,
+                                e.target.checked
+                              )
                             }
                             className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                           />
@@ -749,7 +810,10 @@ const Cart = () => {
                             <div className="flex items-center border border-gray-300 rounded-md">
                               <button
                                 onClick={() =>
-                                  handleQuantityChange(item.cartKey || item._id, "decrease")
+                                  handleQuantityChange(
+                                    item.cartKey || item._id,
+                                    "decrease"
+                                  )
                                 }
                                 disabled={(item?.quantity || 1) <= 1}
                                 className="p-1.5 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -761,7 +825,10 @@ const Cart = () => {
                               </span>
                               <button
                                 onClick={() =>
-                                  handleQuantityChange(item.cartKey || item._id, "increase")
+                                  handleQuantityChange(
+                                    item.cartKey || item._id,
+                                    "increase"
+                                  )
                                 }
                                 className="p-1.5 hover:bg-gray-50 transition-colors"
                               >
@@ -791,7 +858,10 @@ const Cart = () => {
                           <div className="flex lg:justify-center">
                             <button
                               onClick={() =>
-                                handleRemoveItem(item.cartKey || item._id, item.name)
+                                handleRemoveItem(
+                                  item.cartKey || item._id,
+                                  item.name
+                                )
                               }
                               className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors border border-red-200 hover:border-red-300"
                               title="Xóa sản phẩm"

@@ -20,6 +20,7 @@ const routeValue = "/api/order/";
 router.post(`${routeValue}create`, userAuth, createOrder);
 router.get(`${routeValue}my-orders`, userAuth, getUserOrders);
 router.get(`${routeValue}user/:orderId`, userAuth, getUserOrderById);
+router.get(`${routeValue}detail/:orderId`, userAuth, getUserOrderById); // Alternative route for getting order details
 router.post(`${routeValue}notify/:orderId`, userAuth, notifyOrderViewed);
 
 // Admin routes

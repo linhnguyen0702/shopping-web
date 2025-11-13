@@ -25,37 +25,68 @@ const Checkout = () => {
   const [paymentMethod, setPaymentMethod] = useState("");
   const [paymentStep, setPaymentStep] = useState("selection"); // 'selection', 'bank_transfer', 'qr_code', 'processing'
 
-  const fetchOrderDetails = useCallback(async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${serverUrl}/api/order/user/${orderId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const data = await response.json();
-      if (data.success) {
-        setOrder(data.order);
+  const fetchOrderDetails = useCallback(
+    async (retryCount = 0) => {
+      const MAX_RETRIES = 3;
+      const RETRY_DELAY = 1000; // 1 second
 
-        // Set payment method từ order data
-        const orderPaymentMethod = data.order.paymentMethod || "cod";
-        setPaymentMethod(orderPaymentMethod);
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`${serverUrl}/api/order/user/${orderId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await response.json();
+        if (data.success) {
+          setOrder(data.order);
 
-        // Không tự động chuyển sang payment step nữa
-        // User đã thanh toán qua modal, trang này chỉ hiển thị chi tiết đơn hàng
-        setPaymentStep("selection");
-      } else {
-        toast.error("Không tìm thấy đơn hàng");
-        navigate("/orders");
+          // Set payment method từ order data
+          const orderPaymentMethod = data.order.paymentMethod || "cod";
+          setPaymentMethod(orderPaymentMethod);
+
+          // Không tự động chuyển sang payment step nữa
+          // User đã thanh toán qua modal, trang này chỉ hiển thị chi tiết đơn hàng
+          setPaymentStep("selection");
+        } else {
+          // Retry if order not found and we haven't exceeded max retries
+          if (retryCount < MAX_RETRIES) {
+            console.log(
+              `Order not found, retrying... (${retryCount + 1}/${MAX_RETRIES})`
+            );
+            setTimeout(() => {
+              fetchOrderDetails(retryCount + 1);
+            }, RETRY_DELAY);
+          } else {
+            toast.error("Không tìm thấy đơn hàng");
+            navigate("/orders");
+          }
+        }
+      } catch (error) {
+        console.error("Lỗi khi tải đơn hàng", error);
+
+        // Retry on network errors too
+        if (retryCount < MAX_RETRIES) {
+          console.log(
+            `Error fetching order, retrying... (${
+              retryCount + 1
+            }/${MAX_RETRIES})`
+          );
+          setTimeout(() => {
+            fetchOrderDetails(retryCount + 1);
+          }, RETRY_DELAY);
+        } else {
+          toast.error("Không thể tải chi tiết đơn hàng");
+          navigate("/orders");
+        }
+      } finally {
+        if (retryCount === 0) {
+          setLoading(false);
+        }
       }
-    } catch (error) {
-      console.error("Lỗi khi tải đơn hàng", error);
-      toast.error("Không thể tải chi tiết đơn hàng");
-      navigate("/orders");
-    } finally {
-      setLoading(false);
-    }
-  }, [orderId, navigate]);
+    },
+    [orderId, navigate]
+  );
 
   useEffect(() => {
     if (orderId) {
@@ -80,11 +111,12 @@ const Checkout = () => {
     setPaymentStep("selection");
   };
 
-  const handlePaymentComplete = () => {
+  const handlePaymentComplete = (newOrderId) => {
     toast.success("Thanh toán hoàn tất!");
-    // Navigate đến trang chi tiết đơn hàng hoặc trang orders
+    const finalOrderId = newOrderId || orderId;
+    // Navigate đến trang chi tiết đơn hàng
     setTimeout(() => {
-      navigate(`/orders`);
+      navigate(`/checkout/${finalOrderId}`);
     }, 500);
   };
 

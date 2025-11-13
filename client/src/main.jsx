@@ -21,6 +21,7 @@ import Checkout from "./pages/Checkout.jsx";
 import OrderPage from "./pages/OrderPage.jsx";
 import OrderSuccess from "./pages/OrderSuccess.jsx";
 import PaymentSuccess from "./pages/PaymentSuccess.jsx";
+import PaymentResult from "./pages/PaymentResult.jsx";
 import FAQ from "./pages/FAQ.jsx";
 import Blog from "./pages/Blog.jsx";
 import AuthBridge from "./pages/AuthBridge.jsx";
@@ -112,6 +113,10 @@ const router = createBrowserRouter(
         {
           path: "/payment/success",
           element: <PaymentSuccess />,
+        },
+        {
+          path: "/payment-result",
+          element: <PaymentResult />,
         },
         {
           path: "/product/:id",

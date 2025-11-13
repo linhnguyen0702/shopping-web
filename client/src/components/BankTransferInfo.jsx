@@ -36,9 +36,7 @@ const BankTransferInfo = ({ orderId, totalAmount, onPaymentComplete }) => {
             transferContent: transferContent,
             amount: totalAmount,
           });
-          toast.error(
-            response.data.message || "Đang sử dụng thông tin ngân hàng dự phòng"
-          );
+          toast.error(response.data.message || "");
         }
       } catch (error) {
         console.error("Bank Info API Exception:", error);
@@ -52,7 +50,7 @@ const BankTransferInfo = ({ orderId, totalAmount, onPaymentComplete }) => {
           transferContent: transferContent,
           amount: totalAmount,
         });
-        toast.error("Đang sử dụng thông tin ngân hàng dự phòng");
+        toast.error("");
       } finally {
         setLoading(false);
       }
@@ -80,25 +78,47 @@ const BankTransferInfo = ({ orderId, totalAmount, onPaymentComplete }) => {
 
     setSubmitting(true);
     try {
-      await axios.post(`${serverUrl}/api/payment/confirm-transfer`, {
-        orderId,
-        transactionCode: transactionCode.trim(),
-      });
+      const token = localStorage.getItem("token");
+      console.log(
+        "🔍 Calling API:",
+        `${serverUrl}/api/payment/confirm-manual-payment`
+      );
+      console.log("🔍 Transaction ID:", orderId);
+      console.log("🔍 Payment Method: bank_transfer");
+      console.log("🔍 Transaction Code:", transactionCode.trim());
 
-      toast.success("Đã gửi thông tin chuyển khoản thành công!");
+      const response = await axios.post(
+        `${serverUrl}/api/payment/confirm-manual-payment`,
+        {
+          transactionId: orderId, // Prop 'orderId' from modal actually holds the transactionId
+          paymentMethod: "bank_transfer",
+          transactionCode: transactionCode.trim(),
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-      setTransactionCode("");
+      console.log("✅ API Response:", response.data);
 
-      // Show success message and redirect to order details
-      setTimeout(() => {
-        toast.success("Đang chuyển đến trang chi tiết đơn hàng...");
-        setTimeout(() => {
-          if (onPaymentComplete) {
-            onPaymentComplete();
-          }
-        }, 1000);
-      }, 1500);
+      if (response.data.success) {
+        toast.success(
+          "Đã gửi thông tin chuyển khoản thành công! Đang chuyển đến trang chi tiết đơn hàng..."
+        );
+        setTransactionCode("");
+
+        // Immediately redirect to order details
+        if (onPaymentComplete) {
+          // Pass the new orderId from the API response to the callback
+          onPaymentComplete(response.data.orderId);
+        }
+      } else {
+        toast.error(response.data.message || "Có lỗi xảy ra");
+      }
     } catch (error) {
+      console.error("Error confirming payment:", error);
       toast.error(error.response?.data?.message || "Có lỗi xảy ra");
     } finally {
       setSubmitting(false);

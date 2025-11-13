@@ -171,16 +171,20 @@ const QRCodePayment = ({ orderId, totalAmount, onPaymentComplete }) => {
       <button
         onClick={async () => {
           try {
-            // Send notification to admin
             const token = localStorage.getItem("token");
             console.log(
-              "Calling API:",
-              `${serverUrl}/api/payment/notify/${orderId}`
+              "🔍 Calling API:",
+              `${serverUrl}/api/payment/confirm-manual-payment`
             );
+            console.log("🔍 Transaction ID:", orderId);
+            console.log("🔍 Payment Method: qr_code");
 
             const response = await axios.post(
-              `${serverUrl}/api/payment/notify/${orderId}`,
-              {},
+              `${serverUrl}/api/payment/confirm-manual-payment`,
+              {
+                transactionId: orderId, // Prop 'orderId' from modal actually holds the transactionId
+                paymentMethod: "qr_code",
+              },
               {
                 headers: {
                   Authorization: `Bearer ${token}`,
@@ -188,20 +192,18 @@ const QRCodePayment = ({ orderId, totalAmount, onPaymentComplete }) => {
               }
             );
 
-            console.log("API Response:", response.data);
+            console.log("✅ API Response:", response.data);
 
             if (response.data.success) {
               toast.success(
                 "Đã xác nhận thanh toán! Đang chuyển đến trang chi tiết đơn hàng..."
               );
-              console.log("✅ Payment confirmation notification sent");
+              console.log("✅ Payment confirmation sent");
 
-              // Wait a moment for user to see the message
-              setTimeout(() => {
-                if (onPaymentComplete) {
-                  onPaymentComplete();
-                }
-              }, 1500);
+              // Immediately redirect to order details
+              if (onPaymentComplete) {
+                onPaymentComplete(response.data.orderId);
+              }
             } else {
               console.error("API returned error:", response.data);
               toast.error(
