@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useGoogleLogin } from "@react-oauth/google";
 import { serverUrl } from "../config";
@@ -34,6 +34,10 @@ const LoginPage = () => {
   const [modalLoading, setModalLoading] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
+
+  // State for contact admin modal
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [contactMessage, setContactMessage] = useState("");
 
   const googleLogin = useGoogleLogin({
     flow: "auth-code",
@@ -280,6 +284,18 @@ const LoginPage = () => {
   };
 
   // Reset modal khi đóng
+  // Handle Contact Admin submission
+  const handleContactSubmit = (e) => {
+    e.preventDefault();
+    const subject = encodeURIComponent("Yêu cầu hỗ trợ tài khoản Admin");
+    const body = encodeURIComponent(contactMessage);
+    const mailtoLink = `mailto:linhyang0702@gmail.com?subject=${subject}&body=${body}`;
+    window.location.href = mailtoLink;
+    setShowContactModal(false);
+    setContactMessage("");
+    toast.success("Vui lòng gửi email qua ứng dụng của bạn.");
+  };
+
   const handleCloseModal = () => {
     setShowForgotModal(false);
     setOtpStep(1);
@@ -399,7 +415,7 @@ const LoginPage = () => {
                 </button>
               </div>
             </div>
-            <div className="flex justify-end text-sm mt-1 ">
+            <div className="flex justify-end text-sm">
               <button
                 type="button"
                 onClick={() => {
@@ -414,6 +430,8 @@ const LoginPage = () => {
                 Quên mật khẩu?
               </button>
             </div>
+
+            <div className="pt-2">
             <button
               type="submit"
               disabled={loading}
@@ -447,6 +465,7 @@ const LoginPage = () => {
                 "Đăng nhập"
               )}
             </button>
+            </div>
 
             <div className="relative py-2">
               <div className="absolute inset-0 flex items-center">
@@ -490,16 +509,17 @@ const LoginPage = () => {
             </button>
           </form>
 
-          {/* Register Link */}
+          {/* Contact Admin Button */}
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Bạn chưa có tài khoản?{" "}
-              <Link
-                to="/register"
+              <button
+                type="button"
+                onClick={() => setShowContactModal(true)}
                 className="text-blue-600 hover:text-blue-800 font-semibold transition-colors duration-200"
               >
-                Tạo tài khoản
-              </Link>
+                Liên hệ Admin
+              </button>
             </p>
           </div>
         </div>
@@ -754,6 +774,41 @@ const LoginPage = () => {
                 }`}
               />
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Contact Admin Modal */}
+      {showContactModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Liên hệ Admin</h3>
+              <button
+                onClick={() => setShowContactModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            <form onSubmit={handleContactSubmit} className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Nhập nội dung tin nhắn bạn muốn gửi đến quản trị viên.
+              </p>
+              <textarea
+                value={contactMessage}
+                onChange={(e) => setContactMessage(e.target.value)}
+                required
+                placeholder="Ví dụ: Tôi muốn yêu cầu cấp quyền truy cập..."
+                className="w-full h-32 py-3 px-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <button
+                type="submit"
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 focus:ring-4 focus:ring-blue-300 transform hover:scale-[1.02] transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                Gửi tin nhắn
+              </button>
+            </form>
           </div>
         </div>
       )}

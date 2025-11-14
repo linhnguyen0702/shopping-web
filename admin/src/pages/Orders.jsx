@@ -37,11 +37,15 @@ const Orders = () => {
   const [newStatus, setNewStatus] = useState("");
   const [newPaymentStatus, setNewPaymentStatus] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
+  const [selectedItemsForDelivery, setSelectedItemsForDelivery] = useState([]);
+  const [showCreateDeliveryModal, setShowCreateDeliveryModal] = useState(false);
+  const [trackingCode, setTrackingCode] = useState("");
   const location = useLocation();
 
   const statusOptions = [
     "pending",
     "confirmed",
+    "partially-shipped",
     "shipped",
     "delivered",
     "cancelled",
@@ -122,6 +126,42 @@ const Orders = () => {
     }
   };
 
+  // Tạo lần giao hàng mới
+  const handleCreateDelivery = async (orderId, itemIds, trackingCode) => {
+    setIsUpdating(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${serverUrl}/api/order/create-delivery`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ orderId, itemIds, trackingCode }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success("Đã tạo lần giao hàng thành công!");
+        // Đóng tất cả các modal và reset state
+        setShowCreateDeliveryModal(false);
+        setShowDetailsModal(false);
+        setSelectedItemsForDelivery([]);
+        setSelectedOrder(null);
+        setTrackingCode("");
+        // Tải lại danh sách đơn hàng để cập nhật thông tin
+        fetchOrders();
+      } else {
+        toast.error(data.message || "Không thể tạo lần giao hàng.");
+      }
+    } catch (error) {
+      console.error("Lỗi khi tạo lần giao:", error);
+      toast.error("Đã xảy ra lỗi. Vui lòng thử lại.");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
   // Xóa đơn hàng
   const deleteOrder = async (orderId) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa đơn hàng này không?")) {
@@ -160,7 +200,8 @@ const Orders = () => {
   // Xử lý chỉnh sửa đơn hàng
   const handleEditOrder = (order) => {
     setEditingOrder(order);
-    setNewStatus(order.status);
+    // Sử dụng displayStatus để lấy đúng trạng thái của dòng được chọn (đơn hàng gốc hoặc lần giao)
+    setNewStatus(order.displayStatus);
     setNewPaymentStatus(order.paymentStatus);
     setShowEditModal(true);
   };
@@ -187,6 +228,87 @@ const Orders = () => {
     }
 
     updateOrderStatus(editingOrder._id, newStatus, newPaymentStatus);
+  };
+
+  // Tách đơn hàng thành các dòng riêng cho mỗi lần giao hàng
+  const expandOrdersWithDeliveries = (orders) => {
+    const expandedOrders = [];
+
+    orders.forEach((order) => {
+      if (order.deliveries && order.deliveries.length > 0) {
+        // Nếu đơn hàng có deliveries, tạo một dòng cho mỗi delivery
+        order.deliveries.forEach((delivery, index) => {
+          const deliveryItemsWithDetails = delivery.items.map(deliveryItem => {
+            // deliveryItem có thể là object { productId, quantity } hoặc chỉ là string ID
+            const deliveryProductId = (typeof deliveryItem.productId === 'object' && deliveryItem.productId !== null) 
+                                      ? deliveryItem.productId._id 
+                                      : deliveryItem.productId || deliveryItem; // Fallback cho trường hợp deliveryItem là string
+
+            const originalItem = order.items.find(orderItem => {
+              const orderProductId = (typeof orderItem.productId === 'object' && orderItem.productId !== null) 
+                                     ? orderItem.productId._id 
+                                     : orderItem.productId;
+              return orderProductId === deliveryProductId;
+            });
+
+            if (originalItem) {
+              return {
+                ...originalItem,
+                _id: deliveryItem._id || originalItem._id, // Ưu tiên _id của deliveryItem
+                quantity: deliveryItem.quantity || 1, // Lấy số lượng từ deliveryItem
+              };
+            }
+            // Nếu không tìm thấy, trả về item gốc với giá 0 để tránh lỗi NaN
+            return { ...deliveryItem, price: 0, name: "Sản phẩm không xác định" };
+          });
+
+          expandedOrders.push({
+            ...order,
+            isDeliveryRow: true,
+            deliveryIndex: index,
+            currentDelivery: delivery,
+            displayId: `${order._id}-D${index + 1}`,
+            displayStatus: delivery.status,
+            displayItems: deliveryItemsWithDetails,
+            displayAmount: deliveryItemsWithDetails.reduce(
+              (sum, item) => sum + (item.price || 0) * (item.quantity || 0),
+              0
+            ),
+          });
+        });
+
+        // Kiểm tra xem có sản phẩm nào chưa được giao không
+        const undeliveredItems = order.items.filter((item) => !item.isDelivered);
+        if (undeliveredItems.length > 0) {
+          // Tạo một dòng cho các sản phẩm chưa được giao
+          expandedOrders.push({
+            ...order,
+            isDeliveryRow: false,
+            isUndeliveredRow: true,
+            displayId: order._id,
+            displayStatus: order.status,
+            displayItems: undeliveredItems,
+            displayAmount: undeliveredItems.reduce(
+              (sum, item) => sum + item.price * item.quantity,
+              0
+            ),
+          });
+        }
+      } else {
+        // Nếu đơn hàng chưa có delivery nào, hiển thị như bình thường
+        expandedOrders.push({
+          ...order,
+          isDeliveryRow: false,
+          isUndeliveredRow: false,
+          displayId: order._id,
+          displayStatus: order.status,
+          displayItems: order.items,
+          displayAmount: order.amount,
+        });
+      }
+    });
+
+    return expandedOrders;
   };
 
   // Lọc và sắp xếp đơn hàng
@@ -232,12 +354,17 @@ const Orders = () => {
       }
     });
 
+  // Tách các đơn hàng thành các dòng riêng
+  const expandedOrders = expandOrdersWithDeliveries(filteredOrders);
+
   // Lấy màu sắc trạng thái
   const getStatusColor = (status) => {
     switch (status) {
       case "pending":
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
       case "confirmed":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "partially-shipped":
         return "bg-blue-100 text-blue-800 border-blue-200";
       case "shipped":
         return "bg-purple-100 text-purple-800 border-purple-200";
@@ -257,6 +384,8 @@ const Orders = () => {
         return <FaClock className="w-3 h-3" />;
       case "confirmed":
         return <FaCheckCircle className="w-3 h-3" />;
+      case "partially-shipped":
+        return <FaTruck className="w-3 h-3" />;
       case "shipped":
         return <FaTruck className="w-3 h-3" />;
       case "delivered":
@@ -291,6 +420,8 @@ const Orders = () => {
         return "Chờ xử lý";
       case "confirmed":
         return "Đã xác nhận";
+      case "partially-shipped":
+        return "Giao một phần";
       case "shipped":
         return "Đang giao";
       case "delivered":
@@ -314,6 +445,41 @@ const Orders = () => {
       default:
         return status;
     }
+  };
+
+  // Xử lý chọn sản phẩm để giao
+  const handleSelectItemForDelivery = (itemId) => {
+    setSelectedItemsForDelivery((prev) =>
+      prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]
+    );
+  };
+
+  // Lấy tên "Loại" hiển thị cho 1 item trong đơn hàng
+  const getItemType = (item) => {
+    // 1) Nếu item lưu trực tiếp purchaseType khi thêm vào giỏ (ưu tiên)
+    if (item.purchaseType) {
+      return item.purchaseType === "combo" ? "Combo" : "Mua lẻ";
+    }
+
+    // 2) Nếu item có field type trực tiếp
+    if (item.type) {
+      return item.type === "combo" ? "Combo" : item.type;
+    }
+
+    // 3) Nếu productId được populate thành object
+    if (item.productId && typeof item.productId === "object") {
+      const p = item.productId;
+      if (p.type) return p.type === "combo" ? "Combo" : p.type;
+      if (p.category && p.category.name) return p.category.name;
+      if (p.productType) return p.productType;
+    }
+
+    // 4) Các fallback khác (item.productType, item.category)
+    if (item.productType) return item.productType;
+    if (item.category && item.category.name) return item.category.name;
+
+    // 5) Không xác định
+    return "N/A";
   };
 
   // Format tiền VNĐ
@@ -524,9 +690,9 @@ const Orders = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredOrders.map((order) => (
+              {expandedOrders.map((order) => (
                 <tr
-                  key={order._id}
+                  key={order.displayId}
                   className="hover:bg-gray-50 cursor-pointer"
                   onClick={(e) => {
                     // Tránh khi click vào nút Sửa/Xóa cũng mở modal
@@ -536,12 +702,18 @@ const Orders = () => {
                     ) {
                       setSelectedOrder(order);
                       setShowDetailsModal(true);
+                      setSelectedItemsForDelivery([]); // Reset selected items
                     }
                   }}
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
-                      #{order._id.slice(-8).toUpperCase()}
+                      #
+                      {order.isDeliveryRow
+                        ? `${order._id
+                            .slice(-8)
+                            .toUpperCase()}-D${order.deliveryIndex + 1}`
+                        : order._id.slice(-8).toUpperCase()}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -567,24 +739,24 @@ const Orders = () => {
                       {new Date(order.date).toLocaleDateString()}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4">
                     <div className="text-sm text-gray-900">
-                      {order.items.length} sản phẩm
+                      {order.displayItems.length} sản phẩm
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
-                      {formatVND(order.amount)}
+                      {formatVND(order.displayAmount)}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(
-                        order.status
+                        order.displayStatus
                       )}`}
                     >
-                      {getStatusIcon(order.status)}
-                      {translateStatus(order.status)}
+                      {getStatusIcon(order.displayStatus)}
+                      {translateStatus(order.displayStatus)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -669,6 +841,7 @@ const Orders = () => {
                 ) {
                   setSelectedOrder(order);
                   setShowDetailsModal(true);
+                  setSelectedItemsForDelivery([]); // Reset selected items
                 }
               }}
             >
@@ -886,7 +1059,19 @@ const Orders = () => {
 
               <div className="mb-4">
                 <div className="text-sm text-gray-600 mb-2">
-                  Order #{selectedOrder._id.slice(-8).toUpperCase()}
+                  Order #{selectedOrder.isDeliveryRow 
+                    ? `${selectedOrder._id.slice(-8).toUpperCase()}-D${selectedOrder.deliveryIndex + 1}` 
+                    : selectedOrder._id.slice(-8).toUpperCase()}
+                  {selectedOrder.isDeliveryRow && (
+                    <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                      Đang giao
+                    </span>
+                  )}
+                  {selectedOrder.isUndeliveredRow && (
+                    <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">
+                      Chưa giao
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -925,7 +1110,7 @@ const Orders = () => {
                   </p>
                   <p className="text-sm text-gray-600">
                     <strong>Trạng thái:</strong>{" "}
-                    {translateStatus(selectedOrder.status)}
+                    {translateStatus(selectedOrder.displayStatus)}
                   </p>
                   <p className="text-sm text-gray-600">
                     <strong>Thanh toán:</strong>{" "}
@@ -935,6 +1120,14 @@ const Orders = () => {
                     <strong>Phương thức:</strong>{" "}
                     {selectedOrder.paymentMethod?.toUpperCase()}
                   </p>
+                  {selectedOrder.isDeliveryRow && selectedOrder.currentDelivery?.trackingCode && (
+                    <p className="text-sm text-gray-600">
+                      <strong>Mã vận đơn:</strong>{" "}
+                      <span className="font-mono bg-gray-100 px-2 py-1 rounded">
+                        {selectedOrder.currentDelivery.trackingCode}
+                      </span>
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -945,11 +1138,19 @@ const Orders = () => {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
+                        {!selectedOrder.isDeliveryRow && (
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                            Chọn
+                          </th>
+                        )}
                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
                           Ảnh
                         </th>
                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
                           Sản phẩm
+                        </th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                          Loại
                         </th>
                         <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">
                           Số lượng
@@ -960,8 +1161,22 @@ const Orders = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {selectedOrder.items.map((item) => (
-                        <tr key={item._id}>
+                      {selectedOrder.displayItems.map((item) => (
+                        <tr
+                          key={item._id}
+                          className={item.isDelivered ? "bg-gray-100 opacity-60" : ""}
+                        >
+                          {!selectedOrder.isDeliveryRow && (
+                            <td className="px-4 py-2 text-center">
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                                checked={selectedItemsForDelivery.includes(item._id)}
+                                onChange={() => handleSelectItemForDelivery(item._id)}
+                                disabled={item.isDelivered}
+                              />
+                            </td>
+                          )}
                           <td className="px-4 py-2">
                             <img
                               src={item.image}
@@ -970,7 +1185,17 @@ const Orders = () => {
                             />
                           </td>
                           <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {item.name}
+                            <div className="max-w-xs break-words whitespace-pre-line">
+                              {item.name}
+                              {item.isDelivered && (
+                                <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                                  Đang giao
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                            {getItemType(item)}
                           </td>
                           <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 text-center">
                             {item.quantity}
@@ -985,12 +1210,27 @@ const Orders = () => {
                 </div>
               </div>
 
+              {/* Tracking Code Input */}
+              <div className="mt-4">
+                <label htmlFor="trackingCode" className="block text-sm font-medium text-gray-700 mb-2">
+                  Mã vận đơn (Tùy chọn)
+                </label>
+                <input
+                  type="text"
+                  id="trackingCode"
+                  value={trackingCode}
+                  onChange={(e) => setTrackingCode(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  placeholder="Nhập mã vận đơn nếu có"
+                />
+              </div>
+
               {/* Total Amount */}
               <div className="text-right mt-4">
                 <p className="text-sm text-gray-600">
                   Tổng cộng:{" "}
                   <span className="font-bold text-lg text-gray-900">
-                    {formatVND(selectedOrder.amount)}
+                    {formatVND(selectedOrder.displayAmount)}
                   </span>
                 </p>
               </div>
@@ -1042,39 +1282,167 @@ const Orders = () => {
                   </div>
                 )}
 
-              <div className="flex justify-end mt-6 gap-3">
-                {selectedOrder.paymentStatus === "pending" &&
-                  selectedOrder.paymentMethod !== "cod" && (
-                    <button
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            "Từ chối thanh toán sẽ đánh dấu thanh toán thất bại. Đơn hàng vẫn ở trạng thái chờ xử lý. Bạn có chắc chắn?"
-                          )
-                        ) {
-                          updateOrderStatus(
-                            selectedOrder._id,
-                            selectedOrder.status, // Giữ nguyên status hiện tại
-                            "failed"
-                          );
-                          setShowDetailsModal(false);
-                          setSelectedOrder(null);
-                        }
-                      }}
-                      disabled={isUpdating}
-                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Từ chối thanh toán
-                    </button>
-                  )}
+              <div className="flex justify-between items-center mt-6">
+                {!selectedOrder.isDeliveryRow && (
+                  <button
+                    onClick={() => {
+                      if (selectedItemsForDelivery.length > 0) {
+                        setShowCreateDeliveryModal(true);
+                      }
+                    }}
+                    disabled={selectedItemsForDelivery.length === 0}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {selectedItemsForDelivery.length > 0
+                      ? `Tạo lần giao (${selectedItemsForDelivery.length})`
+                      : "Giao hàng"}
+                  </button>
+                )}
+
+                <div className="flex justify-end gap-3">
+                  {selectedOrder.paymentStatus === "pending" &&
+                    selectedOrder.paymentMethod !== "cod" && (
+                      <button
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              "Từ chối thanh toán sẽ đánh dấu thanh toán thất bại. Đơn hàng vẫn ở trạng thái chờ xử lý. Bạn có chắc chắn?"
+                            )
+                          ) {
+                            updateOrderStatus(
+                              selectedOrder._id,
+                              selectedOrder.status, // Giữ nguyên status hiện tại
+                              "failed"
+                            );
+                            setShowDetailsModal(false);
+                            setSelectedOrder(null);
+                          }
+                        }}
+                        disabled={isUpdating}
+                        className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Từ chối thanh toán
+                      </button>
+                    )}
+                  <button
+                    onClick={() => {
+                      setShowDetailsModal(false);
+                      setSelectedOrder(null);
+                      setSelectedItemsForDelivery([]); // Reset khi đóng
+                    }}
+                    className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors font-medium"
+                  >
+                    Đóng
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Delivery Modal */}
+      {showCreateDeliveryModal && selectedOrder && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-5 border w-full max-w-4xl shadow-lg rounded-md">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Tạo lần giao hàng mới
+                </h3>
                 <button
                   onClick={() => {
-                    setShowDetailsModal(false);
-                    setSelectedOrder(null);
+                    setShowCreateDeliveryModal(false);
                   }}
+                  className="text-gray-400 hover:text-gray-600 p-1"
+                >
+                  <FaTimes className="w-5 h-5" />
+                </button>
+              </div>
+
+              <p className="text-sm text-gray-600 mb-4">
+                Xác nhận tạo lần giao cho các sản phẩm được chọn trong đơn hàng #
+                {selectedOrder._id.slice(-8).toUpperCase()}.
+              </p>
+
+              {/* Items to be delivered */}
+              <div>
+                <h4 className="font-medium text-gray-800 mb-2">
+                  Sản phẩm sẽ được giao
+                </h4>
+                <div className="border rounded-lg overflow-hidden">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                          Ảnh
+                        </th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                          Sản phẩm
+                        </th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                          Loại
+                        </th>
+                        <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">
+                          Số lượng
+                        </th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
+                          Giá
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {selectedOrder.items
+                        .filter((item) =>
+                          selectedItemsForDelivery.includes(item._id)
+                        )
+                        .map((item) => (
+                          <tr key={item._id}>
+                            <td className="px-4 py-2">
+                              <img
+                                src={item.image}
+                                alt={item.name}
+                                className="h-12 w-12 object-cover rounded"
+                              />
+                            </td>
+                            <td className="px-4 py-2 text-sm font-medium text-gray-900">
+                              <div className="max-w-md break-words whitespace-pre-wrap">{item.name}</div>
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                              {getItemType(item)}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 text-center">
+                              {item.quantity}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 text-right">
+                              {formatVND(item.price)}
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="flex justify-end mt-6 gap-3">
+                <button
+                  onClick={() => setShowCreateDeliveryModal(false)}
                   className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors font-medium"
                 >
-                  Đóng
+                  Hủy
+                </button>
+                <button
+                  onClick={() =>
+                    handleCreateDelivery(
+                      selectedOrder._id,
+                      selectedItemsForDelivery,
+                      trackingCode
+                    )
+                  }
+                  disabled={isUpdating}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  Xác nhận 
                 </button>
               </div>
             </div>

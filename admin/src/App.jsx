@@ -9,7 +9,7 @@ import Home from "./pages/Home";
 import ScrollToTop from "./components/ScrollToTop";
 import Users from "./pages/Users";
 import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
+
 import ProtectedRoute from "./components/ProtectedRoute";
 import Analytics from "./pages/Analytics";
 import Inventory from "./pages/Inventory";
@@ -25,7 +25,7 @@ function App() {
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+
 
         {/* Protected Routes */}
         <Route

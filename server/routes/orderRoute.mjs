@@ -8,6 +8,7 @@ import {
   getOrderStats,
   deleteOrder,
   notifyOrderViewed,
+  createDelivery,
 } from "../controllers/orderController.mjs";
 import adminAuth from "../middleware/adminAuth.js";
 import userAuth from "../middleware/userAuth.js";
@@ -29,5 +30,6 @@ router.get(`${routeValue}list`, adminAuth, getAllOrders);
 router.get(`${routeValue}stats`, adminAuth, getOrderStats);
 router.post(`${routeValue}update-status`, adminAuth, updateOrderStatus);
 router.post(`${routeValue}delete`, adminAuth, deleteOrder);
+router.post(`${routeValue}create-delivery`, adminAuth, createDelivery);
 
 export default router;

@@ -36,7 +36,7 @@ const BankTransferInfo = ({ orderId, totalAmount, onPaymentComplete }) => {
             transferContent: transferContent,
             amount: totalAmount,
           });
-          toast.error(response.data.message || "");
+          // toast.error(response.data.message || "ádfghj");
         }
       } catch (error) {
         console.error("Bank Info API Exception:", error);
@@ -50,7 +50,7 @@ const BankTransferInfo = ({ orderId, totalAmount, onPaymentComplete }) => {
           transferContent: transferContent,
           amount: totalAmount,
         });
-        toast.error("");
+        // toast.error("ádfgh");
       } finally {
         setLoading(false);
       }

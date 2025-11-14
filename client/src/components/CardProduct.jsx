@@ -48,7 +48,7 @@ const CardProduct = ({ item, onLike, liked }) => {
             <PriceFormat amount={item.price} /> VNĐ
           </span>
           <AddToCartButton
-            item={item}
+            item={{ ...item, purchaseType: "single" }}
             className="bg-[#c89b6a] text-white rounded-full w-7 h-7 flex items-center justify-center"
           />
         </div>

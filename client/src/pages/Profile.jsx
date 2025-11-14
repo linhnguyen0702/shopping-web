@@ -94,10 +94,12 @@ const Profile = () => {
           const stats = {
             pending: orders.filter((order) => order.status === "pending")
               .length,
-            confirmed: orders.filter((order) => order.status === "confirmed")
-              .length,
-            shipped: orders.filter((order) => order.status === "shipped")
-              .length,
+            confirmed: orders.filter(
+              (order) => order.status === "confirmed" || order.status === "partially-shipped"
+            ).length,
+            shipped: orders.filter(
+              (order) => order.status === "shipped" || order.status === "partially-shipped"
+            ).length,
             delivered: orders.filter((order) => order.status === "delivered")
               .length,
             cancelled: orders.filter((order) => order.status === "cancelled")

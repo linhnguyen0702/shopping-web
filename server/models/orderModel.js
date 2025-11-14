@@ -33,6 +33,10 @@ const orderSchema = new mongoose.Schema({
         type: Number,
         default: 0,
       },
+      isDelivered: {
+        type: Boolean,
+        default: false,
+      },
     },
   ],
   amount: {
@@ -102,6 +106,7 @@ const orderSchema = new mongoose.Schema({
       "draft",
       "pending",
       "confirmed",
+      "partially-shipped",
       "shipped",
       "delivered",
       "cancelled",
@@ -140,6 +145,25 @@ const orderSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  deliveries: [
+    {
+      status: {
+        type: String,
+        enum: ["pending", "shipped", "delivered", "cancelled"],
+        default: "pending",
+      },
+      trackingCode: { type: String },
+      createdAt: { type: Date, default: Date.now },
+      items: [
+        {
+          productId: { type: mongoose.Schema.Types.ObjectId, ref: "product" },
+          name: { type: String },
+          quantity: { type: Number },
+          image: { type: String },
+        },
+      ],
+    },
+  ],
   updatedAt: {
     type: Date,
     default: Date.now,

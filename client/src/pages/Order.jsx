@@ -57,6 +57,76 @@ const Order = () => {
   });
   const [activeTab, setActiveTab] = useState("all");
 
+  // Tách đơn hàng thành các dòng riêng cho mỗi lần giao hàng (logic từ admin)
+  const expandOrdersWithDeliveries = (ordersToExpand) => {
+    const expandedOrders = [];
+
+    ordersToExpand.forEach((order) => {
+      if (order.deliveries && order.deliveries.length > 0) {
+        // Tạo một dòng cho mỗi lần giao hàng
+        order.deliveries.forEach((delivery, index) => {
+          const deliveryItemsWithDetails = delivery.items.map(deliveryItem => {
+            const originalItem = order.items.find(orderItem => {
+              const orderProductId = (typeof orderItem.productId === 'object' && orderItem.productId !== null) ? orderItem.productId._id : orderItem.productId;
+              const deliveryProductId = (typeof deliveryItem.productId === 'object' && deliveryItem.productId !== null) ? deliveryItem.productId._id : deliveryItem.productId;
+              return orderProductId === deliveryProductId;
+            });
+
+            if (originalItem) {
+              return {
+                ...originalItem,
+                _id: deliveryItem._id, 
+                quantity: deliveryItem.quantity,
+              };
+            }
+            return { ...deliveryItem, price: 0 }; // Fallback
+          });
+
+          expandedOrders.push({
+            ...order, // Giữ lại thông tin gốc của đơn hàng
+            isDeliveryRow: true,
+            deliveryIndex: index,
+            currentDelivery: delivery,
+            displayId: `${order._id}-D${index + 1}`,
+            displayStatus: delivery.status,
+            displayItems: deliveryItemsWithDetails,
+            displayAmount: deliveryItemsWithDetails.reduce(
+              (sum, item) => sum + (item.price || 0) * (item.quantity || 0),
+              0
+            ),
+          });
+        });
+
+        // Tạo một dòng cho các sản phẩm chưa được giao (nếu có)
+        const undeliveredItems = getUndeliveredItems(order);
+        if (undeliveredItems.length > 0) {
+          expandedOrders.push({
+            ...order,
+            isUndeliveredRow: true,
+            displayId: order._id,
+            displayStatus: order.status, // Trạng thái chung của đơn hàng
+            displayItems: undeliveredItems,
+            displayAmount: undeliveredItems.reduce(
+              (sum, item) => sum + item.price * item.quantity,
+              0
+            ),
+          });
+        }
+      } else {
+        // Nếu không có lần giao nào, hiển thị đơn hàng như bình thường
+        expandedOrders.push({
+          ...order,
+          displayId: order._id,
+          displayStatus: order.status,
+          displayItems: order.items,
+          displayAmount: order.amount,
+        });
+      }
+    });
+
+    return expandedOrders;
+  };
+
   const fetchUserOrders = useCallback(async () => {
     try {
       console.log("=== FETCHING USER ORDERS ===");
@@ -180,27 +250,26 @@ const Order = () => {
 
   // Helper function to count reviewed items
   const getReviewedItemsCount = useCallback(() => {
-    let count = 0;
-    orders.forEach((order) => {
-      order.items.forEach((item) => {
+    const reviewedOrders = orders.filter(order => {
+      // Consider only delivered orders for review counts
+      if (order.status !== 'delivered') return false;
+
+      // Check if at least one item in the order has a review
+      return order.items.some(item => {
         const productId = item.productId?._id || item.productId;
         const productIdStr = productId?.toString();
         const orderIdStr = order._id?.toString();
 
-        const hasReview = userReviews.some((review) => {
+        return userReviews.some(review => {
           const reviewProductId = review.productId?.toString();
           const reviewOrderId = review.orderId?.toString();
-          return (
-            reviewProductId === productIdStr && reviewOrderId === orderIdStr
-          );
+          return reviewProductId === productIdStr && reviewOrderId === orderIdStr;
         });
-
-        if (hasReview) {
-          count++;
-        }
       });
     });
-    console.log("Reviewed items count:", count);
+
+    const count = reviewedOrders.length;
+    console.log("Reviewed orders count:", count);
     return count;
   }, [orders, userReviews]);
 
@@ -235,6 +304,21 @@ const Order = () => {
     },
     [userReviews]
   );
+
+  // Helper function to get items that are not yet in any delivery
+  const getUndeliveredItems = (order) => {
+    if (!order.deliveries || order.deliveries.length === 0) {
+      return order.items;
+    }
+    const deliveredItemIds = new Set(
+      order.deliveries.flatMap((delivery) =>
+        delivery.items.map((item) => item.productId?.toString() || item._id?.toString())
+      )
+    );
+    return order.items.filter(
+      (item) => !deliveredItemIds.has(item.productId?._id?.toString() || item._id?.toString())
+    );
+  };
 
   // Helper function to handle edit review
   const handleEditReview = (item, orderId, existingReview) => {
@@ -330,13 +414,19 @@ const Order = () => {
       key: "confirmed",
       label: "Đã xác nhận",
       icon: FaCheckCircle,
-      count: orders.filter((order) => order.status === "confirmed").length,
+      count: orders.filter((order) => order.status === "confirmed" || order.status === "partially-shipped").length,
     },
     {
       key: "shipped",
       label: "Đang giao hàng",
       icon: FaTruck,
-      count: orders.filter((order) => order.status === "shipped").length,
+      count: (() => {
+        const allExpanded = expandOrdersWithDeliveries(orders);
+        return allExpanded.filter(order => 
+          (order.isDeliveryRow && order.currentDelivery.status === "shipped") || 
+          (!order.isDeliveryRow && !order.isUndeliveredRow && order.status === "shipped")
+        ).length;
+      })(),
     },
     {
       key: "delivered",
@@ -375,7 +465,8 @@ const Order = () => {
       console.log("User reviews:", userReviews.length);
 
       const filtered = orders.filter((order) => {
-        if (order.status !== "delivered") return false;
+        // Chỉ những đơn hàng đã giao mới có thể được đánh giá
+        if (order.status !== 'delivered') return false;
 
         const hasUnreviewedItems = order.items.some((item) => {
           const productId = item.productId?._id || item.productId;
@@ -414,6 +505,9 @@ const Order = () => {
       console.log("=== FILTERING REVIEWED ===");
 
       const filtered = orders.filter((order) => {
+        // Chỉ những đơn hàng đã giao mới có thể được đánh giá
+        if (order.status !== 'delivered') return false;
+
         return order.items.some((item) => {
           const productId = item.productId?._id || item.productId;
           const productIdStr = productId?.toString();
@@ -435,24 +529,81 @@ const Order = () => {
       console.log("Filtered reviewed orders:", filtered.length);
       return filtered;
     }
+    if (activeTab === "shipped") {
+      return orders.filter(
+        (order) => order.status === "shipped" || order.status === "partially-shipped"
+      );
+    }
     return orders.filter((order) => order.status === activeTab);
   }, [orders, activeTab, userReviews]);
 
-  const sortedOrders = React.useMemo(() => {
-    let sortableOrders = [...filteredOrders];
+    const sortedOrders = React.useMemo(() => {
+    const allExpanded = expandOrdersWithDeliveries(orders);
+
+    const tabFiltered = allExpanded.filter(order => {
+      if (activeTab === "all") return true;
+      if (activeTab === "pending") return order.displayStatus === "pending";
+      if (activeTab === "confirmed") {
+        return order.displayStatus === "confirmed" || (order.isUndeliveredRow && order.status === "partially-shipped");
+      }
+      if (activeTab === "shipped") {
+        return (order.isDeliveryRow && order.currentDelivery.status === "shipped") || (!order.isDeliveryRow && !order.isUndeliveredRow && order.status === "shipped");
+      }
+      if (activeTab === "delivered") {
+        return order.displayStatus === "delivered";
+      } 
+      if (activeTab === "cancelled") {
+        return order.displayStatus === "cancelled";
+      }
+      if (activeTab === "reviewed") {
+        // Đơn hàng đã giao và có ít nhất một đánh giá
+        if (order.status !== 'delivered') return false;
+        return order.items.some(item => isItemReviewed(item, order._id));
+      }
+      if (activeTab === "not-reviewed") {
+        // Đơn hàng đã giao và có ít nhất một sản phẩm chưa được đánh giá
+        if (order.status !== 'delivered') return false;
+        return order.items.some(item => !isItemReviewed(item, order._id));
+      }
+      // Fallback for other tabs if any
+      return false;
+    });
+
+    // Sắp xếp danh sách đã lọc
     if (sortConfig !== null) {
-      sortableOrders.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) {
+      tabFiltered.sort((a, b) => {
+        let aValue, bValue;
+
+        switch (sortConfig.key) {
+          case "date":
+            aValue = new Date(a.date);
+            bValue = new Date(b.date);
+            break;
+          case "amount":
+            aValue = a.displayAmount;
+            bValue = b.displayAmount;
+            break;
+          case "status":
+            aValue = a.displayStatus;
+            bValue = b.displayStatus;
+            break;
+          default: // Sắp xếp theo ID
+            aValue = a.displayId;
+            bValue = b.displayId;
+            break;
+        }
+
+        if (aValue < bValue) {
           return sortConfig.direction === "asc" ? -1 : 1;
         }
-        if (a[sortConfig.key] > b[sortConfig.key]) {
+        if (aValue > bValue) {
           return sortConfig.direction === "asc" ? 1 : -1;
         }
         return 0;
       });
     }
-    return sortableOrders;
-  }, [filteredOrders, sortConfig]);
+    return tabFiltered;
+  }, [orders, activeTab, sortConfig, userReviews]);
 
   const viewOrderDetail = (order) => {
     navigate(`/checkout/${order._id}`);
@@ -593,8 +744,8 @@ const Order = () => {
       let addedCount = 0;
       let updatedCount = 0;
 
-      // thêm từng sản phẩm vào giỏ hàng
-      order.items.forEach((item) => {
+      // thêm từng sản phẩm vào giỏ hàng (sử dụng displayItems để chỉ thêm các sản phẩm hiển thị)
+      order.displayItems.forEach((item) => {
         const existingCartItem = cartProducts.find(
           (cartItem) => cartItem._id === (item.productId || item._id)
         );
@@ -693,6 +844,9 @@ const Order = () => {
       case "confirmed":
       case "Đã xác nhận":
         return "bg-blue-100 text-blue-800 border-blue-200";
+      case "partially-shipped":
+      case "Giao một phần":
+        return "bg-blue-100 text-blue-800 border-blue-200";
       case "shipped":
       case "Đang giao":
         return "bg-purple-100 text-purple-800 border-purple-200";
@@ -715,6 +869,9 @@ const Order = () => {
       case "confirmed":
       case "Đã xác nhận":
         return <FaCheckCircle className="w-4 h-4" />;
+      case "partially-shipped":
+      case "Giao một phần":
+        return <FaTruck className="w-4 h-4" />;
       case "shipped":
       case "Đang giao":
         return <FaTruck className="w-4 h-4" />;
@@ -751,6 +908,8 @@ const Order = () => {
         return "Chờ xử lý";
       case "confirmed":
         return "Đã xác nhận";
+      case "partially-shipped":
+        return "Giao một phần";
       case "shipped":
         return "Đang giao";
       case "delivered":
@@ -836,7 +995,7 @@ const Order = () => {
         <div className="mb-8">
           <div className="border-b border-gray-200">
             {/* Desktop Tabs */}
-            <nav className="-mb-px hidden md:flex space-x-8">
+            <nav className="-mb-px hidden md:flex space-x-4">
               {orderTabs.map((tab) => {
                 const IconComponent = tab.icon;
                 const isActive = activeTab === tab.key;
@@ -1194,7 +1353,7 @@ const Order = () => {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {sortedOrders.map((order) => (
                       <motion.tr
-                        key={order._id}
+                        key={order.displayId} // Sử dụng displayId duy nhất
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.3 }}
@@ -1203,8 +1362,14 @@ const Order = () => {
                       >
                         <td className="px-3 py-3 whitespace-nowrap">
                           <div className="text-xs font-medium text-gray-900">
-                            #{order._id.slice(-8).toUpperCase()}
+                            #
+                            {order.isDeliveryRow
+                              ? `${order._id.slice(-8).toUpperCase()}-D${order.deliveryIndex + 1}`
+                              : order._id.slice(-8).toUpperCase()}
                           </div>
+                          {order.isUndeliveredRow && (
+                            <span className="text-xs text-yellow-600 font-semibold">Chờ giao</span>
+                          )}
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap">
                           <div className="text-xs text-gray-900">
@@ -1218,55 +1383,38 @@ const Order = () => {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <div className="flex items-center space-x-2">
-                            <div className="flex -space-x-1">
-                              {order.items.slice(0, 2).map((item, index) => (
-                                <div
-                                  key={index}
-                                  className="w-6 h-6 bg-gray-100 rounded-full border border-white overflow-hidden flex-shrink-0"
-                                >
-                                  {item.image && (
-                                    <img
-                                      src={item.image}
-                                      alt={item.name}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  )}
-                                </div>
+                          <div className="flex items-center">
+                            <div className="flex -space-x-2 mr-2">
+                              {order.displayItems.slice(0, 3).map((item, idx) => (
+                                <img
+                                  key={item._id || idx}
+                                  src={item.image}
+                                  alt={item.name}
+                                  className="w-6 h-6 object-cover rounded-full border-2 border-white"
+                                  title={item.name}
+                                />
                               ))}
-                              {order.items.length > 2 && (
-                                <div className="w-6 h-6 bg-gray-200 rounded-full border border-white flex items-center justify-center flex-shrink-0">
-                                  <span className="text-xs text-gray-600">
-                                    +{order.items.length - 2}
-                                  </span>
-                                </div>
-                              )}
                             </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="text-xs font-medium text-gray-900">
-                                {order.items.length} sản phẩm
-                              </div>
-                              <div className="text-xs text-gray-500 truncate max-w-[160px]">
-                                {order.items[0]?.name}
-                              </div>
-                            </div>
+                            <span className="text-xs text-gray-600">
+                              {order.displayItems.length} sản phẩm
+                            </span>
                           </div>
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap">
                           <div className="text-xs font-semibold text-gray-900">
-                            <PriceFormat amount={order.amount} />
+                            <PriceFormat amount={order.displayAmount} />
                           </div>
                         </td>
-                        {/* Allow status text to be fully visible; avoid unexpected wrapping */}
+                        {/* Trạng thái của dòng (lần giao hoặc đơn hàng) */}
                         <td className="px-3 py-3 whitespace-nowrap">
                           <span
                             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(
-                              order.status
+                              order.displayStatus
                             )}`}
                           >
-                            {getStatusIcon(order.status)}
+                            {getStatusIcon(order.displayStatus)}
                             <span className="hidden sm:inline">
-                              {translateStatus(order.status)}
+                              {translateStatus(order.displayStatus)}
                             </span>
                           </span>
                         </td>
@@ -1278,8 +1426,6 @@ const Order = () => {
                           >
                             {order.paymentMethod === "cod" ? (
                               <FaMoneyBillWave className="w-3 h-3" />
-                            ) : order.paymentMethod === "bank_transfer" ? (
-                              <FaCreditCard className="w-3 h-3" />
                             ) : (
                               <FaCreditCard className="w-3 h-3" />
                             )}
@@ -1315,7 +1461,8 @@ const Order = () => {
                             >
                               <FaShoppingBag className="w-3 h-3" />
                             </Link>
-                            {order.paymentStatus === "pending" && (
+                            {/* Payment Button */}
+                            {order.paymentStatus === "pending" && !order.isDeliveryRow && !order.isUndeliveredRow && (
                               <Link
                                 to={`/checkout/${order._id}`}
                                 className="text-orange-600 hover:text-orange-900 transition-colors p-1 inline-block"
@@ -1325,36 +1472,14 @@ const Order = () => {
                                 <FaCreditCard className="w-3 h-3" />
                               </Link>
                             )}
-                            {order.status === "delivered" &&
-                              order.items.some((item) => {
-                                const productId =
-                                  item.productId?._id || item.productId;
-                                return !userReviews.some(
-                                  (review) =>
-                                    review.productId === productId &&
-                                    review.orderId === order._id
-                                );
-                              }) && (
+                            {/* Review Button */}
+                            {order.displayStatus === "delivered" && !order.isDeliveryRow && order.displayItems.some(item => !isItemReviewed(item, order._id)) && (
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    // Find first unreviewed item
-                                    const unreviewedItem = order.items.find(
-                                      (item) => {
-                                        const productId =
-                                          item.productId?._id || item.productId;
-                                        return !userReviews.some(
-                                          (review) =>
-                                            review.productId === productId &&
-                                            review.orderId === order._id
-                                        );
-                                      }
-                                    );
+                                    const unreviewedItem = order.displayItems.find(item => !isItemReviewed(item, order._id));
                                     if (unreviewedItem) {
-                                      handleOpenReviewModal(
-                                        unreviewedItem,
-                                        order._id
-                                      );
+                                      handleOpenReviewModal(unreviewedItem, order._id);
                                     }
                                   }}
                                   className="text-yellow-600 hover:text-yellow-900 transition-colors p-1"
@@ -1363,24 +1488,14 @@ const Order = () => {
                                   <FaStar className="w-3 h-3" />
                                 </button>
                               )}
-                            {/* Add Edit Review Button for Desktop */}
-                            {order.status === "delivered" &&
-                              order.items.some((item) =>
-                                isItemReviewed(item, order._id)
-                              ) && (
+                            {/* Edit Review Button */}
+                            {order.displayStatus === 'delivered' && !order.isDeliveryRow && order.displayItems.some(item => isItemReviewed(item, order._id)) && (
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    // Find first reviewed item
-                                    const reviewedItem = order.items.find(
-                                      (item) => isItemReviewed(item, order._id)
-                                    );
+                                    const reviewedItem = order.displayItems.find(item => isItemReviewed(item, order._id));
                                     if (reviewedItem) {
-                                      handleEditReview(
-                                        reviewedItem,
-                                        order._id,
-                                        getItemReview(reviewedItem, order._id)
-                                      );
+                                      handleEditReview(reviewedItem, order._id, getItemReview(reviewedItem, order._id));
                                     }
                                   }}
                                   className="text-blue-600 hover:text-blue-900 transition-colors p-1"
@@ -1402,7 +1517,7 @@ const Order = () => {
             <div className="md:hidden space-y-4">
               {sortedOrders.map((order) => (
                 <motion.div
-                  key={order._id}
+                  key={order.displayId}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
@@ -1413,7 +1528,10 @@ const Order = () => {
                   <div className="flex justify-between items-start mb-3">
                     <div>
                       <h3 className="text-sm font-medium text-gray-900">
-                        #{order._id.slice(-8).toUpperCase()}
+                        #
+                        {order.isDeliveryRow
+                          ? `${order._id.slice(-8).toUpperCase()}-D${order.deliveryIndex + 1}`
+                          : order._id.slice(-8).toUpperCase()}
                       </h3>
                       <p className="text-xs text-gray-500">
                         {new Date(order.date).toLocaleDateString()}
@@ -1421,20 +1539,20 @@ const Order = () => {
                     </div>
                     <div className="text-right">
                       <div className="text-sm font-semibold text-gray-900">
-                        <PriceFormat amount={order.amount} />
+                        <PriceFormat amount={order.displayAmount} />
                       </div>
                     </div>
                   </div>
 
                   {/* Order Status */}
-                  <div className="flex items-center gap-3 mb-3">
+                  <div className="flex items-center gap-3 mb-3 flex-wrap">
                     <span
                       className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(
-                        order.status
+                        order.displayStatus
                       )}`}
                     >
-                      {getStatusIcon(order.status)}
-                      {translateStatus(order.status)}
+                      {getStatusIcon(order.displayStatus)}
+                      {translateStatus(order.displayStatus)}
                     </span>
                     <span
                       className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border ${getPaymentStatusColor(
@@ -1443,8 +1561,6 @@ const Order = () => {
                     >
                       {order.paymentMethod === "cod" ? (
                         <FaMoneyBillWave className="w-3 h-3" />
-                      ) : order.paymentMethod === "bank_transfer" ? (
-                        <FaCreditCard className="w-3 h-3" />
                       ) : (
                         <FaCreditCard className="w-3 h-3" />
                       )}
@@ -1453,43 +1569,28 @@ const Order = () => {
                   </div>
 
                   {/* Order Items */}
-                  <div className="flex items-center mb-4">
-                    <div className="flex -space-x-1 mr-2">
-                      {order.items.slice(0, 2).map((item, index) => (
-                        <div
-                          key={index}
-                          className="w-6 h-6 bg-gray-100 rounded-full border border-white overflow-hidden"
-                        >
-                          {item.image && (
-                            <img
-                              src={item.image}
-                              alt={item.name}
-                              className="w-full h-full object-cover"
-                            />
-                          )}
-                        </div>
-                      ))}
-                      {order.items.length > 2 && (
-                        <div className="w-6 h-6 bg-gray-200 rounded-full border border-white flex items-center justify-center">
-                          <span className="text-xs text-gray-600">
-                            +{order.items.length - 2}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-medium text-gray-900">
-                        {order.items.length} sản phẩm
+                  <div className="pt-3 mt-3 border-t border-gray-200">
+                    <div className="flex items-center">
+                      <div className="flex -space-x-2 mr-2">
+                        {order.displayItems.slice(0, 3).map((item, idx) => (
+                          <img
+                            key={item._id || idx}
+                            src={item.image}
+                            alt={item.name}
+                            className="w-8 h-8 object-cover rounded-full border-2 border-white"
+                            title={item.name}
+                          />
+                        ))}
                       </div>
-                      <div className="text-xs text-gray-500 truncate">
-                        {order.items[0]?.name}
-                      </div>
+                      <span className="text-sm text-gray-600">
+                        {order.displayItems.length} sản phẩm
+                      </span>
                     </div>
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex justify-between items-center pt-2 border-t border-gray-100">
-                    <div className="flex gap-2">
+                  <div className="flex justify-between items-center pt-2 mt-2 border-t border-gray-100">
+                    <div className="flex gap-2 flex-wrap">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1505,72 +1606,40 @@ const Order = () => {
                       >
                         Thêm giỏ
                       </button>
-                      {order.status === "delivered" &&
-                        order.items.some((item) => {
-                          const productId =
-                            item.productId?._id || item.productId;
-                          return !userReviews.some(
-                            (review) =>
-                              review.productId === productId &&
-                              review.orderId === order._id
-                          );
-                        }) && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // Find first unreviewed item
-                              const unreviewedItem = order.items.find(
-                                (item) => {
-                                  const productId =
-                                    item.productId?._id || item.productId;
-                                  return !userReviews.some(
-                                    (review) =>
-                                      review.productId === productId &&
-                                      review.orderId === order._id
-                                  );
-                                }
-                              );
-                              if (unreviewedItem) {
-                                handleOpenReviewModal(
-                                  unreviewedItem,
-                                  order._id
-                                );
-                              }
-                            }}
-                            className="text-yellow-600 hover:text-yellow-900 transition-colors text-xs font-medium px-2 py-1 rounded border border-yellow-200 hover:bg-yellow-50 flex items-center gap-1"
-                          >
-                            <FaStar className="w-3 h-3" />
-                            Đánh giá
-                          </button>
-                        )}
-                      {/* Add Edit Review Button for Mobile */}
-                      {order.status === "delivered" &&
-                        order.items.some((item) =>
-                          isItemReviewed(item, order._id)
-                        ) && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // Find first reviewed item
-                              const reviewedItem = order.items.find((item) =>
-                                isItemReviewed(item, order._id)
-                              );
-                              if (reviewedItem) {
-                                handleEditReview(
-                                  reviewedItem,
-                                  order._id,
-                                  getItemReview(reviewedItem, order._id)
-                                );
-                              }
-                            }}
-                            className="text-blue-600 hover:text-blue-900 transition-colors text-xs font-medium px-2 py-1 rounded border border-blue-200 hover:bg-blue-50 flex items-center gap-1"
-                          >
-                            <FaStar className="w-3 h-3" />
-                            Sửa đánh giá
-                          </button>
-                        )}
+                      {/* Nút Đánh giá cho Mobile */}
+                      {order.displayStatus === 'delivered' && !order.isDeliveryRow && order.displayItems.some(item => !isItemReviewed(item, order._id)) && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const unreviewedItem = order.displayItems.find(item => !isItemReviewed(item, order._id));
+                            if (unreviewedItem) {
+                              handleOpenReviewModal(unreviewedItem, order._id);
+                            }
+                          }}
+                          className="text-yellow-600 hover:text-yellow-900 transition-colors text-xs font-medium px-2 py-1 rounded border border-yellow-200 hover:bg-yellow-50 flex items-center gap-1"
+                        >
+                          <FaStar className="w-3 h-3" />
+                          Đánh giá
+                        </button>
+                      )}
+                      {/* Nút Sửa Đánh giá cho Mobile */}
+                      {order.displayStatus === 'delivered' && !order.isDeliveryRow && order.displayItems.some(item => isItemReviewed(item, order._id)) && (
+                         <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const reviewedItem = order.displayItems.find(item => isItemReviewed(item, order._id));
+                            if (reviewedItem) {
+                              handleEditReview(reviewedItem, order._id, getItemReview(reviewedItem, order._id));
+                            }
+                          }}
+                          className="text-blue-600 hover:text-blue-900 transition-colors text-xs font-medium px-2 py-1 rounded border border-blue-200 hover:bg-blue-50 flex items-center gap-1"
+                        >
+                          <FaStar className="w-3 h-3" />
+                          Sửa đánh giá
+                        </button>
+                      )}
                     </div>
-                    {order.paymentStatus === "pending" && (
+                    {order.paymentStatus === 'pending' && !order.isDeliveryRow && !order.isUndeliveredRow && (
                       <Link
                         to={`/checkout/${order._id}`}
                         className="text-orange-600 hover:text-orange-900 transition-colors text-xs font-medium px-2 py-1 rounded border border-orange-200 hover:bg-orange-50"
@@ -1616,8 +1685,8 @@ const Order = () => {
                       #{confirmModal.order._id.slice(-8).toUpperCase()}
                     </span>{" "}
                     vào giỏ hàng của bạn? Điều này sẽ thêm{" "}
-                    {confirmModal.order.items.length} item
-                    {confirmModal.order.items.length !== 1 ? "s" : ""} vào giỏ
+                    {confirmModal.order.displayItems.length} item
+                    {confirmModal.order.displayItems.length !== 1 ? "s" : ""} vào giỏ
                     hàng của bạn.
                   </p>
 
@@ -1627,7 +1696,7 @@ const Order = () => {
                       <span>Sản Phẩm Để Thêm:</span>
                       <span>Số Lượng × Đơn Giá</span>
                     </div>
-                    {confirmModal.order.items.map((item, index) => {
+                    {confirmModal.order.displayItems.map((item, index) => {
                       const isInCart = cartProducts.find(
                         (cartItem) =>
                           cartItem._id === (item.productId || item._id)

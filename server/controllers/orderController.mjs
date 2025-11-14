@@ -325,7 +325,7 @@ const getUserOrderById = async (req, res) => {
 
     const order = await orderModel
       .findOne({ _id: orderId, userId })
-      .populate("items.productId", "name image price");
+      .populate("items.productId", "name image price category");
 
     if (!order) {
       return res.json({
@@ -582,6 +582,88 @@ const notifyOrderViewed = async (req, res) => {
   }
 };
 
+// Create a new delivery for an order (Admin)
+const createDelivery = async (req, res) => {
+  try {
+    const { orderId, itemIds, trackingCode } = req.body;
+
+    if (!orderId || !itemIds || !Array.isArray(itemIds) || itemIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Order ID and a list of item IDs are required.",
+      });
+    }
+
+    const order = await orderModel.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found." });
+    }
+
+    // Filter items to be included in this delivery
+    const itemsForDelivery = order.items.filter((item) =>
+      itemIds.includes(item._id.toString())
+    );
+
+    // Check if all selected items are valid and not already delivered
+    if (itemsForDelivery.length !== itemIds.length) {
+      return res.status(400).json({ success: false, message: "Some selected items were not found in the order." });
+    }
+
+    const alreadyDeliveredItems = itemsForDelivery.filter(item => item.isDelivered);
+    if (alreadyDeliveredItems.length > 0) {
+      return res.status(400).json({ success: false, message: "Some selected items have already been delivered." });
+    }
+
+    // Create the new delivery object
+    const newDelivery = {
+      status: "shipped", // Default status for a new delivery
+      trackingCode: trackingCode || '',
+      createdAt: new Date(),
+      items: itemsForDelivery.map(item => ({
+        productId: item.productId,
+        name: item.name,
+        quantity: item.quantity,
+        image: item.image,
+      })),
+    };
+
+    // Add the new delivery to the order's deliveries array
+    order.deliveries.push(newDelivery);
+
+    // Mark items as delivered in the main items list
+    order.items.forEach(item => {
+      if (itemIds.includes(item._id.toString())) {
+        item.isDelivered = true;
+      }
+    });
+
+    // Update the overall order status
+    const allItemsDelivered = order.items.every(item => item.isDelivered);
+    if (allItemsDelivered) {
+      order.status = "delivered";
+    } else {
+      order.status = "partially-shipped";
+    }
+
+    // Mark the modified paths before saving
+    order.markModified('items');
+    order.markModified('deliveries');
+
+    order.updatedAt = new Date();
+    await order.save();
+
+    res.json({
+      success: true,
+      message: "Delivery created and order updated successfully.",
+      order,
+    });
+
+  } catch (error) {
+    console.error("Create Delivery Error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export {
   createOrder,
   getAllOrders,
@@ -591,4 +673,5 @@ export {
   getOrderStats,
   deleteOrder,
   notifyOrderViewed,
+  createDelivery,
 };

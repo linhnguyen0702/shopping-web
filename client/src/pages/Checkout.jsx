@@ -39,7 +39,21 @@ const Checkout = () => {
         });
         const data = await response.json();
         if (data.success) {
-          setOrder(data.order);
+          console.log("Order data from API:", data.order); // Debugging line
+
+          // --- START TEMPORARY MOCK DATA ---
+          // This is for demonstration purposes to show the status UI.
+          // The backend should provide the 'status' for each item.
+          const mockedOrder = { ...data.order };
+          if (mockedOrder.status === 'partially-shipped') {
+            mockedOrder.items = mockedOrder.items.map((item, index) => ({
+              ...item,
+              // Mocking a more realistic scenario: first item is shipped, rest are pending.
+              status: index === 0 ? 'shipped' : 'pending',
+            }));
+          }
+          setOrder(mockedOrder); // Use the mocked order
+          // --- END TEMPORARY MOCK DATA ---
 
           // Set payment method từ order data
           const orderPaymentMethod = data.order.paymentMethod || "cod";
@@ -123,11 +137,13 @@ const Checkout = () => {
   const translateStatus = (status) => {
     switch (status) {
       case "pending":
-        return "Chờ xử lý";
+        return "Chờ giao hàng";
       case "confirmed":
         return "Đã xác nhận";
       case "shipped":
         return "Đang giao hàng";
+      case "partially-shipped":
+        return "Đã giao một phần";
       case "delivered":
         return "Đã giao hàng";
       case "cancelled":
@@ -158,6 +174,8 @@ const Checkout = () => {
         return "bg-blue-100 text-blue-800 border-blue-200";
       case "shipped":
         return "bg-purple-100 text-purple-800 border-purple-200";
+      case "partially-shipped":
+        return "bg-indigo-100 text-indigo-800 border-indigo-200";
       case "delivered":
         return "bg-green-100 text-green-800 border-green-200";
       case "cancelled":
@@ -178,6 +196,14 @@ const Checkout = () => {
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
     }
+  };
+
+  const getItemTypeLabel = (item) => {
+    return (
+      item.selectedLabel ||
+      item.productId?.category ||
+      (item.purchaseType === "combo" ? "Combo" : "Mua lẻ")
+    );
   };
 
   if (loading) {
@@ -326,12 +352,30 @@ const Checkout = () => {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-medium text-gray-900 truncate hover:text-blue-600 transition-colors">
+                      <h3 className="text-lg font-medium text-gray-900 hover:text-blue-600 transition-colors">
                         {item.name}
                       </h3>
+                      {/* Hiển thị chi tiết loại sản phẩm nếu có */}
+                      <p className="text-sm text-gray-500">
+                        Loại: {getItemTypeLabel(item)}
+                      </p>
                       <p className="text-sm text-gray-600">
                         Số lượng: {item.quantity}
                       </p>
+                      {item.status && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-700">
+                            Trạng thái:
+                          </span>
+                          <span
+                            className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${getStatusColor(
+                              item.status
+                            )}`}
+                          >
+                            {translateStatus(item.status)}
+                          </span>
+                        </div>
+                      )}
                       <p className="text-xs text-blue-600 hover:text-blue-800">
                         Nhấn để xem chi tiết sản phẩm
                       </p>

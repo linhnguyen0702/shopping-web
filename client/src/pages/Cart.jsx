@@ -617,7 +617,13 @@ const Cart = () => {
                                 {item?.name}
                               </h3>
                             </Link>
-
+                            {item.selectedLabel ? (
+                              <p className="text-xs text-gray-500 mb-2">{item.selectedLabel}</p>
+                            ) : item.purchaseType && (
+                              <p className="text-xs text-gray-500 mb-2">
+                                Loại: {item.purchaseType === "combo" ? "Combo" : "Mua lẻ"}
+                              </p>
+                            )}
                             <div className="flex flex-wrap gap-2 mb-2">
                               {item?.brand && (
                                 <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
@@ -766,6 +772,13 @@ const Cart = () => {
                                   {item?.name}
                                 </h3>
                               </Link>
+                              {item.selectedLabel ? (
+                                <p className="text-sm text-gray-500">{item.selectedLabel}</p>
+                              ) : item.purchaseType && (
+                                <p className="text-sm text-gray-500">
+                                  Loại: {item.purchaseType === "combo" ? "Combo" : "Mua lẻ"}
+                                </p>
+                              )}
                               {item?.brand && (
                                 <p className="text-sm text-gray-600 mb-1">
                                   Thương hiệu: {item.brand}

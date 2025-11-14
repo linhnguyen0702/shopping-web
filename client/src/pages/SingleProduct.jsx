@@ -621,6 +621,7 @@ const SingleProduct = () => {
         ? `Lựa chọn: ${activeOption.label}`
         : undefined,
       selectedType: usingCombo ? "combo" : usingOption ? "option" : "base",
+      purchaseType: usingCombo ? "combo" : "single",
       selectedId: usingCombo
         ? activeCombo._id
         : usingOption
