@@ -12,6 +12,7 @@ import {
 import { emptyCart } from "../assets/images";
 import Container from "../components/Container";
 import PriceFormat from "../components/PriceFormat";
+import OpenStreetMapAutocomplete from "../components/OpenStreetMapAutocomplete";
 import toast from "react-hot-toast";
 import {
   FaMinus,
@@ -1339,15 +1340,21 @@ const Cart = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Địa chỉ
                 </label>
-                <input
-                  type="text"
+                <OpenStreetMapAutocomplete
                   value={addressForm.street}
-                  onChange={(e) =>
-                    setAddressForm({ ...addressForm, street: e.target.value })
+                  onChange={(value) =>
+                    setAddressForm({ ...addressForm, street: value })
                   }
-                  placeholder="Số nhà và tên đường"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
+                  onPlaceSelected={(place) => {
+                    setAddressForm((prev) => ({
+                      ...prev,
+                      street: place.street || place.fullAddress || prev.street,
+                      city: place.city || prev.city,
+                      state: place.state || prev.state,
+                      zipCode: place.zipCode || prev.zipCode,
+                      country: place.country || prev.country,
+                    }));
+                  }}
                 />
               </div>
 

@@ -23,6 +23,7 @@ const tempOrderSchema = new mongoose.Schema(
         price: { type: Number, required: true },
         quantity: { type: Number, required: true },
         image: { type: String },
+        selectedLabel: { type: String, default: "" },
       },
     ],
     amount: { type: Number, required: true },

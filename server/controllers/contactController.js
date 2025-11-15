@@ -367,6 +367,76 @@ export const createPublicContact = async (req, res) => {
   }
 };
 
+// Contact Admin from login page (không cần đăng nhập)
+export const contactAdminFromLogin = async (req, res) => {
+  try {
+    const { email, message, subject } = req.body;
+
+    // Validate required fields
+    if (!email || !message) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng nhập đầy đủ email và nội dung tin nhắn!",
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng nhập email hợp lệ!",
+      });
+    }
+
+    // Create new contact message
+    const contact = new Contact({
+      name: "Yêu cầu từ trang đăng nhập Admin",
+      email: email.trim().toLowerCase(),
+      subject: subject || "Yêu cầu hỗ trợ tài khoản Admin",
+      message: message.trim(),
+      // userId không có vì là public contact
+    });
+
+    await contact.save();
+
+    // Gửi thông báo cho admin về liên hệ mới
+    try {
+      await notifyNewContact({
+        name: contact.name,
+        email: contact.email,
+        subject: contact.subject,
+        message: contact.message,
+        phone: "",
+      });
+    } catch (notificationError) {
+      console.error("Lỗi gửi thông báo liên hệ:", notificationError);
+    }
+
+    res.status(201).json({
+      success: true,
+      message:
+        "Tin nhắn của bạn đã được gửi thành công! Admin sẽ liên hệ với bạn sớm.",
+    });
+  } catch (error) {
+    console.error("Contact admin from login error:", error);
+
+    // Handle specific mongoose errors
+    if (error.name === "ValidationError") {
+      const messages = Object.values(error.errors).map((err) => err.message);
+      return res.status(400).json({
+        success: false,
+        message: messages.join(", "),
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Có lỗi xảy ra khi gửi tin nhắn. Vui lòng thử lại!",
+    });
+  }
+};
+
 // Newsletter subscription
 export const subscribeNewsletter = async (req, res) => {
   try {

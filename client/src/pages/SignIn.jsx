@@ -310,25 +310,17 @@ const SignIn = () => {
 
     setModalLoading(true);
     try {
-      // Chuẩn bị payload và headers: gửi token cả trong header và trong body
+      // Chuẩn bị payload theo đúng format backend yêu cầu
       const payload = {
-        email: resetEmail,
-        password: newPassword,
-        // Gửi cả hai key phổ biến để backend nào kỳ vọng key khác nhau đều nhận được
-        resetToken: resetToken || "",
-        token: resetToken || "",
+        resetToken: resetToken,
+        newPassword: newPassword,
       };
-
-      const headers = {
-        "Content-Type": "application/json",
-      };
-      if (resetToken) {
-        headers.Authorization = `Bearer ${resetToken}`;
-      }
 
       const response = await fetch(`${serverUrl}/api/user/password/reset`, {
         method: "POST",
-        headers,
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(payload),
       });
 

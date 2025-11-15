@@ -45,11 +45,11 @@ const userLogin = async (req, res) => {
     const { email, password } = req.body;
     const user = await userModel.findOne({ email });
     if (!user) {
-      return res.json({ success: false, message: "User doesn't exist" });
+      return res.json({ success: false, message: "Người dùng không tồn tại" });
     }
 
     if (!user.isActive) {
-      return res.json({ success: false, message: "Account is deactivated" });
+      return res.json({ success: false, message: "Tài khoản đã bị vô hiệu hóa" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -74,10 +74,10 @@ const userLogin = async (req, res) => {
           email: user.email,
           role: user.role,
         },
-        message: "User logged in successfully",
+        message: "Đăng nhập thành công",
       });
     } else {
-      res.json({ success: false, message: "Invalid credentials, try again" });
+      res.json({ success: false, message: "Thông tin đăng nhập không chính xác" });
     }
   } catch (error) {
     console.log("User Login Error", error);
@@ -98,21 +98,21 @@ const userRegister = async (req, res) => {
     } = req.body;
     const existingUser = await userModel.findOne({ email });
     if (existingUser) {
-      return res.json({ success: false, message: "User already exists" });
+      return res.json({ success: false, message: "Người dùng đã tồn tại" });
     }
 
     // Validating email format & strong password
     if (!validator.isEmail(email)) {
       return res.json({
         success: false,
-        message: "Please enter a valid email address",
+        message: "Vui lòng nhập địa chỉ email hợp lệ",
       });
     }
 
     if (password.length < 8) {
       return res.json({
         success: false,
-        message: "Password length should be equal or greater than 8",
+        message: "Mật khẩu phải có ít nhất 8 ký tự",
       });
     }
 
@@ -120,7 +120,7 @@ const userRegister = async (req, res) => {
     if (role === "admin" && (!req.user || req.user.role !== "admin")) {
       return res.json({
         success: false,
-        message: "Only admins can create admin accounts",
+        message: "Chỉ quản trị viên mới có thể tạo tài khoản quản trị",
       });
     }
 
@@ -162,7 +162,7 @@ const userRegister = async (req, res) => {
         email: user.email,
         role: user.role,
       },
-      message: "User registered successfully!",
+      message: "Đăng ký thành công!",
     });
   } catch (error) {
     console.log("User Register Error", error);
@@ -303,12 +303,12 @@ const verifyPasswordResetOtp = async (req, res) => {
     if (!email || !otp) {
       return res.json({
         success: false,
-        message: "Email and OTP are required",
+        message: "Email và OTP là bắt buộc",
       });
     }
     const user = await userModel.findOne({ email });
     if (!user) {
-      return res.json({ success: false, message: "User doesn't exist" });
+      return res.json({ success: false, message: "Người dùng không tồn tại" });
     }
     if (
       !user.resetOtp ||
@@ -317,12 +317,12 @@ const verifyPasswordResetOtp = async (req, res) => {
     ) {
       return res.json({
         success: false,
-        message: "OTP expired or not requested",
+        message: "OTP đã hết hạn hoặc chưa được yêu cầu",
       });
     }
     const otpHash = crypto.createHash("sha256").update(otp).digest("hex");
     if (otpHash !== user.resetOtp) {
-      return res.json({ success: false, message: "Invalid OTP" });
+      return res.json({ success: false, message: "Mã OTP không hợp lệ" });
     }
 
     // Issue a short-lived token to allow password reset
@@ -332,7 +332,7 @@ const verifyPasswordResetOtp = async (req, res) => {
       { expiresIn: "15m" }
     );
 
-    res.json({ success: true, message: "OTP verified", resetToken });
+    res.json({ success: true, message: "Xác thực OTP thành công", resetToken });
   } catch (error) {
     console.log("Verify OTP Error", error);
     res.json({ success: false, message: error.message });
@@ -344,12 +344,12 @@ const resetPasswordWithToken = async (req, res) => {
   try {
     const { resetToken, newPassword } = req.body;
     if (!resetToken || !newPassword) {
-      return res.json({ success: false, message: "Missing data" });
+      return res.json({ success: false, message: "Thiếu dữ liệu" });
     }
     if (newPassword.length < 8) {
       return res.json({
         success: false,
-        message: "Password must be at least 8 characters",
+        message: "Mật khẩu phải có ít nhất 8 ký tự",
       });
     }
 
@@ -357,16 +357,16 @@ const resetPasswordWithToken = async (req, res) => {
     try {
       payload = jwt.verify(resetToken, process.env.JWT_SECRET);
     } catch (err) {
-      return res.json({ success: false, message: "Invalid or expired token" });
+      return res.json({ success: false, message: "Token không hợp lệ hoặc đã hết hạn" });
     }
 
     if (payload.purpose !== "password_reset") {
-      return res.json({ success: false, message: "Invalid token purpose" });
+      return res.json({ success: false, message: "Mục đích token không hợp lệ" });
     }
 
     const user = await userModel.findById(payload.id);
     if (!user) {
-      return res.json({ success: false, message: "User not found" });
+      return res.json({ success: false, message: "Không tìm thấy người dùng" });
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -376,7 +376,7 @@ const resetPasswordWithToken = async (req, res) => {
     user.resetOtpExpires = undefined;
     await user.save();
 
-    res.json({ success: true, message: "Password reset successfully" });
+    res.json({ success: true, message: "Đặt lại mật khẩu thành công" });
   } catch (error) {
     console.log("Reset Password Error", error);
     res.json({ success: false, message: error.message });
@@ -422,7 +422,7 @@ const googleLogin = async (req, res) => {
   try {
     const { idToken } = req.body;
     if (!idToken) {
-      return res.json({ success: false, message: "Missing Google token" });
+      return res.json({ success: false, message: "Thiếu token Google" });
     }
     const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
     let ticket;
@@ -432,7 +432,7 @@ const googleLogin = async (req, res) => {
         audience: process.env.GOOGLE_CLIENT_ID,
       });
     } catch (err) {
-      return res.json({ success: false, message: "Invalid Google token" });
+      return res.json({ success: false, message: "Token Google không hợp lệ" });
     }
     const payload = ticket.getPayload();
     const email = payload.email?.toLowerCase();
@@ -440,7 +440,7 @@ const googleLogin = async (req, res) => {
     if (!email) {
       return res.json({
         success: false,
-        message: "Google account has no email",
+        message: "Tài khoản Google không có email",
       });
     }
 
@@ -458,7 +458,7 @@ const googleLogin = async (req, res) => {
       });
     }
     if (!user.isActive) {
-      return res.json({ success: false, message: "Account is deactivated" });
+      return res.json({ success: false, message: "Tài khoản đã bị vô hiệu hóa" });
     }
 
     user.lastLogin = new Date();
@@ -474,7 +474,7 @@ const googleLogin = async (req, res) => {
         email: user.email,
         role: user.role,
       },
-      message: "Logged in with Google",
+      message: "Đăng nhập bằng Google thành công",
     });
   } catch (error) {
     console.log("Google Login Error", error);
@@ -490,7 +490,7 @@ const googleLoginWithCode = async (req, res) => {
     if (!code) {
       return res.json({
         success: false,
-        message: "Missing authorization code",
+        message: "Thiếu mã xác thực",
       });
     }
 
@@ -501,7 +501,7 @@ const googleLoginWithCode = async (req, res) => {
     if (!clientId || !clientSecret) {
       return res.json({
         success: false,
-        message: "Google OAuth not configured",
+        message: "Google OAuth chưa được cấu hình",
       });
     }
 
@@ -519,7 +519,7 @@ const googleLoginWithCode = async (req, res) => {
     } catch (err) {
       return res.json({
         success: false,
-        message: "Failed to exchange code for tokens",
+        message: "Không thể đổi mã lấy token",
       });
     }
 
@@ -527,7 +527,7 @@ const googleLoginWithCode = async (req, res) => {
     if (!idToken) {
       return res.json({
         success: false,
-        message: "No id_token returned by Google",
+        message: "Google không trả về id_token",
       });
     }
 
@@ -536,7 +536,7 @@ const googleLoginWithCode = async (req, res) => {
     try {
       ticket = await oauthClient.verifyIdToken({ idToken, audience: clientId });
     } catch (err) {
-      return res.json({ success: false, message: "Invalid Google id_token" });
+      return res.json({ success: false, message: "id_token Google không hợp lệ" });
     }
 
     const payload = ticket.getPayload();
@@ -545,7 +545,7 @@ const googleLoginWithCode = async (req, res) => {
     if (!email) {
       return res.json({
         success: false,
-        message: "Google account has no email",
+        message: "Tài khoản Google không có email",
       });
     }
 
@@ -563,7 +563,7 @@ const googleLoginWithCode = async (req, res) => {
     }
 
     if (!user.isActive) {
-      return res.json({ success: false, message: "Account is deactivated" });
+      return res.json({ success: false, message: "Tài khoản đã bị vô hiệu hóa" });
     }
 
     user.lastLogin = new Date();
@@ -579,7 +579,7 @@ const googleLoginWithCode = async (req, res) => {
         email: user.email,
         role: user.role,
       },
-      message: "Logged in with Google",
+      message: "Đăng nhập bằng Google thành công",
     });
   } catch (error) {
     console.log("Google Login Code Error", error);
@@ -593,7 +593,7 @@ const removeUser = async (req, res) => {
     const user = await userModel.findById(req.body._id);
 
     if (!user) {
-      return res.json({ success: false, message: "User not found" });
+      return res.json({ success: false, message: "Không tìm thấy người dùng" });
     }
 
     // Delete user's avatar from Cloudinary if exists
@@ -616,7 +616,7 @@ const removeUser = async (req, res) => {
 
     // Delete the user from database
     await userModel.findByIdAndDelete(req.body._id);
-    res.json({ success: true, message: "User deleted successfully" });
+    res.json({ success: true, message: "Xóa người dùng thành công" });
   } catch (error) {
     console.log("Removed user Error", error);
     res.json({ success: false, message: error.message });
@@ -631,12 +631,12 @@ const updateUser = async (req, res) => {
     // Support both URL param :id and body _id
     const targetUserId = req.params?.id || _id;
     if (!targetUserId) {
-      return res.json({ success: false, message: "Missing user id" });
+      return res.json({ success: false, message: "Thiếu ID người dùng" });
     }
 
     const user = await userModel.findById(targetUserId);
     if (!user) {
-      return res.json({ success: false, message: "User not found" });
+      return res.json({ success: false, message: "Không tìm thấy người dùng" });
     }
 
     if (name) user.name = name;
@@ -644,7 +644,7 @@ const updateUser = async (req, res) => {
       if (!validator.isEmail(email)) {
         return res.json({
           success: false,
-          message: "Please enter a valid email address",
+          message: "Vui lòng nhập một địa chỉ email hợp lệ",
         });
       }
       user.email = email;
@@ -655,7 +655,7 @@ const updateUser = async (req, res) => {
       if (role === "admin" && (!req.user || req.user.role !== "admin")) {
         return res.json({
           success: false,
-          message: "Only admins can assign admin role",
+          message: "Chỉ quản trị viên mới có thể gán quyền quản trị",
         });
       }
       user.role = role;
@@ -680,7 +680,7 @@ const updateUser = async (req, res) => {
       if (password.length < 8) {
         return res.json({
           success: false,
-          message: "Password length should be equal or greater than 8",
+          message: "Mật khẩu phải có ít nhất 8 ký tự",
         });
       }
 
@@ -690,7 +690,7 @@ const updateUser = async (req, res) => {
 
     await user.save();
 
-    res.json({ success: true, message: "User updated successfully" });
+    res.json({ success: true, message: "Cập nhật người dùng thành công" });
   } catch (error) {
     console.log("Update user Error", error);
     res.json({ success: false, message: error.message });
@@ -752,7 +752,7 @@ const addAddress = async (req, res) => {
 
     const user = await userModel.findById(targetUserId);
     if (!user) {
-      return res.json({ success: false, message: "User not found" });
+      return res.json({ success: false, message: "Không tìm thấy người dùng" });
     }
 
     // If this is being set as default, remove default from other addresses
@@ -777,7 +777,7 @@ const addAddress = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Address added successfully",
+      message: "Thêm địa chỉ thành công",
       address: newAddress,
     });
   } catch (error) {
@@ -798,14 +798,14 @@ const updateAddress = async (req, res) => {
 
     const user = await userModel.findById(targetUserId);
     if (!user) {
-      return res.json({ success: false, message: "User not found" });
+      return res.json({ success: false, message: "Không tìm thấy người dùng" });
     }
 
     const addressIndex = user.addresses.findIndex(
       (addr) => addr._id.toString() === addressId
     );
     if (addressIndex === -1) {
-      return res.json({ success: false, message: "Address not found" });
+      return res.json({ success: false, message: "Không tìm thấy địa chỉ" });
     }
 
     // If setting as default, remove default from other addresses
@@ -834,7 +834,7 @@ const updateAddress = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Address updated successfully",
+      message: "Cập nhật địa chỉ thành công",
       address: updatedAddress,
     });
   } catch (error) {
@@ -853,14 +853,14 @@ const deleteAddress = async (req, res) => {
 
     const user = await userModel.findById(targetUserId);
     if (!user) {
-      return res.json({ success: false, message: "User not found" });
+      return res.json({ success: false, message: "Không tìm thấy người dùng" });
     }
 
     const addressIndex = user.addresses.findIndex(
       (addr) => addr._id.toString() === addressId
     );
     if (addressIndex === -1) {
-      return res.json({ success: false, message: "Address not found" });
+      return res.json({ success: false, message: "Không tìm thấy địa chỉ" });
     }
 
     const wasDefault = user.addresses[addressIndex].isDefault;
@@ -875,7 +875,7 @@ const deleteAddress = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Address deleted successfully",
+      message: "Xóa địa chỉ thành công",
     });
   } catch (error) {
     console.log("Delete Address Error", error);
@@ -893,14 +893,14 @@ const setDefaultAddress = async (req, res) => {
 
     const user = await userModel.findById(targetUserId);
     if (!user) {
-      return res.json({ success: false, message: "User not found" });
+      return res.json({ success: false, message: "Không tìm thấy người dùng" });
     }
 
     const addressIndex = user.addresses.findIndex(
       (addr) => addr._id.toString() === addressId
     );
     if (addressIndex === -1) {
-      return res.json({ success: false, message: "Address not found" });
+      return res.json({ success: false, message: "Không tìm thấy địa chỉ" });
     }
 
     // Remove default from all addresses and set the specified one as default
@@ -911,7 +911,7 @@ const setDefaultAddress = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Default address updated successfully",
+      message: "Cập nhật địa chỉ mặc định thành công",
     });
   } catch (error) {
     console.log("Set Default Address Error", error);
@@ -928,7 +928,7 @@ const getUserAddresses = async (req, res) => {
 
     const user = await userModel.findById(targetUserId).select("addresses");
     if (!user) {
-      return res.json({ success: false, message: "User not found" });
+      return res.json({ success: false, message: "Không tìm thấy người dùng" });
     }
 
     res.json({
@@ -945,7 +945,7 @@ const getUserAddresses = async (req, res) => {
 const uploadUserAvatar = async (req, res) => {
   try {
     if (!req.file) {
-      return res.json({ success: false, message: "No file uploaded" });
+      return res.json({ success: false, message: "Không có tệp được tải lên" });
     }
 
     // Upload image to Cloudinary in the orebi/users folder
@@ -963,7 +963,7 @@ const uploadUserAvatar = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Avatar uploaded successfully",
+      message: "Tải lên ảnh đại diện thành công",
       avatarUrl: uploadResult.secure_url,
     });
   } catch (error) {
@@ -984,7 +984,7 @@ const getUserStats = async (req, res) => {
     const user = await userModel.findById(req.user.id).populate("orders");
 
     if (!user) {
-      return res.json({ success: false, message: "User not found" });
+      return res.json({ success: false, message: "Không tìm thấy người dùng" });
     }
 
     const stats = {
@@ -1012,7 +1012,7 @@ const updateProfileInfo = async (req, res) => {
     const user = await userModel.findById(req.user.id);
 
     if (!user) {
-      return res.json({ success: false, message: "User not found" });
+      return res.json({ success: false, message: "Không tìm thấy người dùng" });
     }
 
     // Update basic profile info
@@ -1049,7 +1049,7 @@ const updateProfileInfo = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Profile updated successfully",
+      message: "Cập nhật hồ sơ thành công",
       user: {
         id: user._id,
         name: user.name,
@@ -1084,7 +1084,7 @@ const updateUserEmail = async (req, res) => {
     const user = await userModel.findById(req.user.id);
 
     if (!user) {
-      return res.json({ success: false, message: "User not found" });
+      return res.json({ success: false, message: "Không tìm thấy người dùng" });
     }
 
     // Verify current password
@@ -1092,7 +1092,7 @@ const updateUserEmail = async (req, res) => {
     if (!isMatch) {
       return res.json({
         success: false,
-        message: "Current password is incorrect",
+        message: "Mật khẩu hiện tại không chính xác",
       });
     }
 
@@ -1100,7 +1100,7 @@ const updateUserEmail = async (req, res) => {
     if (!validator.isEmail(email)) {
       return res.json({
         success: false,
-        message: "Please enter a valid email address",
+        message: "Vui lòng nhập một địa chỉ email hợp lệ",
       });
     }
 
@@ -1112,7 +1112,7 @@ const updateUserEmail = async (req, res) => {
     if (existingUser) {
       return res.json({
         success: false,
-        message: "Email is already taken by another user",
+        message: "Email đã được sử dụng bởi người dùng khác",
       });
     }
 
@@ -1121,7 +1121,7 @@ const updateUserEmail = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Email updated successfully",
+      message: "Cập nhật email thành công",
       user: {
         id: user._id,
         name: user.name,
@@ -1139,12 +1139,12 @@ const updateUserEmail = async (req, res) => {
 const updateUserAvatar = async (req, res) => {
   try {
     if (!req.file) {
-      return res.json({ success: false, message: "No file uploaded" });
+      return res.json({ success: false, message: "Không có tệp được tải lên" });
     }
 
     const user = await userModel.findById(req.user.id);
     if (!user) {
-      return res.json({ success: false, message: "User not found" });
+      return res.json({ success: false, message: "Không tìm thấy người dùng" });
     }
 
     // Delete old avatar if exists
@@ -1175,7 +1175,7 @@ const updateUserAvatar = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Avatar updated successfully",
+      message: "Cập nhật ảnh đại diện thành công",
       avatarUrl: uploadResult.secure_url,
       user: {
         id: user._id,
@@ -1203,7 +1203,7 @@ const changePassword = async (req, res) => {
     const user = await userModel.findById(req.user.id);
 
     if (!user) {
-      return res.json({ success: false, message: "User not found" });
+      return res.json({ success: false, message: "Không tìm thấy người dùng" });
     }
 
     // Verify current password
@@ -1211,7 +1211,7 @@ const changePassword = async (req, res) => {
     if (!isMatch) {
       return res.json({
         success: false,
-        message: "Current password is incorrect",
+        message: "Mật khẩu hiện tại không chính xác",
       });
     }
 
@@ -1219,7 +1219,7 @@ const changePassword = async (req, res) => {
     if (newPassword.length < 8) {
       return res.json({
         success: false,
-        message: "New password must be at least 8 characters long",
+        message: "Mật khẩu mới phải có ít nhất 8 ký tự",
       });
     }
 
@@ -1228,7 +1228,7 @@ const changePassword = async (req, res) => {
     user.password = await bcrypt.hash(newPassword, salt);
     await user.save();
 
-    res.json({ success: true, message: "Password changed successfully" });
+    res.json({ success: true, message: "Đổi mật khẩu thành công" });
   } catch (error) {
     console.log("Change Password Error", error);
     res.json({ success: false, message: error.message });
@@ -1241,7 +1241,7 @@ const getUserPreferences = async (req, res) => {
     const user = await userModel.findById(req.user.id).select("preferences");
 
     if (!user) {
-      return res.json({ success: false, message: "User not found" });
+      return res.json({ success: false, message: "Không tìm thấy người dùng" });
     }
 
     const preferences = user.preferences || {
@@ -1273,14 +1273,14 @@ const updateUserPreferences = async (req, res) => {
     const user = await userModel.findById(req.user.id);
 
     if (!user) {
-      return res.json({ success: false, message: "User not found" });
+      return res.json({ success: false, message: "Không tìm thấy người dùng" });
     }
 
     // Update preferences
     user.preferences = { ...user.preferences, ...preferences };
     await user.save();
 
-    res.json({ success: true, message: "Preferences updated successfully" });
+    res.json({ success: true, message: "Cập nhật tùy chọn thành công" });
   } catch (error) {
     console.log("Update User Preferences Error", error);
     res.json({ success: false, message: error.message });
@@ -1299,7 +1299,7 @@ const getUserWishlist = async (req, res) => {
     });
 
     if (!user) {
-      return res.json({ success: false, message: "User not found" });
+      return res.json({ success: false, message: "Không tìm thấy người dùng" });
     }
 
     res.json({
@@ -1318,20 +1318,20 @@ const addToWishlist = async (req, res) => {
     const { productId } = req.body;
 
     if (!productId) {
-      return res.json({ success: false, message: "Product ID is required" });
+      return res.json({ success: false, message: "ID sản phẩm là bắt buộc" });
     }
 
     const user = await userModel.findById(req.user.id);
 
     if (!user) {
-      return res.json({ success: false, message: "User not found" });
+      return res.json({ success: false, message: "Không tìm thấy người dùng" });
     }
 
     // Check if product already exists in wishlist
     if (user.wishlist.includes(productId)) {
       return res.json({
         success: false,
-        message: "Product already in wishlist",
+        message: "Sản phẩm đã có trong danh sách yêu thích",
       });
     }
 
@@ -1348,7 +1348,7 @@ const addToWishlist = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Product added to wishlist successfully",
+      message: "Thêm sản phẩm vào danh sách yêu thích thành công",
       wishlist: updatedUser.wishlist,
     });
   } catch (error) {
@@ -1363,13 +1363,13 @@ const removeFromWishlist = async (req, res) => {
     const { productId } = req.body;
 
     if (!productId) {
-      return res.json({ success: false, message: "Product ID is required" });
+      return res.json({ success: false, message: "ID sản phẩm là bắt buộc" });
     }
 
     const user = await userModel.findById(req.user.id);
 
     if (!user) {
-      return res.json({ success: false, message: "User not found" });
+      return res.json({ success: false, message: "Không tìm thấy người dùng" });
     }
 
     // Remove product from wishlist
@@ -1387,7 +1387,7 @@ const removeFromWishlist = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Product removed from wishlist successfully",
+      message: "Xóa sản phẩm khỏi danh sách yêu thích thành công",
       wishlist: updatedUser.wishlist,
     });
   } catch (error) {
@@ -1402,7 +1402,7 @@ const clearWishlist = async (req, res) => {
     const user = await userModel.findById(req.user.id);
 
     if (!user) {
-      return res.json({ success: false, message: "User not found" });
+      return res.json({ success: false, message: "Không tìm thấy người dùng" });
     }
 
     user.wishlist = [];
@@ -1410,7 +1410,7 @@ const clearWishlist = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Wishlist cleared successfully",
+      message: "Xóa danh sách yêu thích thành công",
       wishlist: [],
     });
   } catch (error) {
@@ -1543,7 +1543,7 @@ const getUserProfile = async (req, res) => {
       .populate("orders");
 
     if (!user) {
-      return res.json({ success: false, message: "User not found" });
+      return res.json({ success: false, message: "Không tìm thấy người dùng" });
     }
 
     const userProfile = {
@@ -1576,7 +1576,7 @@ const updateUserProfile = async (req, res) => {
     const user = await userModel.findById(req.user.id);
 
     if (!user) {
-      return res.json({ success: false, message: "User not found" });
+      return res.json({ success: false, message: "Không tìm thấy người dùng" });
     }
 
     if (name) user.name = name;
@@ -1584,7 +1584,7 @@ const updateUserProfile = async (req, res) => {
       if (!validator.isEmail(email)) {
         return res.json({
           success: false,
-          message: "Please enter a valid email address",
+          message: "Vui lòng nhập một địa chỉ email hợp lệ",
         });
       }
 
@@ -1596,7 +1596,7 @@ const updateUserProfile = async (req, res) => {
       if (existingUser) {
         return res.json({
           success: false,
-          message: "Email is already taken by another user",
+          message: "Email đã được sử dụng bởi người dùng khác",
         });
       }
 
@@ -1630,7 +1630,7 @@ const updateUserProfile = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Profile updated successfully",
+      message: "Cập nhật hồ sơ thành công",
       user: {
         id: user._id,
         name: user.name,
@@ -1657,7 +1657,7 @@ const addToCart = async (req, res) => {
     const user = await userModel.findById(req.user.id);
 
     if (!user) {
-      return res.json({ success: false, message: "User not found" });
+      return res.json({ success: false, message: "Không tìm thấy người dùng" });
     }
 
     const cartKey = size ? `${productId}_${size}` : productId;
@@ -1672,7 +1672,7 @@ const addToCart = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Item added to cart",
+      message: "Thêm sản phẩm vào giỏ hàng thành công",
       cart: user.userCart,
     });
   } catch (error) {
@@ -1688,7 +1688,7 @@ const updateCart = async (req, res) => {
     const user = await userModel.findById(req.user.id);
 
     if (!user) {
-      return res.json({ success: false, message: "User not found" });
+      return res.json({ success: false, message: "Không tìm thấy người dùng" });
     }
 
     const cartKey = size ? `${productId}_${size}` : productId;
@@ -1703,7 +1703,7 @@ const updateCart = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Cart updated successfully",
+      message: "Cập nhật giỏ hàng thành công",
       cart: user.userCart,
     });
   } catch (error) {
@@ -1718,7 +1718,7 @@ const getUserCart = async (req, res) => {
     const user = await userModel.findById(req.user.id);
 
     if (!user) {
-      return res.json({ success: false, message: "User not found" });
+      return res.json({ success: false, message: "Không tìm thấy người dùng" });
     }
 
     res.json({
@@ -1737,7 +1737,7 @@ const clearCart = async (req, res) => {
     const user = await userModel.findById(req.user.id);
 
     if (!user) {
-      return res.json({ success: false, message: "User not found" });
+      return res.json({ success: false, message: "Không tìm thấy người dùng" });
     }
 
     user.userCart = {};
@@ -1745,7 +1745,7 @@ const clearCart = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Cart cleared successfully",
+      message: "Xóa giỏ hàng thành công",
     });
   } catch (error) {
     console.log("Clear Cart Error", error);
@@ -1760,25 +1760,25 @@ const createAdmin = async (req, res) => {
 
     // Check if requesting user is admin
     if (req.user.role !== "admin") {
-      return res.json({ success: false, message: "Admin access required" });
+      return res.json({ success: false, message: "Yêu cầu quyền quản trị" });
     }
 
     const existingUser = await userModel.findOne({ email });
     if (existingUser) {
-      return res.json({ success: false, message: "User already exists" });
+      return res.json({ success: false, message: "Người dùng đã tồn tại" });
     }
 
     if (!validator.isEmail(email)) {
       return res.json({
         success: false,
-        message: "Please enter a valid email address",
+        message: "Vui lòng nhập một địa chỉ email hợp lệ",
       });
     }
 
     if (password.length < 8) {
       return res.json({
         success: false,
-        message: "Password length should be equal or greater than 8",
+        message: "Mật khẩu phải có ít nhất 8 ký tự",
       });
     }
 
@@ -1796,7 +1796,7 @@ const createAdmin = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Admin created successfully!",
+      message: "Tạo tài khoản quản trị thành công!",
       admin: {
         id: admin._id,
         name: admin.name,

@@ -8,6 +8,7 @@ import {
   getUserContacts,
   createPublicContact,
   subscribeNewsletter,
+  contactAdminFromLogin,
 } from "../controllers/contactController.js";
 import userAuth from "../middleware/userAuth.js";
 import adminAuth from "../middleware/adminAuth.js";
@@ -19,6 +20,7 @@ const routeValue = "/api/contact";
 // Public routes (không cần authentication)
 router.post(`${routeValue}/public`, createPublicContact);
 router.post(`${routeValue}/newsletter`, subscribeNewsletter);
+router.post(`${routeValue}/admin`, contactAdminFromLogin);
 
 // User routes (require authentication)
 router.post(`${routeValue}`, userAuth, createContact);

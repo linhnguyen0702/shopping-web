@@ -29,6 +29,10 @@ const orderSchema = new mongoose.Schema({
       image: {
         type: String,
       },
+      selectedLabel: {
+        type: String,
+        default: "",
+      },
       shippingFee: {
         type: Number,
         default: 0,

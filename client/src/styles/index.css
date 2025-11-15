@@ -1,5 +1,8 @@
 @import "./base.css";
 
+/* Leaflet CSS for OpenStreetMap */
+@import "leaflet/dist/leaflet.css";
+
 /* Tailwind CSS directives - VS Code CSS linter warnings are expected */
 /* stylelint-disable-next-line at-rule-no-unknown */
 @tailwind base;

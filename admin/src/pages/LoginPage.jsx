@@ -38,6 +38,8 @@ const LoginPage = () => {
   // State for contact admin modal
   const [showContactModal, setShowContactModal] = useState(false);
   const [contactMessage, setContactMessage] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactLoading, setContactLoading] = useState(false);
 
   const googleLogin = useGoogleLogin({
     flow: "auth-code",
@@ -235,9 +237,11 @@ const LoginPage = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${resetToken}`,
         },
-        body: JSON.stringify({ newPassword }),
+        body: JSON.stringify({ 
+          resetToken: resetToken,
+          newPassword: newPassword 
+        }),
       });
       const data = await response.json();
 
@@ -285,15 +289,44 @@ const LoginPage = () => {
 
   // Reset modal khi đóng
   // Handle Contact Admin submission
-  const handleContactSubmit = (e) => {
+  const handleContactSubmit = async (e) => {
     e.preventDefault();
-    const subject = encodeURIComponent("Yêu cầu hỗ trợ tài khoản Admin");
-    const body = encodeURIComponent(contactMessage);
-    const mailtoLink = `mailto:linhyang0702@gmail.com?subject=${subject}&body=${body}`;
-    window.location.href = mailtoLink;
-    setShowContactModal(false);
-    setContactMessage("");
-    toast.success("Vui lòng gửi email qua ứng dụng của bạn.");
+    
+    if (!contactEmail || !contactMessage) {
+      toast.error("Vui lòng nhập đầy đủ thông tin");
+      return;
+    }
+
+    setContactLoading(true);
+    try {
+      const response = await fetch(`${serverUrl}/api/contact/admin`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: contactEmail,
+          message: contactMessage,
+          subject: "Yêu cầu hỗ trợ tài khoản Admin",
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success("Gửi tin nhắn thành công! Admin sẽ liên hệ với bạn sớm.");
+        setShowContactModal(false);
+        setContactMessage("");
+        setContactEmail("");
+      } else {
+        toast.error(data.message || "Không thể gửi tin nhắn");
+      }
+    } catch (error) {
+      console.error("Contact error:", error);
+      toast.error("Có lỗi xảy ra khi gửi tin nhắn");
+    } finally {
+      setContactLoading(false);
+    }
   };
 
   const handleCloseModal = () => {
@@ -331,7 +364,7 @@ const LoginPage = () => {
                 <input
                   type="email"
                   name="email"
-                  placeholder="Enter your email"
+                  placeholder="Nhập email của bạn"
                   className="w-full py-3 px-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white/70"
                   required
                   value={formData.email}
@@ -364,7 +397,7 @@ const LoginPage = () => {
                 <input
                   type={showPassword ? "text" : "password"}
                   name="password"
-                  placeholder="Enter your password"
+                  placeholder="Nhập mật khẩu của bạn"
                   className="w-full py-3 px-4 pr-12 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white/70"
                   required
                   value={formData.password}
@@ -459,7 +492,7 @@ const LoginPage = () => {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Signing In...
+                  Đang đăng nhập...
                 </div>
               ) : (
                 "Đăng nhập"
@@ -583,7 +616,7 @@ const LoginPage = () => {
                   </label>
                   <input
                     type="text"
-                    placeholder="000000"
+                    placeholder="Nhập mã OTP"
                     maxLength={6}
                     value={otp}
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
@@ -793,20 +826,70 @@ const LoginPage = () => {
             </div>
             <form onSubmit={handleContactSubmit} className="space-y-4">
               <p className="text-sm text-gray-600">
-                Nhập nội dung tin nhắn bạn muốn gửi đến quản trị viên.
+                Nhập email và nội dung tin nhắn bạn muốn gửi đến quản trị viên.
               </p>
-              <textarea
-                value={contactMessage}
-                onChange={(e) => setContactMessage(e.target.value)}
-                required
-                placeholder="Ví dụ: Tôi muốn yêu cầu cấp quyền truy cập..."
-                className="w-full h-32 py-3 px-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+              
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 block">
+                  Email của bạn
+                </label>
+                <input
+                  type="email"
+                  value={contactEmail}
+                  onChange={(e) => setContactEmail(e.target.value)}
+                  required
+                  placeholder="Nhập email của bạn"
+                  className="w-full py-3 px-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  disabled={contactLoading}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 block">
+                  Nội dung tin nhắn
+                </label>
+                <textarea
+                  value={contactMessage}
+                  onChange={(e) => setContactMessage(e.target.value)}
+                  required
+                  placeholder="Ví dụ: Tôi muốn yêu cầu cấp quyền truy cập..."
+                  className="w-full h-32 py-3 px-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  disabled={contactLoading}
+                />
+              </div>
+
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 focus:ring-4 focus:ring-blue-300 transform hover:scale-[1.02] transition-all duration-200 shadow-lg hover:shadow-xl"
+                disabled={contactLoading}
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 focus:ring-4 focus:ring-blue-300 transform hover:scale-[1.02] transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Gửi tin nhắn
+                {contactLoading ? (
+                  <div className="flex items-center justify-center">
+                    <svg
+                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Đang gửi...
+                  </div>
+                ) : (
+                  "Gửi tin nhắn"
+                )}
               </button>
             </form>
           </div>

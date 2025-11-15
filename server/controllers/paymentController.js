@@ -165,6 +165,7 @@ export const createOrder = async (req, res) => {
         price: item.price,
         quantity: item.quantity,
         image: item.images?.[0] || item.image,
+        selectedLabel: item.selectedLabel || "", // Lưu thông tin loại sản phẩm (Bàn ăn, Combo, v.v.)
         shippingFee: 0, // Individual item shipping fee if needed
       })),
       amount: totalAmount,
@@ -614,6 +615,7 @@ export const initiateOnlinePayment = async (req, res) => {
         price: item.price,
         quantity: item.quantity,
         image: item.images?.[0] || item.image,
+        selectedLabel: item.selectedLabel || "", // Lưu thông tin loại sản phẩm
       })),
       amount: totalAmount,
       address: {
