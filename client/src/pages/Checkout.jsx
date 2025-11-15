@@ -199,8 +199,10 @@ const Checkout = () => {
   };
 
   const getItemTypeLabel = (item) => {
+    if (item.selectedLabel) {
+      return item.selectedLabel.replace(/^(Lựa chọn:|Combo:)\s*/, '');
+    }
     return (
-      item.selectedLabel ||
       item.productId?.category ||
       (item.purchaseType === "combo" ? "Combo" : "Mua lẻ")
     );

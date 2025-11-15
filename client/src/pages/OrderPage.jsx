@@ -19,6 +19,7 @@ import Container from "../components/Container";
 import PriceFormat from "../components/PriceFormat";
 import PaymentModal from "../components/PaymentModal";
 import { removeSelectedItems, setOrderCount } from "../redux/orebiSlice";
+import OpenStreetMapAutocomplete from "../components/OpenStreetMapAutocomplete";
 
 const OrderPage = () => {
   const navigate = useNavigate();
@@ -317,7 +318,7 @@ const OrderPage = () => {
           toast.success("Đặt hàng thành công!");
 
           // COD: Remove items from cart ngay
-          const selectedItemIds = selectedItems.map((item) => item._id);
+          const selectedItemIds = selectedItems.map((item) => item.cartKey || item._id);
           dispatch(removeSelectedItems(selectedItemIds));
           dispatch(setOrderCount(orderCount + 1));
 
@@ -364,7 +365,7 @@ const OrderPage = () => {
                 "pendingVNPayOrder",
                 JSON.stringify({
                   transactionId: data.transactionId,
-                  cartItemIds: selectedItems.map((item) => item._id),
+                  cartItemIds: selectedItems.map((item) => item.cartKey || item._id),
                 })
               );
 
@@ -378,7 +379,7 @@ const OrderPage = () => {
             toast.success("Vui lòng quét mã QR để thanh toán");
 
             // Lưu items cần remove sau khi xác nhận thanh toán
-            const selectedItemIds = selectedItems.map((item) => item._id);
+            const selectedItemIds = selectedItems.map((item) => item.cartKey || item._id);
             setPendingCartItems(selectedItemIds);
 
             setCreatedOrderId(data.transactionId);
@@ -389,7 +390,7 @@ const OrderPage = () => {
             toast.success("Vui lòng chuyển khoản để hoàn tất đặt hàng");
 
             // Lưu items cần remove sau khi xác nhận thanh toán
-            const selectedItemIds = selectedItems.map((item) => item._id);
+            const selectedItemIds = selectedItems.map((item) => item.cartKey || item._id);
             setPendingCartItems(selectedItemIds);
 
             setCreatedOrderId(data.transactionId);
@@ -1072,15 +1073,17 @@ const OrderPage = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Địa chỉ *
                 </label>
-                <input
-                  type="text"
-                  value={addressForm.street}
-                  onChange={(e) =>
-                    setAddressForm({ ...addressForm, street: e.target.value })
-                  }
-                  placeholder="Số nhà và tên đường"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
+                <OpenStreetMapAutocomplete
+                  onSelect={(details) => {
+                    setAddressForm((prev) => ({
+                      ...prev,
+                      street: details.street,
+                      city: details.city,
+                      state: details.state,
+                      zipCode: details.zipCode,
+                      country: details.country,
+                    }));
+                  }}
                 />
               </div>
 

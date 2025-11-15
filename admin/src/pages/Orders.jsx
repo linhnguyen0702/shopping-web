@@ -456,29 +456,22 @@ const Orders = () => {
 
   // Lấy tên "Loại" hiển thị cho 1 item trong đơn hàng
   const getItemType = (item) => {
-    // 1) Nếu item lưu trực tiếp purchaseType khi thêm vào giỏ (ưu tiên)
+    // Ưu tiên 1: Lấy `selectedLabel` đã được lưu trong đơn hàng.
+    if (item.selectedLabel) {
+      return item.selectedLabel.replace(/^(Lựa chọn:|Combo:)\s*/, '');
+    }
+
+    // Ưu tiên 2: Fallback cho các đơn hàng cũ hơn
     if (item.purchaseType) {
       return item.purchaseType === "combo" ? "Combo" : "Mua lẻ";
     }
 
-    // 2) Nếu item có field type trực tiếp
-    if (item.type) {
-      return item.type === "combo" ? "Combo" : item.type;
+    // Fallback khác nếu không có `selectedLabel`
+    if (item.productId && typeof item.productId === "object" && item.productId.category) {
+      return item.productId.category.name || "N/A";
     }
 
-    // 3) Nếu productId được populate thành object
-    if (item.productId && typeof item.productId === "object") {
-      const p = item.productId;
-      if (p.type) return p.type === "combo" ? "Combo" : p.type;
-      if (p.category && p.category.name) return p.category.name;
-      if (p.productType) return p.productType;
-    }
-
-    // 4) Các fallback khác (item.productType, item.category)
-    if (item.productType) return item.productType;
-    if (item.category && item.category.name) return item.category.name;
-
-    // 5) Không xác định
+    // Mặc định
     return "N/A";
   };
 

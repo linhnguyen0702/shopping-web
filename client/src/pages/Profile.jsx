@@ -80,6 +80,84 @@ const Profile = () => {
       }
     };
 
+    // Helper function to expand orders with deliveries (same logic as Order.jsx)
+    const expandOrdersWithDeliveries = (ordersToExpand) => {
+      const expandedOrders = [];
+
+      ordersToExpand.forEach((order) => {
+        if (order.deliveries && order.deliveries.length > 0) {
+          // Tạo một dòng cho mỗi lần giao hàng
+          order.deliveries.forEach((delivery, index) => {
+            const deliveryItemsWithDetails = delivery.items.map(deliveryItem => {
+              const originalItem = order.items.find(orderItem => {
+                const orderProductId = (typeof orderItem.productId === 'object' && orderItem.productId !== null) ? orderItem.productId._id : orderItem.productId;
+                const deliveryProductId = (typeof deliveryItem.productId === 'object' && deliveryItem.productId !== null) ? deliveryItem.productId._id : deliveryItem.productId;
+                return orderProductId === deliveryProductId;
+              });
+
+              if (originalItem) {
+                return {
+                  ...originalItem,
+                  _id: deliveryItem._id, 
+                  quantity: deliveryItem.quantity,
+                };
+              }
+              return { ...deliveryItem, price: 0 };
+            });
+
+            expandedOrders.push({
+              ...order,
+              isDeliveryRow: true,
+              deliveryIndex: index,
+              currentDelivery: delivery,
+              displayId: `${order._id}-D${index + 1}`,
+              displayStatus: delivery.status,
+              displayItems: deliveryItemsWithDetails,
+              displayAmount: deliveryItemsWithDetails.reduce(
+                (sum, item) => sum + (item.price || 0) * (item.quantity || 0),
+                0
+              ),
+            });
+          });
+
+          // Tạo một dòng cho các sản phẩm chưa được giao (nếu có)
+          const deliveredItemIds = new Set(
+            order.deliveries.flatMap((delivery) =>
+              delivery.items.map((item) => item.productId?.toString() || item._id?.toString())
+            )
+          );
+          const undeliveredItems = order.items.filter(
+            (item) => !deliveredItemIds.has(item.productId?._id?.toString() || item._id?.toString())
+          );
+          
+          if (undeliveredItems.length > 0) {
+            expandedOrders.push({
+              ...order,
+              isUndeliveredRow: true,
+              displayId: order._id,
+              displayStatus: order.status,
+              displayItems: undeliveredItems,
+              displayAmount: undeliveredItems.reduce(
+                (sum, item) => sum + item.price * item.quantity,
+                0
+              ),
+            });
+          }
+        } else {
+          // Nếu không có lần giao nào, hiển thị đơn hàng như bình thường
+          expandedOrders.push({
+            ...order,
+            displayId: order._id,
+            displayStatus: order.status,
+            displayItems: order.items,
+            displayAmount: order.amount,
+          });
+        }
+      });
+
+      return expandedOrders;
+    };
+
     const fetchOrderStats = async () => {
       try {
         const token = localStorage.getItem("token");
@@ -91,14 +169,19 @@ const Profile = () => {
 
         if (response.data.success && isActive) {
           const orders = response.data.orders;
+          
+          // Expand orders to count deliveries properly (same as Order.jsx)
+          const allExpanded = expandOrdersWithDeliveries(orders);
+          
           const stats = {
             pending: orders.filter((order) => order.status === "pending")
               .length,
             confirmed: orders.filter(
               (order) => order.status === "confirmed" || order.status === "partially-shipped"
             ).length,
-            shipped: orders.filter(
-              (order) => order.status === "shipped" || order.status === "partially-shipped"
+            shipped: allExpanded.filter(order => 
+              (order.isDeliveryRow && order.currentDelivery.status === "shipped") || 
+              (!order.isDeliveryRow && !order.isUndeliveredRow && order.status === "shipped")
             ).length,
             delivered: orders.filter((order) => order.status === "delivered")
               .length,
