@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import PriceFormat from "./PriceFormat";
 import { FaTruck, FaBox, FaWeight } from "react-icons/fa";
+import { config } from "../../config";
 
 const ShippingInfo = ({ productId, quantity = 1 }) => {
   const [shippingOptions, setShippingOptions] = useState([]);
@@ -12,7 +13,7 @@ const ShippingInfo = ({ productId, quantity = 1 }) => {
     setLoading(true);
     try {
       const response = await fetch(
-        "http://localhost:8000/api/shipping/providers"
+        `${config.baseUrl}/api/shipping/providers`
       );
       const data = await response.json();
 
@@ -24,7 +25,7 @@ const ShippingInfo = ({ productId, quantity = 1 }) => {
           for (const service of provider.services) {
             try {
               const feeResponse = await fetch(
-                "http://localhost:8000/api/shipping/calculate-product",
+                `${config.baseUrl}/api/shipping/calculate-product`,
                 {
                   method: "POST",
                   headers: {

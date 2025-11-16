@@ -24,6 +24,7 @@ import {
   FaChevronDown,
   FaChevronUp,
 } from "react-icons/fa";
+import { config } from "../../config";
 
 const Cart = () => {
   const dispatch = useDispatch();
@@ -107,7 +108,7 @@ const Cart = () => {
       );
 
       const response = await fetch(
-        "http://localhost:8000/api/shipping/calculate",
+        `${config.baseUrl}/api/shipping/calculate`,
         {
           method: "POST",
           headers: {
@@ -269,7 +270,7 @@ const Cart = () => {
   const fetchAddresses = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:8000/api/user/addresses", {
+      const response = await fetch(`${config.baseUrl}/api/user/addresses`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -291,7 +292,7 @@ const Cart = () => {
   const fetchShippingProviders = async () => {
     try {
       const response = await fetch(
-        "http://localhost:8000/api/shipping/providers"
+        `${config.baseUrl}/api/shipping/providers`
       );
       const data = await response.json();
       if (data.success) {
@@ -323,7 +324,7 @@ const Cart = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:8000/api/user/addresses", {
+      const response = await fetch(`${config.baseUrl}/api/user/addresses`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

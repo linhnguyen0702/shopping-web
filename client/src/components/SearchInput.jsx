@@ -6,6 +6,7 @@ import { CiSearch } from "react-icons/ci";
 import { useNavigate } from "react-router-dom";
 import { getData } from "../helpers";
 import PriceFormat from "./PriceFormat";
+import { config } from "../../config";
 
 const SearchInput = () => {
   const [search, setSearch] = useState("");
@@ -20,7 +21,7 @@ const SearchInput = () => {
       return;
     }
 
-    const endpoint = `http://localhost:8000/api/products?_search=${search}`;
+    const endpoint = `${config.baseUrl}/api/products?_search=${search}`;
 
     try {
       setLoading(true);

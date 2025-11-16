@@ -26,6 +26,7 @@ import {
   FaSortDown,
   FaShoppingCart,
 } from "react-icons/fa";
+import { config } from "../../config";
 
 const Order = () => {
   const navigate = useNavigate();
@@ -52,7 +53,7 @@ const Order = () => {
       setLoading(true);
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `http://localhost:8000/api/order/my-orders`,
+        `${config.baseUrl}/api/order/my-orders`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

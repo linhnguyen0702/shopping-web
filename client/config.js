@@ -5,7 +5,7 @@ const checkConfig = (server) => {
   switch (server) {
     case "production":
       config = {
-        baseUrl: "http://localhost:8000",
+        baseUrl: serverUrl || "http://localhost:8000",
       };
       break;
     case "local":

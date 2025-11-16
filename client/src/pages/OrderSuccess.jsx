@@ -15,6 +15,7 @@ import {
   FaMoneyBillWave,
 } from "react-icons/fa";
 import toast from "react-hot-toast";
+import { config } from "../../config";
 
 const OrderSuccess = () => {
   const { orderId } = useParams();
@@ -33,7 +34,7 @@ const OrderSuccess = () => {
       try {
         const token = localStorage.getItem("token");
         const response = await fetch(
-          `http://localhost:8000/api/order/${orderId}`,
+          `${config.baseUrl}/api/order/${orderId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

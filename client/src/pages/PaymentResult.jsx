@@ -17,6 +17,7 @@ import {
 } from "react-icons/fa";
 import toast from "react-hot-toast";
 import { removeSelectedItems, setOrderCount } from "../redux/orebiSlice";
+import { config } from "../../config";
 
 const PaymentResult = () => {
   const [searchParams] = useSearchParams();
@@ -50,7 +51,7 @@ const PaymentResult = () => {
         if (success && orderId) {
           // Thanh toán thành công - Fetch order details
           const response = await fetch(
-            `http://localhost:8000/api/order/detail/${orderId}`,
+            `${config.baseUrl}/api/order/detail/${orderId}`,
             {
               headers: {
                 Authorization: `Bearer ${token}`,

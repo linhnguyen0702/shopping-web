@@ -20,6 +20,7 @@ import PriceFormat from "../components/PriceFormat";
 import PaymentModal from "../components/PaymentModal";
 import { removeSelectedItems, setOrderCount } from "../redux/orebiSlice";
 import OpenStreetMapAutocomplete from "../components/OpenStreetMapAutocomplete";
+import { config } from "../../config";
 
 const OrderPage = () => {
   const navigate = useNavigate();
@@ -197,7 +198,7 @@ const OrderPage = () => {
   const fetchAddresses = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:8000/api/user/addresses", {
+      const response = await fetch(`${config.baseUrl}/api/user/addresses`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -231,7 +232,7 @@ const OrderPage = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:8000/api/user/addresses", {
+      const response = await fetch(`${config.baseUrl}/api/user/addresses`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -293,7 +294,7 @@ const OrderPage = () => {
 
       // COD: Use old endpoint (creates order immediately)
       if (selectedPaymentMethod === "cod") {
-        const response = await fetch("http://localhost:8000/api/order/create", {
+        const response = await fetch(`${config.baseUrl}/api/order/create`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -331,7 +332,7 @@ const OrderPage = () => {
       // Online payments: Use new endpoint (creates temp order, real order after payment)
       else {
         const response = await fetch(
-          "http://localhost:8000/api/payment/initiate",
+          `${config.baseUrl}/api/payment/initiate`,
           {
             method: "POST",
             headers: {

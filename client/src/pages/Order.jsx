@@ -7,7 +7,7 @@ import PriceFormat from "../components/PriceFormat";
 import ReviewForm from "../components/ReviewForm";
 import { addToCart, setOrderCount } from "../redux/orebiSlice";
 import toast from "react-hot-toast";
-import { serverUrl } from "../../config";
+import { config, serverUrl } from "../../config";
 import {
   FaShoppingBag,
   FaEye,
@@ -133,7 +133,7 @@ const Order = () => {
       setLoading(true);
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `http://localhost:8000/api/order/my-orders`,
+        `${config.baseUrl}/api/order/my-orders`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
