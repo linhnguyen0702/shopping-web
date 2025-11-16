@@ -12,11 +12,11 @@ const config = {
   },
   production: {
     API_BASE_URL:
-      import.meta.env.VITE_API_BASE_URL || "https://your-api-domain.com",
+      import.meta.env.VITE_BACKEND_URL || "https://your-api-domain.com",
     CLIENT_BASE_URL:
       import.meta.env.VITE_CLIENT_BASE_URL || "https://orebiclient.reactbd.com",
     ADMIN_BASE_URL:
-      import.meta.env.VITE_ADMIN_BASE_URL || "https://orebiadmin.reactbd.com",
+      import.meta.env.VITE_BACKEND_URL || "https://orebiadmin.reactbd.com",
     NODE_ENV: "production",
     DEBUG: false,
     LOG_LEVEL: "error",
