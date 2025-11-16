@@ -27,20 +27,7 @@ console.log("Allowed Origins:", allowedOrigins);
 
 // ====== CORS (FINAL VERSION) ======
 app.use(cors({
-  origin: function (origin, callback) {
-    console.log("Origin request:", origin);
-
-    if (!origin) return callback(null, true); // mobile / postman / curl
-
-    const cleanOrigin = origin.replace(/\/$/, "");
-
-    if (allowedOrigins.includes(cleanOrigin)) {
-      return callback(null, true);
-    }
-
-    console.log("Blocked origin:", cleanOrigin);
-    return callback(new Error("CORS blocked"));
-  },
+  origin: true,
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
