@@ -10,62 +10,56 @@ import connectCloudinary from "./config/cloudinary.js";
 
 const port = process.env.PORT || 5000;
 
+// ====== CLEAN ORIGINS ======
 const allowedOrigins = [
-  process.env.ADMIN_URL,
-  process.env.CLIENT_URL,
-  // Add production URLs
-  // Add localhost for development
+  process.env.ADMIN_URL?.replace(/\/$/, ""),
+  process.env.CLIENT_URL?.replace(/\/$/, ""),
+
   "http://localhost:5174",
   "http://localhost:5173",
-  "http://localhost:8081", // iOS simulator
-  "http://10.0.2.2:8081", // Android emulator
-  "http://10.0.2.2:8000", // Android emulator direct access
+  "http://localhost:8081",
+  "http://10.0.2.2:8081",
+  "http://10.0.2.2:8000",
   "https://shopping-web-peach.vercel.app",
-].filter(Boolean); // Remove any undefined values
+].filter(Boolean);
 
-// CORS configuration using config system
-console.log("Các nguồn CORS được cho phép:", allowedOrigins);
+console.log("Allowed Origins:", allowedOrigins);
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      console.log("Yêu cầu CORS từ nguồn (origin):", origin);
+// ====== CORS (FINAL VERSION) ======
+app.use(cors({
+  origin: function (origin, callback) {
+    console.log("Origin request:", origin);
 
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
+    if (!origin) return callback(null, true); // mobile / postman / curl
 
-      // In development, allow all origins for easier testing
-      if (
-        process.env.NODE_ENV === "development" ||
-        process.env.CORS_ALLOW_ALL === "true"
-      ) {
-        console.log("Chế độ phát triển: cho phép tất cả các nguồn");
-        return callback(null, true);
-      }
+    const cleanOrigin = origin.replace(/\/$/, "");
 
-      if (allowedOrigins.indexOf(origin) !== -1) {
-        console.log("Nguồn được cho phép:", origin);
-        callback(null, true);
-      } else {
-        console.log("Nguồn bị chặn:", origin);
-        callback(new Error("Không được phép bởi CORS"));
-      }
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+    if (allowedOrigins.includes(cleanOrigin)) {
+      return callback(null, true);
+    }
+
+    console.log("Blocked origin:", cleanOrigin);
+    return callback(new Error("CORS blocked"));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
+// Fix Render OPTIONS redirect
+app.options("*", cors());
+
+// ====== BODY PARSER ======
 app.use(express.json());
 
-// Kết nối đến các dịch vụ trước khi khởi động server
+// ====== DB & CLOUD ======
 await dbConnect();
 connectCloudinary();
 
+// ====== ROUTES ======
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Import specific routes explicitly
 import cartRoute from "./routes/cartRoute.js";
 import notificationRoute from "./routes/notificationRoute.mjs";
 import shippingRoute from "./routes/shippingRoute.mjs";
@@ -77,12 +71,7 @@ app.use("/api/shipping", shippingRoute);
 const routesPath = path.resolve(__dirname, "./routes");
 const routeFiles = readdirSync(routesPath);
 routeFiles.map(async (file) => {
-  if (
-    file === "cartRoute.js" ||
-    file === "notificationRoute.mjs" ||
-    file === "shippingRoute.mjs"
-  )
-    return; // Skip already imported routes
+  if (["cartRoute.js", "notificationRoute.mjs", "shippingRoute.mjs"].includes(file)) return;
   const routeModule = await import(`./routes/${file}`);
   app.use("/", routeModule.default);
 });
@@ -91,18 +80,13 @@ app.get("/", (req, res) => {
   res.send("Bạn không nên ở đây");
 });
 
+// ====== START SERVER ======
 try {
   const server = app.listen(port, () => {
-    console.log(`Server đang chạy trên ${port}`);
+    console.log(`Server chạy trên cổng ${port}`);
   });
   server.on("error", (err) => {
-    if (err?.code === "EADDRINUSE") {
-      console.error(
-        `Port ${port} đã được sử dụng. Đặt một PORT khác hoặc giải phóng nó.`
-      );
-    } else {
-      console.error("Lỗi server:", err?.message || err);
-    }
+    console.error("Lỗi server:", err?.message || err);
     process.exit(1);
   });
 } catch (err) {
