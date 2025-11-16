@@ -32,6 +32,7 @@
     "qs": "^6.14.0",
     "stripe": "^18.4.0",
     "validator": "^13.12.0",
+    "moment-timezone": "^0.5.43",
     "cross-env": "^10.1.0"
   }
 }
