@@ -20,7 +20,7 @@ const allowedOrigins = [
   "http://localhost:8081", // iOS simulator
   "http://10.0.2.2:8081", // Android emulator
   "http://10.0.2.2:8000", // Android emulator direct access
-  "https://shopping-web-peach.vercel.app/",
+  "https://shopping-web-peach.vercel.app",
 ].filter(Boolean); // Remove any undefined values
 
 // CORS configuration using config system
