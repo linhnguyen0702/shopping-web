@@ -3,15 +3,22 @@ import notificationModel from "../models/notificationModel.js";
 
 // Cấu hình email transporter
 const createTransporter = () => {
+  const port = process.env.SMTP_PORT || 587;
+  const secure = port == 465; // true for 465, false for other ports
+
   const emailConfig = {
     host: process.env.SMTP_HOST || "smtp.gmail.com",
-    port: process.env.SMTP_PORT || 587,
-    secure: false, // true for 465, false for other ports
+    port: port,
+    secure: secure,
     auth: {
       user: process.env.SMTP_USER, // Đặt trong .env
       pass: process.env.SMTP_PASS, // App password của Gmail
     },
   };
+
+  console.log(
+    `📧 Email Config: Host=${emailConfig.host}, Port=${emailConfig.port}, Secure=${emailConfig.secure}`
+  );
 
   return createTransport(emailConfig);
 };
