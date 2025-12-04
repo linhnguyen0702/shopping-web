@@ -14,10 +14,15 @@ const createTransporter = () => {
       user: process.env.SMTP_USER, // Đặt trong .env
       pass: process.env.SMTP_PASS, // App password của Gmail
     },
+    logger: true, // Log thông tin chi tiết
+    debug: true, // Log cả traffic SMTP
+    connectionTimeout: 10000, // 10 giây
+    greetingTimeout: 10000,
+    socketTimeout: 10000,
   };
 
   console.log(
-    `📧 Email Config: Host=${emailConfig.host}, Port=${emailConfig.port}, Secure=${emailConfig.secure}`
+    `📧 Email Config: Host=${emailConfig.host}, Port=${emailConfig.port}, Secure=${emailConfig.secure}, User=${emailConfig.auth.user}`
   );
 
   return createTransport(emailConfig);
