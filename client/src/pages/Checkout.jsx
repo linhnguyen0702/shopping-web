@@ -41,19 +41,50 @@ const Checkout = () => {
         if (data.success) {
           console.log("Order data from API:", data.order); // Debugging line
 
-          // --- START TEMPORARY MOCK DATA ---
-          // This is for demonstration purposes to show the status UI.
-          // The backend should provide the 'status' for each item.
-          const mockedOrder = { ...data.order };
-          if (mockedOrder.status === 'partially-shipped') {
-            mockedOrder.items = mockedOrder.items.map((item, index) => ({
+          // Map statuses from deliveries to items
+          const itemsWithStatus = data.order.items.map((item) => {
+            // Priority 1: Main Order Final States overrides everything
+            if (data.order.status === 'delivered') return { ...item, status: 'delivered' };
+            if (data.order.status === 'cancelled') return { ...item, status: 'cancelled' };
+
+            let itemStatus = "pending"; // Default fallback
+
+            // Priority 2: Delivery Status (if exists for this item)
+            // Find if this item is in any delivery
+            let delivery = null;
+            if (data.order.deliveries && data.order.deliveries.length > 0) {
+              delivery = data.order.deliveries.find((d) =>
+                d.items.some((dItem) => {
+                  const dItemId = dItem.productId?._id || dItem.productId;
+                  const itemId = item.productId?._id || item.productId;
+                  return dItemId === itemId;
+                })
+              );
+            }
+
+            if (delivery) {
+              itemStatus = delivery.status;
+            } else {
+              // Priority 3: Inheritance from Main Order (if not partially shipped)
+              // If order is 'confirmed', item is 'confirmed'.
+              // If order is 'partially-shipped', item remains 'pending' (waiting for delivery).
+              if (data.order.status !== 'partially-shipped') {
+                 itemStatus = data.order.status;
+              }
+            }
+            
+            return {
               ...item,
-              // Mocking a more realistic scenario: first item is shipped, rest are pending.
-              status: index === 0 ? 'shipped' : 'pending',
-            }));
-          }
-          setOrder(mockedOrder); // Use the mocked order
-          // --- END TEMPORARY MOCK DATA ---
+              status: itemStatus,
+            };
+          });
+
+          const orderWithStatus = {
+            ...data.order,
+            items: itemsWithStatus,
+          };
+
+          setOrder(orderWithStatus);
 
           // Set payment method từ order data
           const orderPaymentMethod = data.order.paymentMethod || "cod";
@@ -108,6 +139,50 @@ const Checkout = () => {
     }
   }, [orderId, fetchOrderDetails]);
 
+  const handleVNPayPayment = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      
+      const response = await fetch(`${serverUrl}/api/payment/initiate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          amount: order.amount,
+          orderId: orderId,
+          orderInfo: `Thanh toan don hang ${orderId}`,
+          bankCode: "",
+          language: "vn",
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.code === "00" && data.paymentUrl) {
+        // Save pending order for checking later if needed
+        localStorage.setItem(
+          "pendingVNPayOrder",
+          JSON.stringify({
+            orderId: orderId,
+            amount: order.amount,
+          })
+        );
+        // Redirect to VNPay
+        window.location.href = data.paymentUrl;
+      } else {
+        toast.error("Không thể khởi tạo thanh toán VNPay");
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error("VNPay Error:", error);
+      toast.error("Lỗi kết nối đến cổng thanh toán");
+      setLoading(false);
+    }
+  };
+
   const handlePayment = async (selectedMethod) => {
     setPaymentMethod(selectedMethod);
 
@@ -116,8 +191,16 @@ const Checkout = () => {
     } else if (selectedMethod === "qr_code") {
       setPaymentStep("qr_code");
     } else if (selectedMethod === "cod") {
-      toast.success("Đơn hàng đã được xác nhận với thanh toán khi giao hàng");
-      navigate(`/payment-success?order_id=${orderId}`);
+      // Logic for COD (Confirm immediately or ask confirmation)
+      // Since it's an existing order change, maybe we need an API to update payment method?
+      // But here user just wants to "Finish" the flow.
+      // If it's already COD, do nothing. 
+      // For now keep existing behavior but maybe add API call to update method if changed?
+      toast.success("Đơn hàng đang được xử lý (COD)");
+      navigate(`/payment-success?orderId=${orderId}&success=true`);
+    } else if (selectedMethod === "vnpay") {
+      // Just select the method, user clicks specific button to pay
+      setPaymentMethod("vnpay");
     }
   };
 
@@ -128,10 +211,8 @@ const Checkout = () => {
   const handlePaymentComplete = (newOrderId) => {
     toast.success("Thanh toán hoàn tất!");
     const finalOrderId = newOrderId || orderId;
-    // Navigate đến trang chi tiết đơn hàng
-    setTimeout(() => {
-      navigate(`/checkout/${finalOrderId}`);
-    }, 500);
+    // Reload page to show updated status
+    window.location.reload();
   };
 
   const translateStatus = (status) => {
@@ -284,10 +365,26 @@ const Checkout = () => {
                   </span>
                   <span
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(
-                      order.status
+                      (() => {
+                        if (order.deliveries && order.deliveries.length > 0) {
+                          const allDelivered = order.deliveries.every(d => d.status === 'delivered');
+                          if (allDelivered && order.items.every(item => item.status === 'delivered')) return 'delivered';
+                          return 'partially-shipped';
+                        }
+                        return order.status;
+                      })()
                     )}`}
                   >
-                    {translateStatus(order.status)}
+                    {translateStatus(
+                      (() => {
+                        if (order.deliveries && order.deliveries.length > 0) {
+                          const allDelivered = order.deliveries.every(d => d.status === 'delivered');
+                          if (allDelivered && order.items.every(item => item.status === 'delivered')) return 'delivered';
+                          return 'partially-shipped';
+                        }
+                        return order.status;
+                      })()
+                    )}
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -505,82 +602,90 @@ const Checkout = () => {
               </div>
 
               {/* Payment Options */}
-              {order.paymentStatus === "pending" && (
-                <div className="space-y-4">
-                  {paymentStep === "selection" && (
-                    <>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                        Chọn phương thức thanh toán
+              <div className="space-y-4">
+                {paymentStep === "selection" && (
+                  <>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      {order.paymentStatus === "pending"
+                        ? "Chọn phương thức thanh toán"
+                        : "Phương thức thanh toán"}
+                    </h3>
+
+                    <PaymentMethodSelector
+                      selectedMethod={paymentMethod}
+                      onSelectMethod={handlePayment}
+                      readOnly={
+                        order.paymentStatus !== "pending" ||
+                        order.paymentMethod !== "cod"
+                      }
+                      paymentStatus={order.paymentStatus}
+                    />
+
+                    {/* VNPay Pay Button */}
+                    {order.paymentStatus === "pending" &&
+                      paymentMethod === "vnpay" && (
+                        <button
+                          onClick={handleVNPayPayment}
+                          disabled={loading}
+                          className="w-full mt-4 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold flex items-center justify-center gap-2"
+                        >
+                          {loading ? (
+                            <>
+                              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                              Đang xử lý...
+                            </>
+                          ) : (
+                            "Thanh toán ngay bằng VNPay"
+                          )}
+                        </button>
+                      )}
+                  </>
+                )}
+
+                {paymentStep === "bank_transfer" && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 mb-4">
+                      <button
+                        onClick={handlePaymentCancel}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                      >
+                        <FaArrowLeft className="w-4 h-4 text-gray-600" />
+                      </button>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Chuyển khoản ngân hàng
                       </h3>
-
-                      <PaymentMethodSelector
-                        selectedMethod={paymentMethod}
-                        onSelectMethod={handlePayment}
-                      />
-                    </>
-                  )}
-
-                  {paymentStep === "bank_transfer" && (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3 mb-4">
-                        <button
-                          onClick={handlePaymentCancel}
-                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                        >
-                          <FaArrowLeft className="w-4 h-4 text-gray-600" />
-                        </button>
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          Chuyển khoản ngân hàng
-                        </h3>
-                      </div>
-
-                      <BankTransferInfo
-                        orderId={orderId}
-                        totalAmount={order.amount}
-                        onPaymentComplete={handlePaymentComplete}
-                      />
                     </div>
-                  )}
 
-                  {paymentStep === "qr_code" && (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3 mb-4">
-                        <button
-                          onClick={handlePaymentCancel}
-                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                        >
-                          <FaArrowLeft className="w-4 h-4 text-gray-600" />
-                        </button>
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          Thanh toán QR Code
-                        </h3>
-                      </div>
-
-                      <QRCodePayment
-                        orderId={orderId}
-                        totalAmount={order.amount}
-                        onPaymentComplete={handlePaymentComplete}
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {order.paymentStatus === "paid" && (
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <FaCheckCircle className="w-6 h-6 text-green-600" />
-                    <div>
-                      <h4 className="font-semibold text-green-800">
-                        Thanh toán thành công
-                      </h4>
-                      <p className="text-sm text-green-700">
-                        Thanh toán của bạn đã được xử lý thành công
-                      </p>
-                    </div>
+                    <BankTransferInfo
+                      orderId={orderId}
+                      totalAmount={order.amount}
+                      onPaymentComplete={handlePaymentComplete}
+                    />
                   </div>
-                </div>
-              )}
+                )}
+
+                {paymentStep === "qr_code" && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 mb-4">
+                      <button
+                        onClick={handlePaymentCancel}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                      >
+                        <FaArrowLeft className="w-4 h-4 text-gray-600" />
+                      </button>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Thanh toán QR Code
+                      </h3>
+                    </div>
+
+                    <QRCodePayment
+                      orderId={orderId}
+                      totalAmount={order.amount}
+                      onPaymentComplete={handlePaymentComplete}
+                    />
+                  </div>
+                )}
+              </div>
 
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <button

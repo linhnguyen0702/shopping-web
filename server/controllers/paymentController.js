@@ -1021,10 +1021,25 @@ export const vnpayReturn = async (req, res) => {
 
       await order.save();
 
-      // Add order to user's orders array
-      await userModel.findByIdAndUpdate(tempOrder.userId, {
-        $push: { orders: order._id },
-      });
+      // Add order to user's orders array and clear ordered items from cart
+      const userToUpdate = await userModel.findById(tempOrder.userId);
+      if (userToUpdate) {
+        userToUpdate.orders.push(order._id);
+        
+        // Remove ordered items from cart
+        if (userToUpdate.userCart && Array.isArray(userToUpdate.userCart.products)) {
+          const orderedProductIds = new Set(
+            tempOrder.items.map((item) => item.productId.toString())
+          );
+          
+          userToUpdate.userCart.products = userToUpdate.userCart.products.filter(
+            (p) => !orderedProductIds.has(p._id)
+          );
+          
+          userToUpdate.markModified('userCart');
+        }
+        await userToUpdate.save();
+      }
 
       // Update stock for all items
       for (const update of stockUpdates) {
@@ -1082,7 +1097,7 @@ export const vnpayReturn = async (req, res) => {
 
       console.log("✅ VNPay payment successful, order created:", order._id);
       return res.redirect(
-        `${frontendUrl}/payment-result?success=true&orderId=${order._id}&transactionNo=${transactionNo}`
+        `${frontendUrl}/checkout/${order._id}?paymentSuccess=true`
       );
     } else {
       // Payment failed - Delete temporary order
@@ -1257,10 +1272,25 @@ export const confirmManualPayment = async (req, res) => {
 
     console.log("✅ Real order created:", order._id);
 
-    // Add order to user's orders array
-    await userModel.findByIdAndUpdate(tempOrder.userId, {
-      $push: { orders: order._id },
-    });
+    // Add order to user's orders array and clear ordered items from cart
+    const userToUpdate = await userModel.findById(tempOrder.userId);
+    if (userToUpdate) {
+      userToUpdate.orders.push(order._id);
+      
+      // Remove ordered items from cart
+      if (userToUpdate.userCart && Array.isArray(userToUpdate.userCart.products)) {
+        const orderedProductIds = new Set(
+          tempOrder.items.map((item) => item.productId.toString())
+        );
+        
+        userToUpdate.userCart.products = userToUpdate.userCart.products.filter(
+          (p) => !orderedProductIds.has(p._id)
+        );
+        
+        userToUpdate.markModified('userCart');
+      }
+      await userToUpdate.save();
+    }
 
     // Update stock for all items
     for (const update of stockUpdates) {

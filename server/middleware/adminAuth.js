@@ -40,6 +40,10 @@ const adminAuth = async (req, res, next) => {
     console.log("Admin authentication successful");
     // Add user info to request object
     req.user = user;
+    
+    // Update last active timestamp
+    await userModel.findByIdAndUpdate(user._id, { lastActiveAt: new Date() });
+    
     next();
   } catch (error) {
     console.log(error);

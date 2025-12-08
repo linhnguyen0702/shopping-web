@@ -1,7 +1,7 @@
 import orderModel from "../models/orderModel.js";
 import userModel from "../models/userModel.js";
 import productModel from "../models/productModel.js";
-import { notifyNewOrder } from "../services/notificationService.js";
+import { notifyNewOrder, notifyOrderStatusUpdate } from "../services/notificationService.js";
 
 // Create a new order
 const createOrder = async (req, res) => {
@@ -212,10 +212,28 @@ const createOrder = async (req, res) => {
     // Save order first
     await newOrder.save();
 
-    // Add order to user's orders array
-    await userModel.findByIdAndUpdate(userId, {
-      $push: { orders: newOrder._id },
-    });
+    // Add order to user's orders array and clear ordered items from cart
+    const userToUpdate = await userModel.findById(userId);
+    
+    if (userToUpdate) {
+      userToUpdate.orders.push(newOrder._id);
+
+      // Remove ordered items from cart
+      if (userToUpdate.userCart && Array.isArray(userToUpdate.userCart.products)) {
+        const orderedProductIds = new Set(
+          items.map((item) => item._id || item.productId)
+        );
+        
+        userToUpdate.userCart.products = userToUpdate.userCart.products.filter(
+          (p) => !orderedProductIds.has(p._id)
+        );
+        
+        // Mark userCart as modified since it's a Mixed type
+        userToUpdate.markModified('userCart');
+      }
+
+      await userToUpdate.save();
+    }
 
     // Update stock for all items AFTER order is successfully created
     for (const update of stockUpdates) {
@@ -352,7 +370,7 @@ const getUserOrderById = async (req, res) => {
 // Update order status (Admin)
 const updateOrderStatus = async (req, res) => {
   try {
-    const { orderId, status, paymentStatus } = req.body;
+    const { orderId, status, paymentStatus, deliveryId } = req.body;
 
     if (!orderId || !status) {
       return res.json({
@@ -390,12 +408,47 @@ const updateOrderStatus = async (req, res) => {
       });
     }
 
-    order.status = status;
+    if (deliveryId) {
+      // Find the specific delivery
+      const delivery = order.deliveries.id(deliveryId);
+      if (!delivery) {
+        return res.json({
+          success: false,
+          message: "Delivery not found",
+        });
+      }
+      delivery.status = status;
+      
+      // Auto-update main order status if all deliveries are delivered
+      // This logic assumes that if deliveries exist, ALL items are covered by deliveries eventually
+      // or at least that "delivered" status for the order implies all existing deliveries are done.
+      // You might want a more complex check if you have undelivered items remaining.
+      const allDeliveriesDone = order.deliveries.every(d => d.status === 'delivered');
+      
+      // Check if there are any items NOT in any delivery (still pending/processing)
+      // If we assume createDelivery handles item status, we can check item.isDelivered
+      const allItemsDelivered = order.items.every(item => item.isDelivered);
+
+      if (allDeliveriesDone && allItemsDelivered) {
+         order.status = 'delivered';
+      }
+      
+    } else {
+      // Update main order status
+      order.status = status;
+    }
+
     if (paymentStatus) {
       order.paymentStatus = paymentStatus;
     }
     order.updatedAt = Date.now();
     await order.save();
+
+    // 🔔 Gửi thông báo cập nhật cho khách hàng
+    // Only send if it's a main order update or a significant delivery update if you want
+    notifyOrderStatusUpdate(order).catch((err) => {
+      console.error("Lỗi gửi thông báo cập nhật:", err);
+    });
 
     res.json({
       success: true,

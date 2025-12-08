@@ -41,6 +41,7 @@ const userSchema = new mongoose.Schema(
     ],
     isActive: { type: Boolean, default: true },
     lastLogin: { type: Date },
+    lastActiveAt: { type: Date },
     avatar: { type: String, default: "" },
     resetOtp: { type: String, default: "" },
     resetOtpExpires: { type: Date },

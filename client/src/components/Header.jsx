@@ -12,6 +12,7 @@ import { IoMdCart } from "react-icons/io";
 import { useSelector } from "react-redux";
 import { FaUserAlt } from "react-icons/fa";
 import { headerNavigation } from "../constants/navigation";
+import NotificationDropdown from "./NotificationDropdown";
 
 const Header = () => {
   const location = useLocation();
@@ -23,7 +24,6 @@ const Header = () => {
 
   return (
     <div className="border-b border-gray-200 sticky top-0 z-50 bg-white/95 backdrop-blur-sm shadow-sm">
-      {" "}
       <Container className="py-4 lg:py-6 flex items-center gap-x-3 md:gap-x-7 justify-between">
         <Link to={"/"} className="flex-shrink-0">
           <img src={logo} alt="logo" className="h-12 w-15" />
@@ -65,6 +65,8 @@ const Header = () => {
               </span>
             )}
           </Link>
+
+          <NotificationDropdown />
 
           {userInfo ? (
             <Link

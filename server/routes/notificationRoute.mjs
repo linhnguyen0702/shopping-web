@@ -9,17 +9,18 @@ import {
 } from "../controllers/notificationController.js";
 import { sendTestEmail } from "../services/emailService.js";
 import adminAuth from "../middleware/adminAuth.js";
+import userAuth from "../middleware/userAuth.js";
 
 const router = express.Router();
 
-// Routes cho notification (chỉ admin)
-router.get("/", adminAuth, getNotifications);
-router.put("/:notificationId/read", adminAuth, markAsRead);
-router.put("/mark-all-read", adminAuth, markAllAsRead);
+// Routes cho notification (User & Admin)
+router.get("/", userAuth, getNotifications);
+router.put("/read-all", userAuth, markAllAsRead);
+router.put("/:notificationId/read", userAuth, markAsRead);
+router.delete("/", userAuth, deleteNotifications); 
 
-// Delete routes
-router.delete("/delete-selected", adminAuth, deleteNotifications);
-router.delete("/delete-all", adminAuth, deleteAllNotifications);
+// Delete routes (Admin specific or alternative)
+router.delete("/delete-all", userAuth, deleteAllNotifications);
 
 // Route test email (chỉ admin)
 router.post("/test-email", adminAuth, sendTestEmail);

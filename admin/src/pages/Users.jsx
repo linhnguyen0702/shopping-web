@@ -223,6 +223,14 @@ const Users = ({ token }) => {
     </>
   );
 
+  const isUserOnline = (user) => {
+    if (!user?.lastActiveAt) return false;
+    const now = new Date();
+    const lastActive = new Date(user.lastActiveAt);
+    const diffMinutes = (now - lastActive) / (1000 * 60);
+    return diffMinutes < 5;
+  };
+
   const openLoginForm = () => {
     setIsOpen(true);
   };
@@ -363,7 +371,7 @@ const Users = ({ token }) => {
                                   <FaCrown className="text-xs text-white" />
                                 </div>
                               )}
-                              {user.isActive && (
+                              {isUserOnline(user) && (
                                 <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
                               )}
                             </div>
@@ -541,7 +549,7 @@ const Users = ({ token }) => {
                             <FaCrown className="text-xs text-white" />
                           </div>
                         )}
-                        {user.isActive && (
+                        {isUserOnline(user) && (
                           <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white"></div>
                         )}
                       </div>

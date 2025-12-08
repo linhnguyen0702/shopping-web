@@ -63,7 +63,26 @@ export const notifyNewOrder = async (order) => {
       isGlobal: true,
     };
 
-    return await createAndSendNotification(notificationData);
+    // 1. Gửi thông báo cho Admin (Global)
+    await createAndSendNotification(notificationData);
+
+    // 2. Gửi thông báo riêng cho Khách hàng (Targeted)
+    if (order.userId) {
+      const userNotificationData = {
+        type: "order", // Reuse 'order' type but backend filters allow targeted ones
+        title: "Đặt hàng thành công",
+        message: `Đơn hàng #${order._id.toString().slice(-6).toUpperCase()} của bạn đã được ghi nhận.`,
+        data: {
+          orderId: order._id,
+        },
+        recipients: [{ userId: order.userId, isRead: false }],
+        priority: "high",
+        isGlobal: false,
+      };
+      await createAndSendNotification(userNotificationData);
+    }
+    
+    return true;
   } catch (error) {
     console.error("Lỗi tạo thông báo đơn hàng mới:", error);
   }
@@ -133,7 +152,23 @@ export const notifyUserLogin = async (user) => {
     };
 
     console.log("📝 Tạo notification với data:", notificationData.title);
+    // 1. Thông báo cho Admin (Global)
     const result = await createAndSendNotification(notificationData);
+
+    // 2. Thông báo riêng cho User
+    const userNotificationData = {
+      type: "login",
+      title: "Đăng nhập thành công",
+      message: `Hệ thống ghi nhận phiên đăng nhập mới vào ${new Date().toLocaleString('vi-VN')}.`,
+      metadata: {
+        time: new Date().toISOString(),
+      },
+      recipients: [{ userId: user._id, isRead: false }],
+      priority: "low",
+      isGlobal: false,
+    };
+    await createAndSendNotification(userNotificationData);
+
     console.log("✅ Notification đã tạo thành công:", result?._id);
 
     return result;
@@ -270,5 +305,50 @@ export const notifyNewReview = async (review, productName, user = null) => {
     return await createAndSendNotification(notificationData);
   } catch (error) {
     console.error("Lỗi tạo thông báo đánh giá:", error);
+  }
+};
+
+// Notification cập nhật trạng thái đơn hàng
+export const notifyOrderStatusUpdate = async (order, oldStatus = null) => {
+  try {
+    const statusMap = {
+      pending: "Đang chờ xử lý",
+      confirmed: "Đã xác nhận",
+      shipped: "Đang giao hàng",
+      delivered: "Đã giao hàng",
+      cancelled: "Đã hủy",
+      "partially-shipped": "Giao hàng một phần",
+    };
+
+    const paymentStatusMap = {
+      pending: "Chờ thanh toán",
+      paid: "Đã thanh toán",
+      failed: "Thanh toán thất bại",
+    };
+
+    const statusText = statusMap[order.status] || order.status;
+    
+    // Tạo thông điệp
+    const message = `Đơn hàng #${order._id.toString().slice(-6).toUpperCase()} đã được cập nhật trạng thái: ${statusText}`;
+
+    // Notification cho Khách hàng
+    if (order.userId) {
+      const userNotificationData = {
+        type: "order",
+        title: "Cập nhật đơn hàng",
+        message: message,
+        data: {
+          orderId: order._id,
+          status: statusText,
+          paymentStatus: paymentStatusMap[order.paymentStatus] || order.paymentStatus,
+        },
+        recipients: [{ userId: order.userId, isRead: false }],
+        priority: "medium",
+        isGlobal: false,
+      };
+      await createAndSendNotification(userNotificationData);
+    }
+  } catch (error) {
+    console.error("Lỗi tạo thông báo cập nhật đơn hàng:", error);
   }
 };

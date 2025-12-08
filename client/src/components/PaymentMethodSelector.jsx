@@ -1,7 +1,7 @@
 import PropTypes from "prop-types";
 import { FaMoneyBillWave, FaCreditCard, FaQrcode } from "react-icons/fa";
 
-const PaymentMethodSelector = ({ selectedMethod, onSelectMethod }) => {
+const PaymentMethodSelector = ({ selectedMethod, onSelectMethod, readOnly, paymentStatus }) => {
   const paymentMethods = [
     {
       id: "cod",
@@ -9,6 +9,13 @@ const PaymentMethodSelector = ({ selectedMethod, onSelectMethod }) => {
       icon: FaMoneyBillWave,
       description: "Thanh toán bằng tiền mặt khi nhận hàng",
       color: "green",
+    },
+    {
+      id: "vnpay",
+      name: "Ví điện tử VNPay",
+      icon: FaCreditCard,
+      description: "Thanh toán qua ví điện tử VNPay",
+      color: "blue",
     },
     {
       id: "bank_transfer",
@@ -39,8 +46,12 @@ const PaymentMethodSelector = ({ selectedMethod, onSelectMethod }) => {
         return (
           <div
             key={method.id}
-            onClick={() => onSelectMethod(method.id)}
-            className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
+            onClick={() => (!readOnly || isSelected) && onSelectMethod(method.id)}
+            className={`p-4 border-2 rounded-2xl transition-all relative ${
+              readOnly && !isSelected
+                ? "cursor-default opacity-50 bg-gray-50"
+                : "cursor-pointer"
+            } ${
               isSelected
                 ? `border-${method.color}-500 bg-${method.color}-50 shadow-md`
                 : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
@@ -69,22 +80,24 @@ const PaymentMethodSelector = ({ selectedMethod, onSelectMethod }) => {
                 </div>
               </div>
               {isSelected && (
-                <div
-                  className={`w-6 h-6 rounded-full bg-${method.color}-500 flex items-center justify-center`}
-                >
-                  <svg
-                    className="w-4 h-4 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`w-6 h-6 rounded-full bg-${method.color}-500 flex items-center justify-center`}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
+                    <svg
+                      className="w-4 h-4 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  </div>
                 </div>
               )}
             </div>

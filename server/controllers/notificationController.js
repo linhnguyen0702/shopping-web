@@ -9,13 +9,33 @@ export const getNotifications = async (req, res) => {
 
     console.log("🔍 getNotifications được gọi cho user:", userId);
 
-    // Build base query - tất cả notifications có thể xem
-    let query = {
-      $or: [
-        { isGlobal: true }, // Global notifications
-        { "recipients.userId": userId }, // Targeted notifications
-      ],
-    };
+    // Build base query
+    let query;
+
+    // Nếu là admin, xem hết global (trừ login logs) và của mình
+    if (req.user.role === "admin") {
+      query = {
+        $or: [
+          { 
+            isGlobal: true,
+            type: { $ne: "login" } // Ẩn thông báo đăng nhập hệ thống khỏi menu giúp gọn gàng
+          },
+          { "recipients.userId": userId },
+        ],
+      };
+    } else {
+      // Nếu là user thường, chỉ xem của mình HOẶC global dạng system/warning (thông báo chung)
+      // Ẩn các global dạng order/login/user (đây là log cho admin)
+      query = {
+        $or: [
+          { "recipients.userId": userId },
+          { 
+            isGlobal: true, 
+            type: { $in: ["system", "warning"] } 
+          },
+        ],
+      };
+    }
 
     // Add type filter
     if (type && type !== "all") {
@@ -177,10 +197,26 @@ export const markAllAsRead = async (req, res) => {
 
     console.log("📖📖 markAllAsRead cho user:", userId);
 
-    // Lấy tất cả notifications của user
-    const notifications = await notificationModel.find({
-      $or: [{ isGlobal: true }, { "recipients.userId": userId }],
-    });
+    // Build query based on user role (same as getNotifications)
+    let query;
+    if (req.user.role === "admin") {
+      query = {
+        $or: [
+          { isGlobal: true, type: { $ne: "login" } },
+          { "recipients.userId": userId }
+        ],
+      };
+    } else {
+      query = {
+        $or: [
+          { "recipients.userId": userId },
+          { isGlobal: true, type: { $in: ["system", "warning"] } },
+        ],
+      };
+    }
+
+    // Lấy tất cả notifications phù hợp
+    const notifications = await notificationModel.find(query);
 
     // Update từng notification
     for (const notification of notifications) {
@@ -318,16 +354,24 @@ export const createNotification = async (notificationData) => {
     } = notificationData;
 
     // Validate recipients nếu không phải global
+    // Validate recipients nếu không phải global
     let validRecipients = [];
     if (!isGlobal && recipients.length > 0) {
+      // Extract IDs properly (recipients is array of {userId, isRead})
+      const recipientIds = recipients.map(r => r.userId);
+      
+      // Verify users exist (do NOT filter by role: "admin" here, allow all users)
       const users = await userModel.find({
-        _id: { $in: recipients },
-        role: "admin",
+        _id: { $in: recipientIds }
       });
+
       validRecipients = users.map((user) => ({
         userId: user._id,
         isRead: false,
       }));
+    } else if (!isGlobal && recipients.length === 0) {
+      // Allow passing explicit recipients objects if provided directly
+       validRecipients = recipients;
     }
 
     const notification = new notificationModel({

@@ -86,7 +86,7 @@ const Orders = () => {
   };
 
   // Cập nhật trạng thái đơn hàng
-  const updateOrderStatus = async (orderId, status, paymentStatus = null) => {
+  const updateOrderStatus = async (orderId, status, paymentStatus = null, deliveryId = null) => {
     try {
       setIsUpdating(true);
       const token = localStorage.getItem("token");
@@ -94,6 +94,10 @@ const Orders = () => {
 
       if (paymentStatus) {
         updateData.paymentStatus = paymentStatus;
+      }
+      
+      if (deliveryId) {
+        updateData.deliveryId = deliveryId;
       }
 
       const response = await fetch(`${serverUrl}/api/order/update-status`, {
@@ -219,15 +223,20 @@ const Orders = () => {
 
     // Kiểm tra có thay đổi không
     const hasChanges =
-      newStatus !== editingOrder.status ||
+      newStatus !== editingOrder.displayStatus ||
       newPaymentStatus !== editingOrder.paymentStatus;
 
     if (!hasChanges) {
       toast.info("Không có thay đổi nào để lưu");
       return;
     }
+    
+    // Check if we are updating a delivery row
+    const deliveryId = editingOrder.isDeliveryRow && editingOrder.currentDelivery 
+      ? editingOrder.currentDelivery._id 
+      : null;
 
-    updateOrderStatus(editingOrder._id, newStatus, newPaymentStatus);
+    updateOrderStatus(editingOrder._id, newStatus, newPaymentStatus, deliveryId);
   };
 
   // Tách đơn hàng thành các dòng riêng cho mỗi lần giao hàng
@@ -1060,7 +1069,7 @@ const Orders = () => {
                       Đang giao
                     </span>
                   )}
-                  {selectedOrder.isUndeliveredRow && (
+                  {selectedOrder.isUndeliveredRow && selectedOrder.status !== 'delivered' && (
                     <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">
                       Chưa giao
                     </span>
