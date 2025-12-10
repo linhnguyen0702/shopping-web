@@ -60,7 +60,7 @@ const testimonials = [
 const featuredProducts = [
     { name: "Ghế Sofa Vải Lanh", imageUrl: "https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?q=80&w=2070&auto=format&fit=crop" },
     { name: "Bàn Cà Phê Gỗ Sồi", imageUrl: "https://images.unsplash.com/photo-1611269154421-4e27233ac5c7?q=80&w=1964&auto=format&fit=crop" },
-    { name: "Ghế Sofa Vải Linen Hiện Đại", imageUrl: "https://www.marthastewart.com/thmb/JSJwSMsolMumuoCAHHIjICbzYgs%3D/1500x0/filters%3Ano_upscale%28%29%3Amax_bytes%28150000%29%3Astrip_icc%28%29/BradRamseyInteriors_credit_CarolineSharpnack-dee35c1fab554898af7c549697c2f592.jpg" },
+    { name: "Ghế Sofa Vải Linen Hiện Đại", imageUrl: "https://cdn.shopify.com/s/files/1/0583/3690/3348/files/chat-lieu-sofa-vai-cotton-ben-nhe.jpg?v=1723016469" },
     { name: "Sofa Luxury Cao Cấp", imageUrl: "https://www.bocadolobo.com/en/inspiration-and-ideas/wp-content/uploads/2023/09/50-luxury-living-rooms-38-750x1024.jpg" },
 ];
 
@@ -95,7 +95,7 @@ const About = () => {
               className="h-80 md:h-[500px] rounded-lg overflow-hidden shadow-xl"
             >
               <img
-                src="https://www.marthastewart.com/thmb/JSJwSMsolMumuoCAHHIjICbzYgs%3D/1500x0/filters%3Ano_upscale%28%29%3Amax_bytes%28150000%29%3Astrip_icc%28%29/BradRamseyInteriors_credit_CarolineSharpnack-dee35c1fab554898af7c549697c2f592.jpg"
+                src="https://kenh14cdn.com/203336854389633024/2022/5/16/photo-1-16526922153081294012662.jpeg"
                 alt="Modern living room with a stylish sofa"
                 className="w-full h-full object-cover"
               />

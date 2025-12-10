@@ -192,9 +192,9 @@ const Home = () => {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
+    return new Date(dateString).toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
       year: "numeric",
     });
   };
@@ -212,6 +212,8 @@ const Home = () => {
         return "Chờ xử lý";
       case "cancelled":
         return "Đã hủy";
+      case "partially-shipped":
+        return "Giao một phần";
       default:
         return status || "Chờ xử lý";
     }

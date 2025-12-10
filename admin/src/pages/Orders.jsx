@@ -738,7 +738,7 @@ const Orders = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center text-sm text-gray-900">
                       <FaCalendarAlt className="w-4 h-4 mr-2 text-gray-400" />
-                      {new Date(order.date).toLocaleDateString()}
+                      {new Date(order.date).toLocaleDateString("vi-VN")}
                     </div>
                   </td>
                   <td className="px-6 py-4">
