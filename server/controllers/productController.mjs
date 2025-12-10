@@ -227,12 +227,37 @@ const listProducts = async (req, res) => {
       ];
     }
 
-    // Get database products
-    let dbProducts = await productModel.find(filter).sort({ createdAt: -1 });
+    // Use aggregation to calculate rating
+    const pipeline = [
+      { $match: filter },
+      {
+        $lookup: {
+          from: "reviews",
+          localField: "_id",
+          foreignField: "productId",
+          as: "reviews",
+        },
+      },
+      {
+        $addFields: {
+          rating: { $ifNull: [{ $avg: "$reviews.rating" }, 0] },
+          numReviews: { $size: "$reviews" },
+        },
+      },
+      {
+        $project: {
+          reviews: 0, // Exclude reviews array to keep payload light
+        },
+      },
+      { $sort: { createdAt: -1 } },
+    ];
+
+    let dbProducts = await productModel.aggregate(pipeline);
 
     // Format database products for frontend compatibility
+    // Note: aggregate returns plain objects, so toObject() is not needed/available
     let formattedDbProducts = dbProducts.map((product) => ({
-      ...product.toObject(),
+      ...product,
       image:
         product.images && product.images.length > 0 ? product.images[0] : "",
     }));

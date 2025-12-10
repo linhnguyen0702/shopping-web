@@ -212,6 +212,12 @@ const ProductsSideNav = ({ onFilterChange, filters, onClearFilters }) => {
             >
               <input
                 type="checkbox"
+                checked={Number(filters?.rating) === rating}
+                onChange={() => {
+                   onFilterChange({
+                    rating: Number(filters?.rating) === rating ? "" : rating,
+                  });
+                }}
                 className="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-gray-900 focus:ring-2"
               />
               <div className="ml-3 flex items-center">

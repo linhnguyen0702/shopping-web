@@ -16,6 +16,7 @@ const Shop = () => {
     brand: "",
     priceRange: "",
     search: "",
+    rating: "",
   });
   const [sortBy, setSortBy] = useState("newest");
   const [viewMode, setViewMode] = useState("grid"); // grid or list
@@ -92,6 +93,14 @@ const Shop = () => {
       });
     }
 
+    // Áp dụng lọc theo đánh giá
+    if (filters.rating) {
+      filtered = filtered.filter((product) => {
+        const rating = product.rating || 0;
+        return rating >= filters.rating;
+      });
+    }
+
     // Áp dụng sắp xếp
     switch (sortBy) {
       case "price-low":
@@ -127,7 +136,9 @@ const Shop = () => {
       category: "",
       brand: "",
       priceRange: "",
+      priceRange: "",
       search: "",
+      rating: "",
     });
     if (window.innerWidth < 1024) {
       setTimeout(() => setMobileFiltersOpen(false), 500);
@@ -346,6 +357,17 @@ const Shop = () => {
                     Search: {filters.search}
                     <button
                       onClick={() => handleFilterChange({ search: "" })}
+                      className="ml-1 hover:text-gray-300"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
+                {filters.rating && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-gray-900 text-white text-sm rounded-full">
+                    Đánh giá: {filters.rating} sao trở lên
+                    <button
+                      onClick={() => handleFilterChange({ rating: "" })}
                       className="ml-1 hover:text-gray-300"
                     >
                       ×
