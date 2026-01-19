@@ -2,6 +2,7 @@ import Header from "./Header";
 import { Outlet, ScrollRestoration } from "react-router-dom";
 import Footer from "./Footer";
 import ScrollToTop from "./ScrollToTop";
+import ChatboxAI from "./ChatboxAI";
 import "slick-carousel/slick/slick.css";
 import { Provider } from "react-redux";
 import { persistor, store } from "../redux/store";
@@ -20,6 +21,7 @@ const RootLayout = () => {
         <ServicesTag />
         <Footer />
         <ScrollToTop />
+        <ChatboxAI />
         <Toaster
           position="bottom-right"
           toastOptions={{

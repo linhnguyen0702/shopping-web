@@ -26,12 +26,14 @@ const allowedOrigins = [
 console.log("Allowed Origins:", allowedOrigins);
 
 // ====== CORS (FINAL VERSION) ======
-app.use(cors({
-  origin: true,
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 
 // Fix Render OPTIONS redirect
 app.options("*", cors());
@@ -50,15 +52,25 @@ const __dirname = path.dirname(__filename);
 import cartRoute from "./routes/cartRoute.js";
 import notificationRoute from "./routes/notificationRoute.mjs";
 import shippingRoute from "./routes/shippingRoute.mjs";
+import chatbotRoute from "./routes/chatbotRoute.mjs";
 
 app.use("/cart", cartRoute);
 app.use("/api/notifications", notificationRoute);
 app.use("/api/shipping", shippingRoute);
+app.use("/api/chatbot", chatbotRoute);
 
 const routesPath = path.resolve(__dirname, "./routes");
 const routeFiles = readdirSync(routesPath);
 routeFiles.map(async (file) => {
-  if (["cartRoute.js", "notificationRoute.mjs", "shippingRoute.mjs"].includes(file)) return;
+  if (
+    [
+      "cartRoute.js",
+      "notificationRoute.mjs",
+      "shippingRoute.mjs",
+      "chatbotRoute.mjs",
+    ].includes(file)
+  )
+    return;
   const routeModule = await import(`./routes/${file}`);
   app.use("/", routeModule.default);
 });

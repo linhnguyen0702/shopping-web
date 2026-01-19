@@ -136,7 +136,6 @@ const Shop = () => {
       category: "",
       brand: "",
       priceRange: "",
-      priceRange: "",
       search: "",
       rating: "",
     });
