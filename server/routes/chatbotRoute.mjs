@@ -1,9 +1,15 @@
 import express from "express";
-import { handleChatbot } from "../controllers/chatbotController.mjs";
+import {
+  handleChatbot,
+  getChatHistory,
+} from "../controllers/chatbotController.mjs";
 
 const router = express.Router();
 
-// Chatbot endpoint
+// Chatbot endpoint - handle message
 router.post("/", handleChatbot);
+
+// Get chat history
+router.get("/history", getChatHistory);
 
 export default router;

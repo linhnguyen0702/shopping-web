@@ -1,21 +1,33 @@
 import ProductModel from "../models/productModel.js";
+import chatHistoryModel from "../models/chatHistoryModel.js";
 
 // AI Chatbot Controller
 export const handleChatbot = async (req, res) => {
   try {
-    const { message } = req.body;
+    const { message, sessionId, userId } = req.body;
 
-    if (!message) {
+    if (!message || !sessionId) {
       return res.status(400).json({
         success: false,
-        message: "Vui lòng nhập tin nhắn",
+        message: "Vui lòng nhập tin nhắn và sessionId",
       });
     }
 
     const userMessage = message.toLowerCase().trim();
 
-    // Analyze user intent and extract keywords
-    const intent = analyzeIntent(userMessage);
+    // Fetch previous context
+    let previousContext = null;
+    try {
+      const chatHistory = await chatHistoryModel.findOne({ sessionId });
+      if (chatHistory && chatHistory.metadata) {
+        previousContext = chatHistory.metadata;
+      }
+    } catch (err) {
+      console.log("Error fetching chat context:", err);
+    }
+
+    // Analyze user intent and extract keywords with context
+    const intent = analyzeIntent(userMessage, previousContext);
     console.log("Intent analyzed:", intent);
     let response = "";
     let products = [];
@@ -49,18 +61,18 @@ export const handleChatbot = async (req, res) => {
 
       case "greeting":
         response =
-          "Xin chào! Tôi là trợ lý nội thất của bạn. Tôi có thể giúp bạn tìm kiếm nội thất phù hợp, tư vấn về giá cả và phong cách. Bạn đang tìm loại nội thất nào?";
+          "Xin chào! Tôi là trợ lý mua sắm của bạn. Tôi có thể giúp bạn tìm kiếm sản phẩm phù hợp, tư vấn về mức giá và thương hiệu. Bạn đang tìm sản phẩm nào?";
         break;
 
       case "help":
         response = `Tôi có thể giúp bạn:
-• Tìm kiếm nội thất theo tên, danh mục
-• Tư vấn về giá cả và khuyến mãi
-• Gợi ý nội thất phù hợp
-• Xem nội thất mới nhất
-• Xem nội thất bán chạy
+• Tìm kiếm sản phẩm theo tên, danh mục
+• Tư vấn về giá cả và thông tin sản phẩm
+• Gợi ý sản phẩm dựa trên nhu cầu
+• Xem các sản phẩm mới nhất
+• Xem các sản phẩm bán chạy
 
-Hãy thử hỏi tôi: "Bàn ghế phòng khách" hoặc "Giường ngủ giá tốt"`;
+Hãy thử hỏi tôi: "Áo sơ mi nam" hoặc "Mũ bảo hiểm giá tốt"`;
         break;
 
       default:
@@ -75,6 +87,22 @@ Hãy thử hỏi tôi: "Bàn ghế phòng khách" hoặc "Giường ngủ giá t
 
     // Limit products to top 5
     products = products.slice(0, 5);
+
+    // Save to chat history
+    try {
+      await saveChatMessage(
+        sessionId,
+        userId,
+        message,
+        response,
+        intent.type,
+        products,
+        intent,
+      );
+    } catch (historyError) {
+      console.error("Error saving chat history:", historyError);
+      // Không dừng request nếu lỗi lưu history
+    }
 
     res.json({
       success: true,
@@ -92,8 +120,71 @@ Hãy thử hỏi tôi: "Bàn ghế phòng khách" hoặc "Giường ngủ giá t
   }
 };
 
-// Analyze user intent from message
-function analyzeIntent(message) {
+// Save chat message to database
+async function saveChatMessage(
+  sessionId,
+  userId,
+  userText,
+  botResponse,
+  intent,
+  products,
+  intentDetails,
+) {
+  try {
+    const productData = products.map((p) => ({
+      productId: p._id,
+      name: p.name,
+      price: p.price,
+      image: p.images?.[0] || "",
+      category: p.category,
+      brand: p.brand,
+    }));
+
+    const chatHistory = await chatHistoryModel.findOneAndUpdate(
+      { sessionId },
+      {
+        $push: {
+          messages: [
+            {
+              role: "user",
+              text: userText,
+              intent,
+              timestamp: new Date(),
+            },
+            {
+              role: "bot",
+              text: botResponse,
+              intent,
+              products: productData,
+              timestamp: new Date(),
+            },
+          ],
+        },
+        $set: {
+          userId: userId || null,
+          "metadata.lastKeywords": intentDetails.keywords,
+          "metadata.lastCategory": intentDetails.category,
+          "metadata.priceRange": {
+            min: intentDetails.filters?.minPrice,
+            max: intentDetails.filters?.maxPrice,
+          },
+        },
+        $inc: { "metadata.totalMessages": 2 },
+      },
+      {
+        upsert: true,
+        new: true,
+      },
+    );
+
+    console.log("Chat history saved:", chatHistory._id);
+  } catch (error) {
+    console.error("Save chat history error:", error);
+  }
+}
+
+// Analyze user intent from message - IMPROVED
+function analyzeIntent(message, previousContext = null) {
   const intent = {
     type: "search",
     keywords: [],
@@ -102,181 +193,169 @@ function analyzeIntent(message) {
   };
 
   // Greeting detection
-  if (/^(xin chào|chào|hello|hi|hey)/i.test(message) || message.length < 10) {
+  if (/^(xin chào|chào|hello|hi|hey)/i.test(message)) {
     intent.type = "greeting";
     return intent;
   }
 
   // Help detection
-  if (/giúp|help|hỗ trợ|hướng dẫn/i.test(message)) {
+  if (/giúp|help|hỗ trợ|hướng dẫn|làm sao|cách|sao/i.test(message)) {
     intent.type = "help";
     return intent;
   }
 
   // Latest products
-  if (/mới nhất|new|latest|sản phẩm mới/i.test(message)) {
+  if (/mới nhất|new|latest|sản phẩm mới|vừa ra|ra mắt/i.test(message)) {
     intent.type = "latest";
+    return intent;
   }
 
   // Best sellers
-  if (/bán chạy|best seller|hot|phổ biến/i.test(message)) {
+  if (/bán chạy|best seller|hot|phổ biến|chạy nhất|bán nhiều/i.test(message)) {
     intent.type = "bestseller";
-  }
-
-  // Extract categories and furniture keywords first
-  const furnitureKeywords = [
-    "bàn",
-    "ghế",
-    "tủ",
-    "giường",
-    "sofa",
-    "kệ",
-    "đèn",
-    "tranh",
-    "thảm",
-    "gương",
-    "bếp",
-    "ăn",
-    "tivi",
-    "trà",
-    "làm việc",
-    "văn phòng",
-    "sách",
-    "trang điểm",
-    "quần áo",
-    "nội thất",
-  ];
-
-  const hasFurnitureKeyword = furnitureKeywords.some((kw) =>
-    message.includes(kw),
-  );
-
-  // Price inquiry (only if no specific furniture keyword)
-  if (/giá|price|bao nhiêu|cost/i.test(message) && !hasFurnitureKeyword) {
-    intent.type = "price_inquiry";
-  }
-
-  // Recommendation
-  if (
-    /gợi ý|recommend|tư vấn|nên|tốt nhất|best/i.test(message) &&
-    !hasFurnitureKeyword
-  ) {
-    intent.type = "recommendation";
+    return intent;
   }
 
   // Extract price range
-  const priceMatch = message.match(/(\d+)\s*(triệu|tr|million|k|nghìn)/gi);
-  if (priceMatch) {
-    const prices = priceMatch.map((p) => {
-      const num = parseInt(p);
-      if (/triệu|tr|million/i.test(p)) return num * 1000000;
-      if (/k|nghìn/i.test(p)) return num * 1000;
-      return num;
+  const pricePattern =
+    /(\d+[\.,]?\d*)\s*(triệu|tr|từ|đến|to|-|~|tới|nghìn|k|vnd|đơn|usd)/gi;
+  const priceMatches = [...message.matchAll(pricePattern)];
+
+  if (priceMatches.length > 0) {
+    let prices = priceMatches.map((match) => {
+      let num = parseFloat(match[1].replace(",", "."));
+      const unit = match[2].toLowerCase();
+
+      if (/triệu|tr|million/.test(unit)) {
+        num *= 1000000;
+      } else if (/k|nghìn/.test(unit)) {
+        num *= 1000;
+      }
+
+      return Math.floor(num);
+    });
+
+    let maxMultiplier = 1;
+    prices.forEach(p => {
+      if (p >= 1000000) maxMultiplier = 1000000;
+      else if (p >= 1000 && maxMultiplier < 1000) maxMultiplier = 1000;
+    });
+
+    prices = prices.map(p => {
+      if (p < 1000 && maxMultiplier > 1) return p * maxMultiplier;
+      return p;
     });
 
     if (prices.length >= 2) {
       intent.filters.minPrice = Math.min(...prices);
       intent.filters.maxPrice = Math.max(...prices);
     } else if (prices.length === 1) {
-      if (/dưới|under|less|nhỏ hơn/i.test(message)) {
+      if (/dưới|under|less|nhỏ hơn|tối đa|giới hạn|max/i.test(message)) {
         intent.filters.maxPrice = prices[0];
-      } else if (/trên|over|more|lớn hơn/i.test(message)) {
+      } else if (/trên|over|more|lớn hơn|tối thiểu|min/i.test(message)) {
         intent.filters.minPrice = prices[0];
       } else {
+        // Default: use as max price
         intent.filters.maxPrice = prices[0];
       }
     }
   }
 
-  // Extract categories and specific furniture keywords
-  const categories = {
-    "phòng khách": ["phòng khách", "sofa", "bàn ghế", "kệ tivi", "bàn trà"],
-    "phòng ngủ": ["phòng ngủ", "giường", "tủ quần áo", "bàn trang điểm"],
-    "phòng bếp": ["phòng bếp", "bếp", "tủ bếp", "bàn ăn", "ghế ăn"],
-    "phòng làm việc": [
-      "phòng làm việc",
-      "bàn làm việc",
-      "ghế văn phòng",
-      "kệ sách",
-    ],
-    "trang trí": ["trang trí", "tranh", "thảm", "đèn", "gương"],
-  };
-
-  for (const [category, keywords] of Object.entries(categories)) {
-    if (keywords.some((kw) => message.includes(kw))) {
-      intent.category = category;
-      intent.keywords.push(...keywords.filter((kw) => message.includes(kw)));
-    }
+  // Recommendation intent
+  if (
+    /gợi ý|recommend|tư vấn|nên|tốt nhất|best choice|suggestion|đề xuất/i.test(
+      message,
+    )
+  ) {
+    intent.type = "recommendation";
   }
 
-  // Add individual furniture keywords
-  furnitureKeywords.forEach((keyword) => {
-    if (message.includes(keyword) && !intent.keywords.includes(keyword)) {
-      intent.keywords.push(keyword);
-    }
-  });
-
-  // Extract general keywords (remove common words)
-  const commonWords = [
-    "tìm",
-    "kiếm",
-    "cho",
-    "tôi",
-    "mình",
-    "có",
-    "không",
-    "được",
-    "hay",
-    "của",
-    "và",
-    "với",
-    "về",
-    "trong",
-    "ngoài",
-    "các",
-    "những",
-    "một",
-    "cái",
-  ];
+  // Extract other words (exclude common Vietnamese words)
+  const commonWords = new Set([
+     "tìm", "kiếm", "cho", "tôi", "mình", "có", "không", "được", "hay", "của", "và", 
+     "với", "về", "trong", "ngoài", "các", "những", "một", "cái", "từ", "đến", "tới", 
+     "là", "như", "thế", "nào", "gì", "sao", "hoặc", "nhưng", "mà", "thì", "khi", 
+     "nếu", "vì", "giúp", "hỗ trợ", "bao", "nhiêu", "giá", "biết", "hiểu", "cách", 
+     "bạn", "ạ", "nhé", "nha", "đó", "đây", "muốn", "xem", "khoảng", "tầm", "k", "vnd", "usd", "nghìn", "triệu"
+  ]);
 
   const words = message
     .split(/\s+/)
-    .filter((word) => word.length > 2 && !commonWords.includes(word));
+    .map((w) => w.replace(/[^\w\u00C0-\u1EF9]/g, "").toLowerCase())
+    .filter((word) => word.length > 0 && !commonWords.has(word) && !/^\d+$/.test(word));
 
-  // Add all meaningful words to keywords
-  intent.keywords = [...new Set([...intent.keywords, ...words])];
+  intent.keywords = [...new Set(words)];
+  
+  const isKeywordsEmpty = intent.keywords.length === 0;
 
-  // If no keywords found, use the entire message
-  if (intent.keywords.length === 0) {
-    intent.keywords.push(userMessage);
+  if (isKeywordsEmpty) {
+    intent.keywords = [message];
   }
+
+  // --- CONTEXT MERGING LOGIC ---
+  if (previousContext) {
+    const isOnlyPriceFilter = priceMatches.length > 0 && isKeywordsEmpty;
+    
+    // If the user seems to just be refining their previous search with price
+    if (isOnlyPriceFilter && previousContext.lastKeywords && previousContext.lastKeywords.length > 0) {
+      intent.keywords = previousContext.lastKeywords;
+      intent.category = previousContext.lastCategory || intent.category;
+      intent.type = "price_inquiry";
+    }
+  }
+
+  // If price mentioned and keywords identified, prioritize as price inquiry
+  if (priceMatches.length > 0 && intent.keywords.length > 0 && intent.type === "search" && !isKeywordsEmpty) {
+    intent.type = "price_inquiry";
+  }
+
+  console.log("Intent details:", {
+    type: intent.type,
+    keywords: intent.keywords,
+    category: intent.category,
+    filters: intent.filters,
+  });
 
   return intent;
 }
 
-// Search products
+// Search products - IMPROVED
 async function searchProducts(keywords, filters = {}) {
   try {
     const query = { isAvailable: true };
 
     // Build search query with better keyword matching
     if (keywords.length > 0) {
-      // Create regex pattern for each keyword
-      const keywordPatterns = keywords
-        .map((kw) => kw.trim())
-        .filter((kw) => kw.length > 0);
-      const regexPattern = keywordPatterns.join("|");
+      // Filter out common words and very short keywords
+      const validKeywords = keywords
+        .filter((kw) => kw && kw.length > 0)
+        .map((kw) => kw.trim());
 
-      console.log("Search keywords:", keywordPatterns);
-      console.log("Regex pattern:", regexPattern);
+      if (validKeywords.length > 0) {
+        // Use AND conditions so products must match ALL keywords
+        const andConditions = [];
 
-      query.$or = [
-        { name: { $regex: regexPattern, $options: "i" } },
-        { description: { $regex: regexPattern, $options: "i" } },
-        { brand: { $regex: regexPattern, $options: "i" } },
-        { category: { $regex: regexPattern, $options: "i" } },
-        { tags: { $elemMatch: { $regex: regexPattern, $options: "i" } } },
-      ];
+        // For each keyword, create search patterns
+        validKeywords.forEach((keyword) => {
+          const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+          andConditions.push({
+            $or: [
+              { name: { $regex: escapedKeyword, $options: "i" } },
+              { description: { $regex: escapedKeyword, $options: "i" } },
+              { brand: { $regex: escapedKeyword, $options: "i" } },
+              { category: { $regex: escapedKeyword, $options: "i" } },
+              { tags: { $elemMatch: { $regex: escapedKeyword, $options: "i" } } },
+            ]
+          });
+        });
+
+        if (andConditions.length > 0) {
+          query.$and = andConditions;
+        }
+
+        console.log("Search keywords (AND constraint):", validKeywords);
+      }
     }
 
     // Price filters
@@ -287,12 +366,15 @@ async function searchProducts(keywords, filters = {}) {
     }
 
     const products = await ProductModel.find(query)
-      .sort({ createdAt: -1 })
-      .limit(10)
-      .select("name price images rating category brand");
+      .sort({ rating: -1, soldQuantity: -1, createdAt: -1 })
+      .limit(15)
+      .select(
+        "name price images rating category brand description soldQuantity",
+      );
 
-    console.log(`Found ${products.length} products for search`);
-    return products;
+    console.log(`Found ${products.length} products for keywords:`, keywords);
+
+    return products || [];
   } catch (error) {
     console.error("Search products error:", error);
     return [];
@@ -315,11 +397,13 @@ async function getRecommendations(category, filters = {}) {
     }
 
     const products = await ProductModel.find(query)
-      .sort({ soldQuantity: -1 })
-      .limit(10)
-      .select("name price images rating category brand");
+      .sort({ rating: -1, soldQuantity: -1 })
+      .limit(15)
+      .select(
+        "name price images rating category brand description soldQuantity",
+      );
 
-    return products;
+    return products || [];
   } catch (error) {
     console.error("Get recommendations error:", error);
     return [];
@@ -339,10 +423,12 @@ async function getLatestProducts(filters = {}) {
 
     const products = await ProductModel.find(query)
       .sort({ createdAt: -1 })
-      .limit(10)
-      .select("name price images rating category brand");
+      .limit(15)
+      .select(
+        "name price images rating category brand description soldQuantity",
+      );
 
-    return products;
+    return products || [];
   } catch (error) {
     console.error("Get latest products error:", error);
     return [];
@@ -361,11 +447,13 @@ async function getBestSellers(filters = {}) {
     }
 
     const products = await ProductModel.find(query)
-      .sort({ soldQuantity: -1 })
-      .limit(10)
-      .select("name price images rating category brand soldQuantity");
+      .sort({ soldQuantity: -1, rating: -1 })
+      .limit(15)
+      .select(
+        "name price images rating category brand description soldQuantity",
+      );
 
-    return products;
+    return products || [];
   } catch (error) {
     console.error("Get best sellers error:", error);
     return [];
@@ -375,15 +463,15 @@ async function getBestSellers(filters = {}) {
 // Generate responses
 function generateSearchResponse(products, keywords) {
   if (products.length === 0) {
-    return `Xin lỗi, tôi không tìm thấy sản phẩm nào về "${keywords.slice(0, 3).join(", ")}". Bạn có thể thử:\n• Tìm theo danh mục (phòng khách, phòng ngủ, phòng bếp)\n• Tìm theo loại (bàn, ghế, tủ, giường)\n• Xem sản phẩm mới nhất`;
+    return `Xin lỗi, tôi không tìm thấy sản phẩm nào liên quan đến "${keywords.slice(0, 3).join(", ")}". Bạn có thể thử:\n• Kiểm tra lại lỗi chính tả\n• Tìm theo danh mục hoặc thương hiệu\n• Xem sản phẩm mới nhất`;
   }
 
   const keywordsDisplay = keywords.slice(0, 3).join(", ");
   if (products.length === 1) {
-    return `Tôi tìm thấy 1 sản phẩm về ${keywordsDisplay}:`;
+    return `Tôi tìm thấy 1 sản phẩm liên quan đến ${keywordsDisplay}:`;
   }
 
-  return `Tôi tìm thấy ${products.length} sản phẩm về ${keywordsDisplay}:`;
+  return `Tôi tìm thấy ${products.length} sản phẩm liên quan đến ${keywordsDisplay}:`;
 }
 
 function generatePriceResponse(products, keywords) {
@@ -392,7 +480,7 @@ function generatePriceResponse(products, keywords) {
   }
 
   const keywordsDisplay = keywords.slice(0, 3).join(", ");
-  return `Đây là các sản phẩm về ${keywordsDisplay} với thông tin giá:`;
+  return `Đây là các sản phẩm liên quan đến ${keywordsDisplay} với thông tin giá:`;
 }
 
 function generateRecommendationResponse(products, category) {
@@ -400,6 +488,41 @@ function generateRecommendationResponse(products, category) {
     return "Xin lỗi, hiện tại chúng tôi chưa có sản phẩm phù hợp để gợi ý.";
   }
 
-  const categoryText = category ? `cho ${category}` : "";
+  const categoryText = category ? `thuộc nhóm ${category}` : "";
   return `Dựa trên đánh giá và độ phổ biến, đây là những sản phẩm tốt nhất ${categoryText}:`;
 }
+
+// Get chat history - EXPORT
+export const getChatHistory = async (req, res) => {
+  try {
+    const { sessionId } = req.query;
+
+    if (!sessionId) {
+      return res.status(400).json({
+        success: false,
+        message: "sessionId là bắt buộc",
+      });
+    }
+
+    const chatHistory = await chatHistoryModel.findOne({ sessionId });
+
+    if (!chatHistory) {
+      return res.json({
+        success: true,
+        messages: [],
+      });
+    }
+
+    res.json({
+      success: true,
+      messages: chatHistory.messages || [],
+      metadata: chatHistory.metadata,
+    });
+  } catch (error) {
+    console.error("Get chat history error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi khi lấy lịch sử chat",
+    });
+  }
+};

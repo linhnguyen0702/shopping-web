@@ -10,12 +10,15 @@ const ChatboxAI = () => {
     {
       id: 1,
       type: "bot",
-      text: "Xin chào! Tôi là trợ lý nội thất của bạn. Tôi có thể giúp bạn tìm kiếm nội thất phù hợp, tư vấn về giá cả và phong cách. Bạn đang tìm loại nội thất nào?",
+      text: "Xin chào! 👋 Tôi là trợ lý mua sắm của bạn. Tôi có thể giúp bạn tìm kiếm sản phẩm phù hợp, tư vấn về mức giá và thương hiệu. Bạn đang tìm sản phẩm nào?",
       timestamp: new Date(),
     },
   ]);
   const [inputMessage, setInputMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [sessionId] = useState(
+    () => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+  );
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -55,10 +58,19 @@ const ChatboxAI = () => {
         },
         body: JSON.stringify({
           message: inputMessage,
+          sessionId: sessionId,
         }),
       });
 
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
       const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.message || "Yêu cầu không thành công");
+      }
 
       setIsTyping(false);
 
@@ -67,6 +79,7 @@ const ChatboxAI = () => {
         type: "bot",
         text: data.response,
         products: data.products || [],
+        intent: data.intent,
         timestamp: new Date(),
       };
 
@@ -77,11 +90,32 @@ const ChatboxAI = () => {
       const errorMessage = {
         id: Date.now() + 1,
         type: "bot",
-        text: "Xin lỗi, tôi đang gặp sự cố. Vui lòng thử lại sau.",
+        text: "❌ Xin lỗi, tôi đang gặp sự cố. Vui lòng thử lại sau.",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
     }
+  };
+
+  const getProductImage = (images) => {
+    if (!images) return "/placeholder.jpg";
+
+    // If images is an array
+    if (Array.isArray(images) && images.length > 0) {
+      return images[0];
+    }
+
+    // If images is an object with public_id (Cloudinary)
+    if (typeof images === "object" && images.public_id) {
+      return `https://res.cloudinary.com/decora-shopping/image/upload/${images.public_id}`;
+    }
+
+    // If images is a string
+    if (typeof images === "string" && images.length > 0) {
+      return images;
+    }
+
+    return "/placeholder.jpg";
   };
 
   const handleKeyPress = (e) => {
@@ -92,10 +126,10 @@ const ChatboxAI = () => {
   };
 
   const quickQuestions = [
-    "Bàn ghế phòng khách",
-    "Giường ngủ",
-    "Tủ quần áo",
-    "Nội thất phòng bếp",
+    "👕 Quần áo thời trang",
+    "🎒 Túi xách, balo",
+    "💰 Sản phẩm giá rẻ",
+    "🔥 Sản phẩm bán chạy",
   ];
 
   const handleQuickQuestion = async (question) => {
@@ -119,10 +153,19 @@ const ChatboxAI = () => {
         },
         body: JSON.stringify({
           message: question,
+          sessionId: sessionId,
         }),
       });
 
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
       const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.message || "Yêu cầu không thành công");
+      }
 
       setIsTyping(false);
 
@@ -131,6 +174,7 @@ const ChatboxAI = () => {
         type: "bot",
         text: data.response,
         products: data.products || [],
+        intent: data.intent,
         timestamp: new Date(),
       };
 
@@ -141,7 +185,7 @@ const ChatboxAI = () => {
       const errorMessage = {
         id: Date.now() + 1,
         type: "bot",
-        text: "Xin lỗi, tôi đang gặp sự cố. Vui lòng thử lại sau.",
+        text: "❌ Xin lỗi, tôi đang gặp sự cố. Vui lòng thử lại sau.",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -208,18 +252,25 @@ const ChatboxAI = () => {
                     <div className="mt-3 space-y-2">
                       {message.products.map((product) => (
                         <a
-                          key={product._id}
-                          href={`/product/${product._id}`}
-                          className="block bg-gray-50 rounded-lg p-2 hover:bg-gray-100 transition-colors"
+                          key={product._id || product.productId}
+                          href={`/product/${product._id || product.productId}`}
+                          className="block bg-gray-50 rounded-lg p-2 hover:bg-gray-100 transition-colors hover:shadow-md"
                           target="_blank"
                           rel="noopener noreferrer"
                         >
                           <div className="flex gap-2">
-                            <img
-                              src={product.images[0]}
-                              alt={product.name}
-                              className="w-16 h-16 object-cover rounded"
-                            />
+                            <div className="w-16 h-16 bg-gray-200 rounded flex-shrink-0 overflow-hidden">
+                              <img
+                                src={getProductImage(
+                                  product.images || product.image,
+                                )}
+                                alt={product.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.target.src = "/placeholder.jpg";
+                                }}
+                              />
+                            </div>
                             <div className="flex-1 min-w-0">
                               <h4 className="font-medium text-xs text-gray-800 line-clamp-2">
                                 {product.name}
@@ -239,6 +290,11 @@ const ChatboxAI = () => {
                                     {product.rating.toFixed(1)}
                                   </span>
                                 </div>
+                              )}
+                              {product.brand && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {product.brand}
+                                </p>
                               )}
                             </div>
                           </div>
@@ -273,15 +329,17 @@ const ChatboxAI = () => {
           </div>
 
           {/* Quick Questions */}
-          {messages.length === 1 && (
-            <div className="px-4 py-2 bg-white border-t">
-              <p className="text-xs text-gray-500 mb-2">Câu hỏi gợi ý:</p>
-              <div className="flex flex-wrap gap-2">
+          {messages.length <= 2 && (
+            <div className="px-4 py-2 bg-gradient-to-r from-blue-50 to-purple-50 border-t">
+              <p className="text-xs text-gray-600 font-medium mb-2">
+                💡 Câu hỏi gợi ý:
+              </p>
+              <div className="grid grid-cols-2 gap-2">
                 {quickQuestions.map((question, index) => (
                   <button
                     key={index}
                     onClick={() => handleQuickQuestion(question)}
-                    className="text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full transition-colors"
+                    className="text-xs bg-white hover:bg-blue-50 border border-gray-200 px-2 py-1.5 rounded-lg transition-colors text-left text-gray-700 hover:text-blue-600"
                   >
                     {question}
                   </button>
