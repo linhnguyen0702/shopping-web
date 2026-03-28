@@ -96,7 +96,7 @@ export const createOrder = async (req, res) => {
 
     // Validate items have productId
     const itemsWithoutProductId = items.filter(
-      (item) => !item._id && !item.productId
+      (item) => !item._id && !item.productId,
     );
     if (itemsWithoutProductId.length > 0) {
       return res.json({
@@ -122,7 +122,7 @@ export const createOrder = async (req, res) => {
 
       if (!productId || !quantity || quantity <= 0) {
         stockCheckErrors.push(
-          `Invalid product or quantity for item: ${item.name || "Unknown"}`
+          `Invalid product or quantity for item: ${item.name || "Unknown"}`,
         );
         continue;
       }
@@ -135,7 +135,7 @@ export const createOrder = async (req, res) => {
 
       if (product.stock < quantity) {
         stockCheckErrors.push(
-          `Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${quantity}`
+          `Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${quantity}`,
         );
         continue;
       }
@@ -211,7 +211,7 @@ export const createOrder = async (req, res) => {
             soldQuantity: quantity,
           },
         },
-        { new: true }
+        { new: true },
       );
 
       // If stock becomes 0, mark as unavailable
@@ -222,7 +222,7 @@ export const createOrder = async (req, res) => {
       }
 
       console.log(
-        `✅ Stock updated for product ${productId}: -${quantity} (New stock: ${updatedProduct?.stock})`
+        `✅ Stock updated for product ${productId}: -${quantity} (New stock: ${updatedProduct?.stock})`,
       );
     }
 
@@ -294,7 +294,7 @@ export const generatePaymentQR = async (req, res) => {
     const qrUrl = `https://img.vietqr.io/image/${BANK_INFO.bankCode}-${
       BANK_INFO.accountNumber
     }-compact2.jpg?amount=${order.amount}&addInfo=${encodeURIComponent(
-      transferContent
+      transferContent,
     )}&accountName=${encodeURIComponent(BANK_INFO.accountName)}`;
 
     res.json({
@@ -470,7 +470,7 @@ export const notifyPaymentConfirmation = async (req, res) => {
 
         console.log(
           "✅ Payment confirmation notification sent for order:",
-          order._id
+          order._id,
         );
 
         return res.json({
@@ -557,7 +557,7 @@ export const initiateOnlinePayment = async (req, res) => {
 
     // Validate items have productId
     const itemsWithoutProductId = items.filter(
-      (item) => !item._id && !item.productId
+      (item) => !item._id && !item.productId,
     );
     if (itemsWithoutProductId.length > 0) {
       return res.json({
@@ -643,7 +643,7 @@ export const initiateOnlinePayment = async (req, res) => {
     await tempOrder.save();
 
     console.log(
-      `✅ Temporary order created with transaction ID: ${transactionId}`
+      `✅ Temporary order created with transaction ID: ${transactionId}`,
     );
 
     // Return different response based on payment method
@@ -693,8 +693,8 @@ export const initiateOnlinePayment = async (req, res) => {
         .map(
           (key) =>
             `${encodeURIComponent(key)}=${encodeURIComponent(
-              sortedParams[key]
-            )}`
+              sortedParams[key],
+            )}`,
         )
         .join("&");
 
@@ -720,7 +720,7 @@ export const initiateOnlinePayment = async (req, res) => {
       const qrUrl = `https://img.vietqr.io/image/${BANK_INFO.bankCode}-${
         BANK_INFO.accountNumber
       }-compact2.jpg?amount=${totalAmount}&addInfo=${encodeURIComponent(
-        transferContent
+        transferContent,
       )}&accountName=${encodeURIComponent(BANK_INFO.accountName)}`;
 
       return res.json({
@@ -844,7 +844,7 @@ export const createVNPayPayment = async (req, res) => {
     const signData = Object.keys(sortedParams)
       .map(
         (key) =>
-          `${encodeURIComponent(key)}=${encodeURIComponent(sortedParams[key])}`
+          `${encodeURIComponent(key)}=${encodeURIComponent(sortedParams[key])}`,
       )
       .join("&");
 
@@ -854,12 +854,12 @@ export const createVNPayPayment = async (req, res) => {
       "Amount:",
       order.amount,
       "→ VNPay amount:",
-      Math.round(order.amount) * 100
+      Math.round(order.amount) * 100,
     );
     console.log("Sign data:", signData);
     console.log(
       "Secret key:",
-      secretKey ? "***" + secretKey.slice(-4) : "MISSING"
+      secretKey ? "***" + secretKey.slice(-4) : "MISSING",
     );
 
     const hmac = crypto.createHmac("sha512", secretKey);
@@ -906,14 +906,14 @@ export const vnpayReturn = async (req, res) => {
     const signData = Object.keys(sortedParams)
       .map(
         (key) =>
-          `${encodeURIComponent(key)}=${encodeURIComponent(sortedParams[key])}`
+          `${encodeURIComponent(key)}=${encodeURIComponent(sortedParams[key])}`,
       )
       .join("&");
 
     console.log("🔐 Sign data string:", signData);
     console.log(
       "🔑 Secret key:",
-      secretKey ? "***" + secretKey.slice(-4) : "MISSING"
+      secretKey ? "***" + secretKey.slice(-4) : "MISSING",
     );
 
     const hmac = crypto.createHmac("sha512", secretKey);
@@ -940,7 +940,7 @@ export const vnpayReturn = async (req, res) => {
       console.error("Expected:", signed);
       console.error("Received:", secureHash);
       return res.redirect(
-        `${frontendUrl}/payment-result?success=false&message=Invalid signature`
+        `${frontendUrl}/payment-result?success=false&message=Invalid signature`,
       );
     }
 
@@ -949,7 +949,7 @@ export const vnpayReturn = async (req, res) => {
     if (!tempOrder) {
       console.error("❌ Temporary order not found:", transactionId);
       return res.redirect(
-        `${frontendUrl}/payment-result?success=false&message=`
+        `${frontendUrl}/payment-result?success=false&message=`,
       );
     }
 
@@ -971,7 +971,7 @@ export const vnpayReturn = async (req, res) => {
 
         if (product.stock < item.quantity) {
           stockCheckErrors.push(
-            `Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}`
+            `Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}`,
           );
           continue;
         }
@@ -986,7 +986,7 @@ export const vnpayReturn = async (req, res) => {
       if (stockCheckErrors.length > 0) {
         console.error(
           "❌ Stock validation failed after payment:",
-          stockCheckErrors
+          stockCheckErrors,
         );
 
         // Delete temp order
@@ -994,8 +994,8 @@ export const vnpayReturn = async (req, res) => {
 
         return res.redirect(
           `${frontendUrl}/payment-result?success=false&message=Stock unavailable. Please contact support for refund.&errors=${encodeURIComponent(
-            stockCheckErrors.join(", ")
-          )}`
+            stockCheckErrors.join(", "),
+          )}`,
         );
       }
 
@@ -1025,18 +1025,22 @@ export const vnpayReturn = async (req, res) => {
       const userToUpdate = await userModel.findById(tempOrder.userId);
       if (userToUpdate) {
         userToUpdate.orders.push(order._id);
-        
+
         // Remove ordered items from cart
-        if (userToUpdate.userCart && Array.isArray(userToUpdate.userCart.products)) {
+        if (
+          userToUpdate.userCart &&
+          Array.isArray(userToUpdate.userCart.products)
+        ) {
           const orderedProductIds = new Set(
-            tempOrder.items.map((item) => item.productId.toString())
+            tempOrder.items.map((item) => item.productId.toString()),
           );
-          
-          userToUpdate.userCart.products = userToUpdate.userCart.products.filter(
-            (p) => !orderedProductIds.has(p._id)
-          );
-          
-          userToUpdate.markModified('userCart');
+
+          userToUpdate.userCart.products =
+            userToUpdate.userCart.products.filter(
+              (p) => !orderedProductIds.has(p._id),
+            );
+
+          userToUpdate.markModified("userCart");
         }
         await userToUpdate.save();
       }
@@ -1053,7 +1057,7 @@ export const vnpayReturn = async (req, res) => {
               soldQuantity: quantity,
             },
           },
-          { new: true }
+          { new: true },
         );
 
         // If stock becomes 0, mark as unavailable
@@ -1064,7 +1068,7 @@ export const vnpayReturn = async (req, res) => {
         }
 
         console.log(
-          `✅ Stock updated for product ${productId}: -${quantity} (New stock: ${updatedProduct?.stock})`
+          `✅ Stock updated for product ${productId}: -${quantity} (New stock: ${updatedProduct?.stock})`,
         );
       }
 
@@ -1097,7 +1101,7 @@ export const vnpayReturn = async (req, res) => {
 
       console.log("✅ VNPay payment successful, order created:", order._id);
       return res.redirect(
-        `${frontendUrl}/checkout/${order._id}?paymentSuccess=true`
+        `${frontendUrl}/payment-result?success=true&orderId=${order._id}&transactionNo=${transactionNo}`,
       );
     } else {
       // Payment failed - Delete temporary order
@@ -1107,16 +1111,16 @@ export const vnpayReturn = async (req, res) => {
         "❌ VNPay payment failed for transaction:",
         transactionId,
         "Code:",
-        responseCode
+        responseCode,
       );
       return res.redirect(
-        `${frontendUrl}/payment-result?success=false&code=${responseCode}`
+        `${frontendUrl}/payment-result?success=false&code=${responseCode}`,
       );
     }
   } catch (error) {
     console.error("VNPay Return Error:", error);
     return res.redirect(
-      `${frontendUrl}/payment-result?success=false&message=System error`
+      `${frontendUrl}/payment-result?success=false&message=System error`,
     );
   }
 };
@@ -1215,7 +1219,7 @@ export const confirmManualPayment = async (req, res) => {
 
       if (product.stock < item.quantity) {
         stockCheckErrors.push(
-          `Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}`
+          `Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}`,
         );
         continue;
       }
@@ -1276,18 +1280,21 @@ export const confirmManualPayment = async (req, res) => {
     const userToUpdate = await userModel.findById(tempOrder.userId);
     if (userToUpdate) {
       userToUpdate.orders.push(order._id);
-      
+
       // Remove ordered items from cart
-      if (userToUpdate.userCart && Array.isArray(userToUpdate.userCart.products)) {
+      if (
+        userToUpdate.userCart &&
+        Array.isArray(userToUpdate.userCart.products)
+      ) {
         const orderedProductIds = new Set(
-          tempOrder.items.map((item) => item.productId.toString())
+          tempOrder.items.map((item) => item.productId.toString()),
         );
-        
+
         userToUpdate.userCart.products = userToUpdate.userCart.products.filter(
-          (p) => !orderedProductIds.has(p._id)
+          (p) => !orderedProductIds.has(p._id),
         );
-        
-        userToUpdate.markModified('userCart');
+
+        userToUpdate.markModified("userCart");
       }
       await userToUpdate.save();
     }
@@ -1304,7 +1311,7 @@ export const confirmManualPayment = async (req, res) => {
             soldQuantity: quantity,
           },
         },
-        { new: true }
+        { new: true },
       );
 
       // If stock becomes 0, mark as unavailable
@@ -1315,7 +1322,7 @@ export const confirmManualPayment = async (req, res) => {
       }
 
       console.log(
-        `✅ Stock updated for product ${productId}: -${quantity} (New stock: ${updatedProduct?.stock})`
+        `✅ Stock updated for product ${productId}: -${quantity} (New stock: ${updatedProduct?.stock})`,
       );
     }
 

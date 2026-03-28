@@ -16,7 +16,11 @@ import {
   FaCreditCard,
 } from "react-icons/fa";
 import toast from "react-hot-toast";
-import { removeSelectedItems, setOrderCount } from "../redux/orebiSlice";
+import {
+  removeSelectedItems,
+  setOrderCount,
+  resetCart,
+} from "../redux/orebiSlice";
 import { config } from "../../config";
 
 const PaymentResult = () => {
@@ -56,7 +60,7 @@ const PaymentResult = () => {
               headers: {
                 Authorization: `Bearer ${token}`,
               },
-            }
+            },
           );
 
           const data = await response.json();
@@ -65,11 +69,13 @@ const PaymentResult = () => {
             setOrder(data.order);
             toast.success("Thanh toán thành công!");
 
-            // Remove items from cart
+            // Reset cart từ Redux (backend đã xóa từ DB)
+            // Thay vì rely trên cartItemIds (có thể không match khi Redux reset)
+            dispatch(resetCart());
+            dispatch(setOrderCount(orderCount + 1));
+
+            // Clean up localStorage
             if (pendingOrder) {
-              const { cartItemIds } = JSON.parse(pendingOrder);
-              dispatch(removeSelectedItems(cartItemIds));
-              dispatch(setOrderCount(orderCount + 1));
               localStorage.removeItem("pendingVNPayOrder");
             }
           } else {
@@ -78,7 +84,7 @@ const PaymentResult = () => {
         } else {
           // Thanh toán thất bại - Không có order được tạo
           toast.error("Thanh toán thất bại!");
-          
+
           // Clean up pending order info
           if (pendingOrder) {
             localStorage.removeItem("pendingVNPayOrder");
