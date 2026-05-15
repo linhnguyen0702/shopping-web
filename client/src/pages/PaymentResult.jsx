@@ -67,7 +67,8 @@ const PaymentResult = () => {
 
           if (data.success) {
             setOrder(data.order);
-            toast.success("Thanh toán thành công!");
+            // Không gọi toast ở đây - trang đã hiển thị "Thanh toán thành công"
+            // để tránh notification popup lặp lại khi polling
 
             // Reset cart từ Redux (backend đã xóa từ DB)
             // Thay vì rely trên cartItemIds (có thể không match khi Redux reset)

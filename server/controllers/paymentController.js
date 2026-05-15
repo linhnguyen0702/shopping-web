@@ -226,11 +226,14 @@ export const createOrder = async (req, res) => {
       );
     }
 
-    // Send notification for COD orders
+    // Send notification for COD orders (only once)
     try {
-      await notifyNewOrder(order);
-      order.notificationSent = true;
-      await order.save();
+      if (!order.notificationSent) {
+        console.log("📢 Sending notification for COD order:", order._id);
+        await notifyNewOrder(order);
+        order.notificationSent = true;
+        await order.save();
+      }
     } catch (notifyError) {
       console.error("Error sending notification:", notifyError);
     }
@@ -1075,14 +1078,9 @@ export const vnpayReturn = async (req, res) => {
       // Delete temporary order
       await tempOrderModel.findByIdAndDelete(tempOrder._id);
 
-      // Send notification to admin
-      try {
-        await notifyNewOrder(order);
-        order.notificationSent = true;
-        await order.save();
-      } catch (notifyError) {
-        console.error("❌ Error sending notification:", notifyError);
-      }
+      // Note: Không gửi notification cho VNPAY payment vì payment result page đã hiển thị success
+      // Notification chỉ dành cho COD (thanh toán khi nhận hàng) và manual payment (QR/Bank)
+      // để tránh notification popup lặp lại từ polling
 
       // Send confirmation email to customer
       try {

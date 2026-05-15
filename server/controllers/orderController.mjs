@@ -1,7 +1,10 @@
 import orderModel from "../models/orderModel.js";
 import userModel from "../models/userModel.js";
 import productModel from "../models/productModel.js";
-import { notifyNewOrder, notifyOrderStatusUpdate } from "../services/notificationService.js";
+import {
+  notifyNewOrder,
+  notifyOrderStatusUpdate,
+} from "../services/notificationService.js";
 
 // Create a new order
 const createOrder = async (req, res) => {
@@ -116,7 +119,7 @@ const createOrder = async (req, res) => {
 
     // Validate items have productId
     const itemsWithoutProductId = items.filter(
-      (item) => !item._id && !item.productId
+      (item) => !item._id && !item.productId,
     );
     if (itemsWithoutProductId.length > 0) {
       return res.json({
@@ -144,7 +147,7 @@ const createOrder = async (req, res) => {
 
       if (!productId || !quantity || quantity <= 0) {
         stockCheckErrors.push(
-          `Invalid product or quantity for item: ${item.name}`
+          `Invalid product or quantity for item: ${item.name}`,
         );
         continue;
       }
@@ -157,7 +160,7 @@ const createOrder = async (req, res) => {
 
       if (product.stock < quantity) {
         stockCheckErrors.push(
-          `Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${quantity}`
+          `Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${quantity}`,
         );
         continue;
       }
@@ -214,22 +217,25 @@ const createOrder = async (req, res) => {
 
     // Add order to user's orders array and clear ordered items from cart
     const userToUpdate = await userModel.findById(userId);
-    
+
     if (userToUpdate) {
       userToUpdate.orders.push(newOrder._id);
 
       // Remove ordered items from cart
-      if (userToUpdate.userCart && Array.isArray(userToUpdate.userCart.products)) {
+      if (
+        userToUpdate.userCart &&
+        Array.isArray(userToUpdate.userCart.products)
+      ) {
         const orderedProductIds = new Set(
-          items.map((item) => item._id || item.productId)
+          items.map((item) => item._id || item.productId),
         );
-        
+
         userToUpdate.userCart.products = userToUpdate.userCart.products.filter(
-          (p) => !orderedProductIds.has(p._id)
+          (p) => !orderedProductIds.has(p._id),
         );
-        
+
         // Mark userCart as modified since it's a Mixed type
-        userToUpdate.markModified('userCart');
+        userToUpdate.markModified("userCart");
       }
 
       await userToUpdate.save();
@@ -247,7 +253,7 @@ const createOrder = async (req, res) => {
             soldQuantity: quantity,
           },
         },
-        { new: true }
+        { new: true },
       );
 
       // If stock becomes 0, mark as unavailable
@@ -261,6 +267,12 @@ const createOrder = async (req, res) => {
     // 🔔 Tạo thông báo đơn hàng mới (async, không chờ)
     notifyNewOrder(newOrder).catch((error) => {
       console.error("Lỗi tạo thông báo đơn hàng:", error);
+    });
+
+    // Mark notification as sent to prevent duplicates
+    newOrder.notificationSent = true;
+    await newOrder.save().catch((err) => {
+      console.error("Error updating notification flag:", err);
     });
 
     res.json({
@@ -418,21 +430,22 @@ const updateOrderStatus = async (req, res) => {
         });
       }
       delivery.status = status;
-      
+
       // Auto-update main order status if all deliveries are delivered
       // This logic assumes that if deliveries exist, ALL items are covered by deliveries eventually
       // or at least that "delivered" status for the order implies all existing deliveries are done.
       // You might want a more complex check if you have undelivered items remaining.
-      const allDeliveriesDone = order.deliveries.every(d => d.status === 'delivered');
-      
+      const allDeliveriesDone = order.deliveries.every(
+        (d) => d.status === "delivered",
+      );
+
       // Check if there are any items NOT in any delivery (still pending/processing)
       // If we assume createDelivery handles item status, we can check item.isDelivered
-      const allItemsDelivered = order.items.every(item => item.isDelivered);
+      const allItemsDelivered = order.items.every((item) => item.isDelivered);
 
       if (allDeliveriesDone && allItemsDelivered) {
-         order.status = 'delivered';
+        order.status = "delivered";
       }
-      
     } else {
       // Update main order status
       order.status = status;
@@ -641,7 +654,12 @@ const createDelivery = async (req, res) => {
   try {
     const { orderId, itemIds, trackingCode } = req.body;
 
-    if (!orderId || !itemIds || !Array.isArray(itemIds) || itemIds.length === 0) {
+    if (
+      !orderId ||
+      !itemIds ||
+      !Array.isArray(itemIds) ||
+      itemIds.length === 0
+    ) {
       return res.status(400).json({
         success: false,
         message: "Order ID and a list of item IDs are required.",
@@ -650,30 +668,44 @@ const createDelivery = async (req, res) => {
 
     const order = await orderModel.findById(orderId);
     if (!order) {
-      return res.status(404).json({ success: false, message: "Order not found." });
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found." });
     }
 
     // Filter items to be included in this delivery
     const itemsForDelivery = order.items.filter((item) =>
-      itemIds.includes(item._id.toString())
+      itemIds.includes(item._id.toString()),
     );
 
     // Check if all selected items are valid and not already delivered
     if (itemsForDelivery.length !== itemIds.length) {
-      return res.status(400).json({ success: false, message: "Some selected items were not found in the order." });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Some selected items were not found in the order.",
+        });
     }
 
-    const alreadyDeliveredItems = itemsForDelivery.filter(item => item.isDelivered);
+    const alreadyDeliveredItems = itemsForDelivery.filter(
+      (item) => item.isDelivered,
+    );
     if (alreadyDeliveredItems.length > 0) {
-      return res.status(400).json({ success: false, message: "Some selected items have already been delivered." });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Some selected items have already been delivered.",
+        });
     }
 
     // Create the new delivery object
     const newDelivery = {
       status: "shipped", // Default status for a new delivery
-      trackingCode: trackingCode || '',
+      trackingCode: trackingCode || "",
       createdAt: new Date(),
-      items: itemsForDelivery.map(item => ({
+      items: itemsForDelivery.map((item) => ({
         productId: item.productId,
         name: item.name,
         quantity: item.quantity,
@@ -685,14 +717,14 @@ const createDelivery = async (req, res) => {
     order.deliveries.push(newDelivery);
 
     // Mark items as delivered in the main items list
-    order.items.forEach(item => {
+    order.items.forEach((item) => {
       if (itemIds.includes(item._id.toString())) {
         item.isDelivered = true;
       }
     });
 
     // Update the overall order status
-    const allItemsDelivered = order.items.every(item => item.isDelivered);
+    const allItemsDelivered = order.items.every((item) => item.isDelivered);
     if (allItemsDelivered) {
       order.status = "delivered";
     } else {
@@ -700,8 +732,8 @@ const createDelivery = async (req, res) => {
     }
 
     // Mark the modified paths before saving
-    order.markModified('items');
-    order.markModified('deliveries');
+    order.markModified("items");
+    order.markModified("deliveries");
 
     order.updatedAt = new Date();
     await order.save();
@@ -711,7 +743,6 @@ const createDelivery = async (req, res) => {
       message: "Delivery created and order updated successfully.",
       order,
     });
-
   } catch (error) {
     console.error("Create Delivery Error:", error);
     res.status(500).json({ success: false, message: error.message });
