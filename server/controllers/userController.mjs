@@ -60,10 +60,7 @@ const userLogin = async (req, res) => {
 
       const token = createToken(user);
 
-      // 🔔 Tạo thông báo user login (tất cả accounts, async, không chờ)
-      notifyUserLogin(user).catch((error) => {
-        console.error("Lỗi tạo thông báo login:", error);
-      });
+      await notifyUserLogin(user);
 
       res.json({
         success: true,
@@ -199,15 +196,7 @@ const adminLogin = async (req, res) => {
 
       const token = createToken(user);
 
-      // 🔔 Tạo thông báo admin login (async, không chờ)
-      console.log(
-        "🎯 Admin login thành công, tạo notification cho:",
-        user.name,
-        user.email
-      );
-      notifyUserLogin(user).catch((error) => {
-        console.error("❌ Lỗi tạo thông báo admin login:", error);
-      });
+      await notifyUserLogin(user);
 
       res.json({
         success: true,
@@ -464,6 +453,8 @@ const googleLogin = async (req, res) => {
     user.lastLogin = new Date();
     await user.save();
 
+    await notifyUserLogin(user);
+
     const token = createToken(user);
     res.json({
       success: true,
@@ -568,6 +559,8 @@ const googleLoginWithCode = async (req, res) => {
 
     user.lastLogin = new Date();
     await user.save();
+
+    await notifyUserLogin(user);
 
     const token = createToken(user);
     res.json({

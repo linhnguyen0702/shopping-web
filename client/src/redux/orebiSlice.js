@@ -69,6 +69,19 @@ export const orebiSlice = createSlice({
     resetCart: (state) => {
       state.products = [];
     },
+    restoreCartItems: (state, action) => {
+      action.payload.forEach((product) => {
+        const productKey =
+          product.cartKey || product._id || product.productId;
+        const alreadyInCart = state.products.some(
+          (item) => (item.cartKey || item._id || item.productId) === productKey
+        );
+
+        if (productKey && !alreadyInCart) {
+          state.products.push(product);
+        }
+      });
+    },
     addUser: (state, action) => {
       state.userInfo = action.payload;
     },
@@ -93,6 +106,7 @@ export const {
   deleteItem,
   removeSelectedItems,
   resetCart,
+  restoreCartItems,
   addUser,
   removeUser,
   setOrderCount,

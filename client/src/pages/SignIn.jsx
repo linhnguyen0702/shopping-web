@@ -118,7 +118,12 @@ const SignIn = () => {
         if (data?.success && data?.token) {
           // Mặc định quyền user do backend cấp; client chỉ lưu token
           localStorage.setItem("token", data.token);
+          if (data.user) {
+            dispatch(addUser(data.user));
+          }
           await fetchUserOrderCount(data.token);
+          await fetchUserCart(data.token);
+          dispatch(fetchWishlist({ silent: true }));
           toast.success("Đăng nhập Google thành công");
           navigate("/");
         } else {

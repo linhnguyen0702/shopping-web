@@ -199,7 +199,13 @@ const NotificationDropdown = () => {
   return (
     <div className="relative" ref={dropdownRef}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          const shouldOpen = !isOpen;
+          setIsOpen(shouldOpen);
+          if (shouldOpen) {
+            fetchNotifications();
+          }
+        }}
         className="text-2xl text-gray-700 hover:text-black relative transition-colors duration-300 p-2"
       >
         <FaBell />
@@ -260,6 +266,22 @@ const NotificationDropdown = () => {
                         <p className="text-sm text-gray-600 mt-0.5 line-clamp-2">
                           {notification.message}
                         </p>
+                        {notification.type === "order" &&
+                          notification.data &&
+                          typeof notification.data === "object" && (
+                            <div className="mt-1 text-xs text-gray-500">
+                              {notification.data["Tổng tiền"] && (
+                                <span>
+                                  Tổng tiền: {notification.data["Tổng tiền"]}
+                                </span>
+                              )}
+                              {notification.data["Số sản phẩm"] != null && (
+                                <span className="ml-2">
+                                  {notification.data["Số sản phẩm"]} sản phẩm
+                                </span>
+                              )}
+                            </div>
+                          )}
                         <div className="flex items-center gap-3 mt-2">
                           <span className="text-xs text-gray-400">
                             {formatDate(notification.createdAt)}

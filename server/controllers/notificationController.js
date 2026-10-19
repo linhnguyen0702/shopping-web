@@ -1,5 +1,26 @@
 import notificationModel from "../models/notificationModel.js";
 import userModel from "../models/userModel.js";
+import orderModel from "../models/orderModel.js";
+
+const parseNotificationData = (value) => {
+  if (!value) return {};
+  if (typeof value === "string") {
+    try {
+      return JSON.parse(value);
+    } catch (error) {
+      console.error("Lỗi phân tích dữ liệu thông báo:", error);
+      return {};
+    }
+  }
+  return typeof value === "object" && !Array.isArray(value) ? value : {};
+};
+
+const paymentMethodLabels = {
+  cod: "Thanh toán khi nhận hàng",
+  bank_transfer: "Chuyển khoản ngân hàng",
+  qr_code: "QR Code",
+  vnpay: "VNPay",
+};
 
 // Lấy danh sách thông báo đơn giản
 export const getNotifications = async (req, res) => {
@@ -54,8 +75,116 @@ export const getNotifications = async (req, res) => {
 
     console.log("📋 Tìm thấy", notifications.length, "notifications");
 
+    const orderIds = notifications
+      .filter((notification) => notification.type === "order")
+      .map((notification) => {
+        const data = parseNotificationData(notification.data);
+        const metadata = parseNotificationData(notification.metadata);
+        return (
+          data.orderId ||
+          data["Mã đơn hàng"] ||
+          metadata.orderId ||
+          metadata["Mã đơn hàng"]
+        );
+      })
+      .filter(
+        (orderId) =>
+          orderId &&
+          /^[a-f\d]{24}$/i.test(
+            typeof orderId === "string" ? orderId : orderId.toString()
+          )
+      );
+
+    const orders = orderIds.length
+      ? await orderModel
+          .find({ _id: { $in: orderIds } })
+          .populate("userId", "name email")
+          .lean()
+      : [];
+    const ordersById = new Map(
+      orders.map((order) => [order._id.toString(), order])
+    );
+
+    const notificationsWithOrderDetails = notifications.map((notification) => {
+      if (notification.type !== "order") return notification;
+
+      const data = parseNotificationData(notification.data);
+      const metadata = parseNotificationData(notification.metadata);
+      const orderId =
+        data.orderId ||
+        data["Mã đơn hàng"] ||
+        metadata.orderId ||
+        metadata["Mã đơn hàng"];
+      const order = orderId
+        ? ordersById.get(orderId.toString())
+        : undefined;
+
+      if (!order) {
+        return {
+          ...notification,
+          data: { ...data, ...metadata },
+        };
+      }
+
+      const address = order.address || {};
+      const customerName =
+        `${address.firstName || ""} ${address.lastName || ""}`.trim() ||
+        order.userId?.name ||
+        data["Khách hàng"] ||
+        "N/A";
+      const customerEmail =
+        address.email || order.userId?.email || data.Email || "N/A";
+      const products =
+        order.items?.map((item) => ({
+          name: item.name || "Sản phẩm không rõ",
+          quantity: item.quantity || 1,
+          price: item.price || 0,
+          image: item.image || "",
+        })) || [];
+
+      return {
+        ...notification,
+        data: {
+          ...data,
+          ...metadata,
+          orderId: order._id.toString(),
+          "Mã đơn hàng": order._id.toString(),
+          "Khách hàng": customerName,
+          Email: customerEmail,
+          "Số điện thoại": address.phone || data["Số điện thoại"] || "N/A",
+          "Địa chỉ giao hàng":
+            [
+              address.street,
+              address.city,
+              address.state,
+              address.zipcode,
+              address.country,
+            ]
+              .filter(Boolean)
+              .join(", ") ||
+            data["Địa chỉ giao hàng"] ||
+            "N/A",
+          "Tổng tiền": `${Number(order.amount || 0).toLocaleString("vi-VN")} VNĐ`,
+          "Phí vận chuyển": Number(order.shippingFee || 0),
+          "Phương thức vận chuyển":
+            order.shippingMethod?.serviceName ||
+            order.shippingMethod?.provider ||
+            "N/A",
+          "Phương thức thanh toán":
+            paymentMethodLabels[order.paymentMethod] ||
+            order.paymentMethod ||
+            data["Phương thức thanh toán"] ||
+            "N/A",
+          "Trạng thái đơn hàng": order.status || data.status || "pending",
+          "Trạng thái thanh toán": order.paymentStatus || "",
+          "Số sản phẩm": products.length,
+          "Sản phẩm": JSON.stringify(products),
+        },
+      };
+    });
+
     // Process isRead status cho từng notification
-    const processedNotifications = notifications.map((notification) => {
+    const processedNotifications = notificationsWithOrderDetails.map((notification) => {
       let isRead = false;
       let readAt = null;
 

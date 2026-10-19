@@ -24,6 +24,19 @@ import {
   FaBox,
 } from "react-icons/fa";
 
+const parseNotificationPayload = (value) => {
+  if (!value) return {};
+  if (typeof value === "string") {
+    try {
+      return JSON.parse(value);
+    } catch (error) {
+      console.error("Lỗi phân tích dữ liệu thông báo:", error);
+      return {};
+    }
+  }
+  return typeof value === "object" && !Array.isArray(value) ? value : {};
+};
+
 const Notifications = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -78,9 +91,9 @@ const Notifications = () => {
       return;
     }
 
-    const fetchData = async () => {
+    const fetchData = async (showLoader = false) => {
       try {
-        setLoading(true);
+        if (showLoader) setLoading(true);
         const response = await axios.get(
           `${serverUrl}/api/notifications?limit=100`,
           {
@@ -93,13 +106,14 @@ const Notifications = () => {
         }
       } catch (error) {
         console.error("Lỗi lấy thông báo:", error);
-        setNotifications([]);
       } finally {
-        setLoading(false);
+        if (showLoader) setLoading(false);
       }
     };
 
-    fetchData();
+    fetchData(true);
+    const interval = setInterval(() => fetchData(), 15000);
+    return () => clearInterval(interval);
   }, [token]);
 
   // Apply filters
@@ -668,20 +682,25 @@ const Notifications = () => {
                                 </span>
                               )}
                             {(notification.metadata?.orderId ||
+                              notification.data?.orderId ||
                               notification.data?.["Mã đơn hàng"]) && (
                               <span className="flex items-center gap-1">
                                 <FaShoppingCart />
                                 Đơn hàng #
                                 {notification.metadata?.orderId ||
+                                  notification.data?.orderId ||
                                   notification.data?.["Mã đơn hàng"]}
                               </span>
                             )}
-                            {notification.metadata?.amount && (
+                            {(notification.metadata?.amount ||
+                              notification.data?.["Tổng tiền"]) && (
                               <span className="font-medium text-green-600">
-                                {new Intl.NumberFormat("vi-VN", {
-                                  style: "currency",
-                                  currency: "VND",
-                                }).format(notification.metadata.amount)}
+                                {notification.metadata?.amount
+                                  ? new Intl.NumberFormat("vi-VN", {
+                                      style: "currency",
+                                      currency: "VND",
+                                    }).format(notification.metadata.amount)
+                                  : notification.data["Tổng tiền"]}
                               </span>
                             )}
                           </div>
@@ -689,12 +708,12 @@ const Notifications = () => {
                           {/* Product Preview for Orders */}
                           {notification.type === "order" &&
                             (() => {
-                              const rawData =
-                                notification.metadata || notification.data;
-                              const metadataObject =
-                                typeof rawData === "string"
-                                  ? JSON.parse(rawData)
-                                  : rawData;
+                              const metadataObject = {
+                                ...parseNotificationPayload(notification.data),
+                                ...parseNotificationPayload(
+                                  notification.metadata
+                                ),
+                              };
 
                               const productsData =
                                 metadataObject["Sản phẩm"] &&
@@ -908,13 +927,16 @@ const Notifications = () => {
                     selectedNotification.data) &&
                     (() => {
                       // Try metadata first, then fall back to data
-                      const rawMetadata =
-                        selectedNotification.metadata ||
-                        selectedNotification.data;
-                      const metadataObject =
-                        typeof rawMetadata === "string"
-                          ? JSON.parse(rawMetadata)
-                          : rawMetadata;
+                      const rawMetadata = parseNotificationPayload(
+                        selectedNotification.metadata
+                      );
+                      const rawData = parseNotificationPayload(
+                        selectedNotification.data
+                      );
+                      const metadataObject = {
+                        ...rawData,
+                        ...rawMetadata,
+                      };
 
                       // DEBUG: Log để xem dữ liệu
                       console.log(
@@ -963,6 +985,13 @@ const Notifications = () => {
                                         {metadataObject["Số điện thoại"] ||
                                           "N/A"}
                                       </p>
+                                      <p className="text-sm text-gray-600">
+                                        <span className="font-medium">
+                                          Địa chỉ:
+                                        </span>{" "}
+                                        {metadataObject["Địa chỉ giao hàng"] ||
+                                          "N/A"}
+                                      </p>
                                     </div>
                                   </div>
                                   <div className="bg-white rounded-lg p-4 border border-gray-200">
@@ -986,6 +1015,48 @@ const Notifications = () => {
                                             ]
                                           }
                                         </span>
+                                      </p>
+                                      <p className="text-sm text-gray-600">
+                                        <span className="font-medium">
+                                          Trạng thái đơn:
+                                        </span>{" "}
+                                        {metadataObject[
+                                          "Trạng thái đơn hàng"
+                                        ] ||
+                                          metadataObject.status ||
+                                          "Đang xử lý"}
+                                      </p>
+                                      <p className="text-sm text-gray-600">
+                                        <span className="font-medium">
+                                          Trạng thái thanh toán:
+                                        </span>{" "}
+                                        {metadataObject[
+                                          "Trạng thái thanh toán"
+                                        ] ||
+                                          metadataObject.paymentStatus ||
+                                          "Chờ thanh toán"}
+                                      </p>
+                                      <p className="text-sm text-gray-600">
+                                        <span className="font-medium">
+                                          Vận chuyển:
+                                        </span>{" "}
+                                        {metadataObject[
+                                          "Phương thức vận chuyển"
+                                        ] || "N/A"}
+                                      </p>
+                                      <p className="text-sm text-gray-600">
+                                        <span className="font-medium">
+                                          Phí vận chuyển:
+                                        </span>{" "}
+                                        {new Intl.NumberFormat("vi-VN", {
+                                          style: "currency",
+                                          currency: "VND",
+                                        }).format(
+                                          Number(
+                                            metadataObject["Phí vận chuyển"] ||
+                                              0
+                                          )
+                                        )}
                                       </p>
                                     </div>
                                   </div>
@@ -1095,7 +1166,7 @@ const Notifications = () => {
                                       Tổng cộng:
                                     </span>
                                     <span className="text-2xl font-bold text-green-600">
-                                      {metadataObject["Tổng tiền"]}
+                                      {metadataObject["Tổng tiền"] || "N/A"}
                                     </span>
                                   </div>
                                 </div>

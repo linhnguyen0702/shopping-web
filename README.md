@@ -232,7 +232,7 @@ For production deployment, update your environment variables:
 # Production URLs
 CLIENT_URL=https://yourdomain.com
 ADMIN_URL=https://admin.yourdomain.com
-MONGODB_URI=your_production_mongodb_uri
+MONGO_URI=your_production_mongodb_uri
 STRIPE_SECRET_KEY=sk_live_your_live_stripe_key
 ```
 
@@ -288,7 +288,7 @@ Once the server is running, visit: http://localhost:8000/api-docs
 ### Common Issues
 
 1. **CORS Errors**: Make sure your CLIENT_URL and ADMIN_URL match your running ports
-2. **Database Connection**: Verify your MONGODB_URI and network access settings
+2. **Database Connection**: Verify your MONGO_URI and network access settings
 3. **Image Upload Issues**: Check your Cloudinary credentials
 4. **Payment Issues**: Ensure Stripe keys are correct and webhook is configured
 

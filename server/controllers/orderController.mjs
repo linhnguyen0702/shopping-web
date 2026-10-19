@@ -264,16 +264,13 @@ const createOrder = async (req, res) => {
       }
     }
 
-    // 🔔 Tạo thông báo đơn hàng mới (async, không chờ)
-    notifyNewOrder(newOrder).catch((error) => {
+    try {
+      await notifyNewOrder(newOrder);
+      newOrder.notificationSent = true;
+      await newOrder.save();
+    } catch (error) {
       console.error("Lỗi tạo thông báo đơn hàng:", error);
-    });
-
-    // Mark notification as sent to prevent duplicates
-    newOrder.notificationSent = true;
-    await newOrder.save().catch((err) => {
-      console.error("Error updating notification flag:", err);
-    });
+    }
 
     res.json({
       success: true,

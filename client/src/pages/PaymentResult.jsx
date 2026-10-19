@@ -18,8 +18,8 @@ import {
 import toast from "react-hot-toast";
 import {
   removeSelectedItems,
+  restoreCartItems,
   setOrderCount,
-  resetCart,
 } from "../redux/orebiSlice";
 import { config } from "../../config";
 
@@ -39,12 +39,31 @@ const PaymentResult = () => {
   const errorCode = searchParams.get("code");
 
   useEffect(() => {
+    const restorePendingCart = (pendingOrder) => {
+      if (!pendingOrder) return;
+
+      try {
+        const orderData = JSON.parse(pendingOrder);
+        if (Array.isArray(orderData.cartItems)) {
+          dispatch(restoreCartItems(orderData.cartItems));
+        }
+      } catch (error) {
+        console.error("Không thể khôi phục giỏ hàng sau thanh toán:", error);
+      }
+    };
+
     const processPaymentResult = async () => {
       // Lấy thông tin pending order từ localStorage
       const pendingOrder = localStorage.getItem("pendingVNPayOrder");
 
       if (!orderId && !success) {
+        restorePendingCart(pendingOrder);
+        if (pendingOrder) {
+          localStorage.removeItem("pendingVNPayOrder");
+        }
         toast.error("Không tìm thấy thông tin giao dịch");
+        setLoading(false);
+        setProcessingPayment(false);
         setTimeout(() => navigate("/cart"), 2000);
         return;
       }
@@ -70,9 +89,15 @@ const PaymentResult = () => {
             // Không gọi toast ở đây - trang đã hiển thị "Thanh toán thành công"
             // để tránh notification popup lặp lại khi polling
 
-            // Reset cart từ Redux (backend đã xóa từ DB)
-            // Thay vì rely trên cartItemIds (có thể không match khi Redux reset)
-            dispatch(resetCart());
+            const pendingData = pendingOrder
+              ? JSON.parse(pendingOrder)
+              : null;
+            const orderedItemIds = Array.isArray(pendingData?.cartItemIds)
+              ? pendingData.cartItemIds
+              : [];
+            if (orderedItemIds.length > 0) {
+              dispatch(removeSelectedItems(orderedItemIds));
+            }
             dispatch(setOrderCount(orderCount + 1));
 
             // Clean up localStorage
@@ -84,6 +109,7 @@ const PaymentResult = () => {
           }
         } else {
           // Thanh toán thất bại - Không có order được tạo
+          restorePendingCart(pendingOrder);
           toast.error("Thanh toán thất bại!");
 
           // Clean up pending order info

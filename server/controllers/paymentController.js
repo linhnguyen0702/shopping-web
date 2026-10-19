@@ -28,14 +28,28 @@ const vnpUrl = process.env.VNP_URL;
 const returnUrl = process.env.VNP_RETURNURL;
 const frontendUrl = process.env.FRONTEND_URL || process.env.CLIENT_URL;
 
-// Helper function to sort object by keys (required by VNPay)
-function sortObject(obj) {
-  const sorted = {};
-  const keys = Object.keys(obj).sort();
-  keys.forEach((key) => {
-    sorted[key] = obj[key];
+function encodeVNPayParams(params) {
+  return Object.keys(params)
+    .map((key) => encodeURIComponent(key))
+    .sort()
+    .reduce((encodedParams, encodedKey) => {
+      const key = decodeURIComponent(encodedKey);
+      encodedParams[encodedKey] = encodeURIComponent(params[key]).replace(
+        /%20/g,
+        "+"
+      );
+      return encodedParams;
+    }, {});
+}
+
+function createVNPaySignature(params) {
+  const signData = qs.stringify(encodeVNPayParams(params), {
+    encode: false,
   });
-  return sorted;
+  return crypto
+    .createHmac("sha512", secretKey)
+    .update(signData, "utf-8")
+    .digest("hex");
 }
 
 // Create order with payment method selection (COD ONLY)
@@ -226,16 +240,16 @@ export const createOrder = async (req, res) => {
       );
     }
 
-    // Send notification for COD orders (only once)
-    try {
-      if (!order.notificationSent) {
+    // Send notification for COD orders (only once).
+    if (!order.notificationSent) {
+      try {
         console.log("📢 Sending notification for COD order:", order._id);
         await notifyNewOrder(order);
         order.notificationSent = true;
         await order.save();
+      } catch (notifyError) {
+        console.error("Error sending notification:", notifyError);
       }
-    } catch (notifyError) {
-      console.error("Error sending notification:", notifyError);
     }
 
     res.json({
@@ -691,22 +705,12 @@ export const initiateOnlinePayment = async (req, res) => {
         vnp_CreateDate: createDate,
       };
 
-      const sortedParams = sortObject(vnp_Params);
-      const signData = Object.keys(sortedParams)
-        .map(
-          (key) =>
-            `${encodeURIComponent(key)}=${encodeURIComponent(
-              sortedParams[key],
-            )}`,
-        )
-        .join("&");
-
-      const hmac = crypto.createHmac("sha512", secretKey);
-      const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
+      const sortedParams = encodeVNPayParams(vnp_Params);
+      const signed = createVNPaySignature(vnp_Params);
       sortedParams["vnp_SecureHash"] = signed;
 
       const paymentUrl =
-        vnpUrl + "?" + qs.stringify(sortedParams, { encode: true });
+        vnpUrl + "?" + qs.stringify(sortedParams, { encode: false });
 
       return res.json({
         success: true,
@@ -841,15 +845,9 @@ export const createVNPayPayment = async (req, res) => {
     };
 
     // Sort parameters by key (IMPORTANT for signature)
-    const sortedParams = sortObject(vnp_Params);
+    const sortedParams = encodeVNPayParams(vnp_Params);
 
-    // Create signature string manually to ensure correct encoding
-    const signData = Object.keys(sortedParams)
-      .map(
-        (key) =>
-          `${encodeURIComponent(key)}=${encodeURIComponent(sortedParams[key])}`,
-      )
-      .join("&");
+    const signed = createVNPaySignature(vnp_Params);
 
     console.log("🔐 Creating VNPay payment:");
     console.log("Order ID:", orderId);
@@ -859,22 +857,11 @@ export const createVNPayPayment = async (req, res) => {
       "→ VNPay amount:",
       Math.round(order.amount) * 100,
     );
-    console.log("Sign data:", signData);
-    console.log(
-      "Secret key:",
-      secretKey ? "***" + secretKey.slice(-4) : "MISSING",
-    );
-
-    const hmac = crypto.createHmac("sha512", secretKey);
-    const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
-
-    console.log("Generated hash:", signed);
-
     sortedParams["vnp_SecureHash"] = signed;
 
     // Create payment URL - encode the final URL
     const paymentUrl =
-      vnpUrl + "?" + qs.stringify(sortedParams, { encode: true });
+      vnpUrl + "?" + qs.stringify(sortedParams, { encode: false });
 
     console.log("✅ VNPay payment URL created for order:", orderId);
     console.log("Payment URL length:", paymentUrl.length);
@@ -893,36 +880,18 @@ export const createVNPayPayment = async (req, res) => {
 // Handle VNPay return (callback from VNPay)
 export const vnpayReturn = async (req, res) => {
   try {
-    let vnp_Params = req.query;
+    const vnp_Params = { ...req.query };
     const secureHash = vnp_Params["vnp_SecureHash"];
 
     console.log("🔍 VNPay callback received:");
-    console.log("Query params:", vnp_Params);
-    console.log("Received hash:", secureHash);
+    console.log("Transaction reference:", vnp_Params["vnp_TxnRef"]);
 
     // Remove hash params
     delete vnp_Params["vnp_SecureHash"];
     delete vnp_Params["vnp_SecureHashType"];
 
-    // Sort and verify signature
-    const sortedParams = sortObject(vnp_Params);
-    const signData = Object.keys(sortedParams)
-      .map(
-        (key) =>
-          `${encodeURIComponent(key)}=${encodeURIComponent(sortedParams[key])}`,
-      )
-      .join("&");
-
-    console.log("🔐 Sign data string:", signData);
-    console.log(
-      "🔑 Secret key:",
-      secretKey ? "***" + secretKey.slice(-4) : "MISSING",
-    );
-
-    const hmac = crypto.createHmac("sha512", secretKey);
-    const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
-
-    console.log("✅ Calculated hash:", signed);
+    // Verify with the same canonical parameter encoding used to create the payment URL.
+    const signed = createVNPaySignature(vnp_Params);
     console.log("🔍 Hash match:", secureHash === signed);
 
     const transactionId = vnp_Params["vnp_TxnRef"];
@@ -940,8 +909,6 @@ export const vnpayReturn = async (req, res) => {
     // Verify signature
     if (secureHash !== signed) {
       console.error("❌ Invalid VNPay signature");
-      console.error("Expected:", signed);
-      console.error("Received:", secureHash);
       return res.redirect(
         `${frontendUrl}/payment-result?success=false&message=Invalid signature`,
       );
@@ -1078,9 +1045,16 @@ export const vnpayReturn = async (req, res) => {
       // Delete temporary order
       await tempOrderModel.findByIdAndDelete(tempOrder._id);
 
-      // Note: Không gửi notification cho VNPAY payment vì payment result page đã hiển thị success
-      // Notification chỉ dành cho COD (thanh toán khi nhận hàng) và manual payment (QR/Bank)
-      // để tránh notification popup lặp lại từ polling
+      try {
+        await notifyNewOrder(order);
+        order.notificationSent = true;
+        await order.save();
+      } catch (notificationError) {
+        console.error(
+          "Lỗi tạo thông báo cho đơn hàng VNPay:",
+          notificationError
+        );
+      }
 
       // Send confirmation email to customer
       try {

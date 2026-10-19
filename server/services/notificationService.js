@@ -32,7 +32,7 @@ export const createAndSendNotification = async (notificationData) => {
 // Notification cho đơn hàng mới
 export const notifyNewOrder = async (order) => {
   try {
-    // Chuẩn bị mảng sản phẩm chi tiết
+    const orderId = order._id.toString();
     const productsArray =
       order.items?.map((item) => ({
         name: item.name || "Sản phẩm không rõ",
@@ -40,25 +40,54 @@ export const notifyNewOrder = async (order) => {
         price: item.price || 0,
         image: item.image || item.images?.[0] || "",
       })) || [];
+    const customerName = `${order.address?.firstName || ""} ${
+      order.address?.lastName || ""
+    }`.trim();
+    const paymentMethodLabels = {
+      cod: "Thanh toán khi nhận hàng",
+      bank_transfer: "Chuyển khoản ngân hàng",
+      qr_code: "QR Code",
+      vnpay: "VNPay",
+    };
+    const orderData = {
+      orderId,
+      "Mã đơn hàng": orderId,
+      "Khách hàng": customerName || "N/A",
+      Email: order.address?.email || "N/A",
+      "Số điện thoại": order.address?.phone || "N/A",
+      "Địa chỉ giao hàng": [
+        order.address?.street,
+        order.address?.city,
+        order.address?.state,
+        order.address?.zipcode,
+        order.address?.country,
+      ]
+        .filter(Boolean)
+        .join(", "),
+      "Tổng tiền": `${Number(order.amount || 0).toLocaleString("vi-VN")} VNĐ`,
+      "Phí vận chuyển": Number(order.shippingFee || 0),
+      "Phương thức vận chuyển":
+        order.shippingMethod?.serviceName ||
+        order.shippingMethod?.provider ||
+        "N/A",
+      "Phương thức thanh toán":
+        paymentMethodLabels[order.paymentMethod] ||
+        order.paymentMethod ||
+        "N/A",
+      "Trạng thái đơn hàng": order.status || "pending",
+      "Trạng thái thanh toán": order.paymentStatus || "pending",
+      "Số sản phẩm": productsArray.length,
+      "Sản phẩm": JSON.stringify(productsArray),
+    };
 
     const notificationData = {
       type: "order",
-      title: "Đơn hàng mới nhận",
-      message: `Có đơn hàng mới #${order._id} từ khách hàng ${
-        order.address?.firstName || "N/A"
-      } ${order.address?.lastName || ""}`,
-      data: {
-        "Mã đơn hàng": order._id,
-        "Khách hàng": `${order.address?.firstName || ""} ${
-          order.address?.lastName || ""
-        }`.trim(),
-        Email: order.address?.email || "N/A",
-        "Số điện thoại": order.address?.phone || "N/A",
-        "Tổng tiền": `${order.amount?.toLocaleString() || 0} VNĐ`,
-        "Phương thức thanh toán": order.paymentMethod || "N/A",
-        "Số sản phẩm": order.items?.length || 0,
-        "Sản phẩm": JSON.stringify(productsArray),
-      },
+      title: "Đơn hàng mới",
+      message: `Đơn hàng #${orderId.slice(-8).toUpperCase()} đã được lưu${
+        customerName ? ` cho khách hàng ${customerName}` : ""
+      }.`,
+      data: orderData,
+      metadata: orderData,
       priority: "high",
       isGlobal: true,
     };
@@ -73,7 +102,7 @@ export const notifyNewOrder = async (order) => {
         title: "Đặt hàng thành công",
         message: `Đơn hàng #${order._id.toString().slice(-6).toUpperCase()} của bạn đã được ghi nhận.`,
         data: {
-          orderId: order._id,
+          ...orderData,
         },
         recipients: [{ userId: order.userId, isRead: false }],
         priority: "high",
@@ -85,6 +114,7 @@ export const notifyNewOrder = async (order) => {
     return true;
   } catch (error) {
     console.error("Lỗi tạo thông báo đơn hàng mới:", error);
+    throw error;
   }
 };
 
@@ -341,6 +371,38 @@ export const notifyOrderStatusUpdate = async (order, oldStatus = null) => {
           orderId: order._id,
           status: statusText,
           paymentStatus: paymentStatusMap[order.paymentStatus] || order.paymentStatus,
+          "Mã đơn hàng": order._id.toString(),
+          "Khách hàng": `${order.address?.firstName || ""} ${
+            order.address?.lastName || ""
+          }`.trim(),
+          Email: order.address?.email || "N/A",
+          "Số điện thoại": order.address?.phone || "N/A",
+          "Tổng tiền": `${Number(order.amount || 0).toLocaleString("vi-VN")} VNĐ`,
+          "Địa chỉ giao hàng":
+            [
+              order.address?.street,
+              order.address?.city,
+              order.address?.state,
+              order.address?.zipcode,
+              order.address?.country,
+            ]
+              .filter(Boolean)
+              .join(", ") || "N/A",
+          "Phí vận chuyển": Number(order.shippingFee || 0),
+          "Phương thức vận chuyển":
+            order.shippingMethod?.serviceName ||
+            order.shippingMethod?.provider ||
+            "N/A",
+          "Trạng thái đơn hàng": statusText,
+          "Số sản phẩm": order.items?.length || 0,
+          "Sản phẩm": JSON.stringify(
+            order.items?.map((item) => ({
+              name: item.name || "Sản phẩm không rõ",
+              quantity: item.quantity || 1,
+              price: item.price || 0,
+              image: item.image || "",
+            })) || []
+          ),
         },
         recipients: [{ userId: order.userId, isRead: false }],
         priority: "medium",

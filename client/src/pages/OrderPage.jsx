@@ -367,6 +367,7 @@ const OrderPage = () => {
                 JSON.stringify({
                   transactionId: data.transactionId,
                   cartItemIds: selectedItems.map((item) => item.cartKey || item._id),
+                  cartItems: selectedItems,
                 })
               );
 

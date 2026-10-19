@@ -66,7 +66,9 @@ const Header = () => {
             )}
           </Link>
 
-          <NotificationDropdown />
+          <NotificationDropdown
+            key={userInfo?.id || userInfo?._id || "anonymous"}
+          />
 
           {userInfo ? (
             <Link
