@@ -16,23 +16,24 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@google/genai": "^2.30.0",
     "@paypal/paypal-server-sdk": "^1.1.0",
     "bcrypt": "^5.1.1",
     "cloudinary": "^2.5.0",
     "cors": "^2.8.5",
+    "cross-env": "^10.1.0",
     "crypto": "^1.0.1",
     "dotenv": "^16.4.5",
     "express": "^4.21.2",
     "google-auth-library": "^9.14.1",
     "jsonwebtoken": "^9.0.2",
+    "moment-timezone": "^0.5.43",
     "mongoose": "^8.9.5",
     "multer": "1.4.5-lts.1",
     "nodemailer": "^6.9.15",
     "nodemon": "^3.1.4",
     "qs": "^6.14.0",
     "stripe": "^18.4.0",
-    "validator": "^13.12.0",
-    "moment-timezone": "^0.5.43",
-    "cross-env": "^10.1.0"
+    "validator": "^13.12.0"
   }
 }

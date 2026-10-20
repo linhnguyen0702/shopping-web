@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { FaBell, FaCheck, FaInfoCircle, FaExclamationTriangle, FaShoppingBag, FaTimes } from "react-icons/fa";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { config } from "../../config";
 import toast from "react-hot-toast";
 
@@ -9,6 +9,7 @@ const NotificationDropdown = () => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [markingAllAsRead, setMarkingAllAsRead] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
@@ -89,10 +90,18 @@ const NotificationDropdown = () => {
   };
 
   const handleMarkAllAsRead = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
+    if (markingAllAsRead) return;
 
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    const previousNotifications = notifications;
+    const previousUnreadCount = unreadCount;
+    setMarkingAllAsRead(true);
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    setUnreadCount(0);
+
+    try {
       const response = await fetch(
         `${config.baseUrl}/api/notifications/read-all`,
         {
@@ -104,13 +113,18 @@ const NotificationDropdown = () => {
       );
 
       const data = await response.json();
-      if (data.success) {
-        setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-        setUnreadCount(0);
-        toast.success("Đã đánh dấu tất cả là đã đọc");
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Không thể đánh dấu thông báo đã đọc");
       }
+
+      toast.success("Đã đánh dấu tất cả là đã đọc");
     } catch (error) {
       console.error("Error marking all as read:", error);
+      setNotifications(previousNotifications);
+      setUnreadCount(previousUnreadCount);
+      toast.error("Không thể đánh dấu tất cả đã đọc. Vui lòng thử lại.");
+    } finally {
+      setMarkingAllAsRead(false);
     }
   };
 
@@ -223,9 +237,11 @@ const NotificationDropdown = () => {
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllAsRead}
-                className="text-xs font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-white px-2 py-1 rounded shadow-sm border border-gray-200"
+                disabled={markingAllAsRead}
+                className="text-xs font-medium text-blue-600 hover:text-blue-800 disabled:opacity-60 disabled:cursor-wait flex items-center gap-1 bg-white px-2 py-1 rounded shadow-sm border border-gray-200"
               >
-                <FaCheck className="w-3 h-3" /> Đánh dấu đã đọc
+                <FaCheck className="w-3 h-3" />
+                {markingAllAsRead ? "Đang cập nhật..." : "Đánh dấu đã đọc"}
               </button>
             )}
           </div>

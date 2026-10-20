@@ -344,44 +344,45 @@ export const markAllAsRead = async (req, res) => {
       };
     }
 
-    // Lấy tất cả notifications phù hợp
-    const notifications = await notificationModel.find(query);
-
-    // Update từng notification
-    for (const notification of notifications) {
-      if (notification.isGlobal) {
-        const existingRecipient = notification.recipients.find(
-          (r) => r.userId.toString() === userId.toString()
-        );
-
-        if (existingRecipient) {
-          existingRecipient.isRead = true;
-          existingRecipient.readAt = new Date();
-        } else {
-          notification.recipients.push({
-            userId: userId,
-            isRead: true,
-            readAt: new Date(),
-          });
-        }
-      } else {
-        const recipient = notification.recipients.find(
-          (r) => r.userId.toString() === userId.toString()
-        );
-
-        if (recipient) {
-          recipient.isRead = true;
-          recipient.readAt = new Date();
-        }
+    const readAt = new Date();
+    const existingRecipientResult = await notificationModel.updateMany(
+      {
+        ...query,
+        "recipients.userId": userId,
+      },
+      {
+        $set: {
+          "recipients.$[recipient].isRead": true,
+          "recipients.$[recipient].readAt": readAt,
+        },
+      },
+      {
+        arrayFilters: [{ "recipient.userId": userId }],
       }
+    );
 
-      await notification.save();
-    }
+    const globalQuery =
+      req.user.role === "admin"
+        ? { isGlobal: true, type: { $ne: "login" } }
+        : { isGlobal: true, type: { $in: ["system", "warning"] } };
+    const newRecipientsResult = await notificationModel.updateMany(
+      {
+        ...globalQuery,
+        recipients: { $not: { $elemMatch: { userId } } },
+      },
+      {
+        $push: {
+          recipients: { userId, isRead: true, readAt },
+        },
+      }
+    );
 
     res.json({
       success: true,
       message: "Đã đánh dấu tất cả thông báo đã đọc",
-      count: notifications.length,
+      count:
+        existingRecipientResult.modifiedCount +
+        newRecipientsResult.modifiedCount,
     });
   } catch (error) {
     console.error("❌ Lỗi mark all as read:", error);
